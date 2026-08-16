@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>奕晉網球學院｜Match Point Performance Lab</title>
+  <meta name="description" content="奕晉網球學院 Match Point Performance Lab：結合運動科學與實戰經驗的網球訓練空間。專注青少年選手、成人業餘球友的體能評估、長期訓練與賽季備戰規劃。">
+
+  <style>
+    :root {
+      --bg-page: #020617;
+      --bg-card: #020617;
+      --accent: #22c55e;
+      --accent-alt: #38bdf8;
+      --accent-soft: #bbf7d0;
+      --text-main: #e5e7eb;
+      --text-sub: #9ca3af;
+      --text-muted: #6b7280;
+      --border-subtle: #1e293b;
+      --radius-lg: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+      background:
+        radial-gradient(circle at 10% 0, #0f172a 0, #020617 45%, #000 100%);
+      color: var(--text-main);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 20px 18px 40px;
+    }
+
+    /* ========= 頂部導覽 ========= */
+    header.site-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0 16px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 2px solid rgba(34,197,94,0.9);
+      box-shadow: 0 0 18px rgba(34,197,94,0.9);
+      object-fit: cover;
+      background: radial-gradient(circle at 30% 30%, #22c55e, #16a34a);
+    }
+
+    .brand-text-main {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .brand-text-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    nav {
+      display: flex;
+      gap: 14px;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    nav a {
+      padding: 6px 10px;
+      border-radius: 999px;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    nav a:hover {
+      background: rgba(15,23,42,0.9);
+      color: #f9fafb;
+    }
+
+    .nav-cta {
+      border: 1px solid rgba(34,197,94,0.8);
+      color: var(--accent-soft);
+      box-shadow: 0 0 12px rgba(34,197,94,0.6);
+    }
+
+    /* ========= Hero 區 ========= */
+    .hero {
+      margin-top: 8px;
+      margin-bottom: 30px;
+      padding: 24px 22px;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 0 0, rgba(56,189,248,0.18) 0, transparent 55%),
+        radial-gradient(circle at 100% 0, rgba(34,197,94,0.24) 0, transparent 60%),
+        radial-gradient(circle at 50% 130%, #020617 0, #000 60%);
+      border: 1px solid rgba(148,163,184,0.35);
+      box-shadow:
+        0 22px 60px rgba(15,23,42,0.9),
+        0 0 0 1px rgba(15,23,42,1);
+      display: grid;
+      grid-template-columns: minmax(0,1.4fr) minmax(0,1fr);
+      gap: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      border-radius: 999px;
+      border: 1px solid rgba(56,189,248,0.4);
+      right: -70px;
+      top: -100px;
+      opacity: 0.6;
+      box-shadow: 0 0 40px rgba(56,189,248,0.6);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      border-radius: 999px;
+      border: 2px solid rgba(34,197,94,0.7);
+      left: -90px;
+      bottom: -80px;
+      opacity: 0.6;
+      box-shadow: 0 0 36px rgba(34,197,94,0.7);
+    }
+
+    .hero-main,
+    .hero-side {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.9);
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-bottom: 10px;
+    }
+
+    .hero-pill span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 10px #22c55e;
+    }
+
+    .hero-title {
+      font-size: 28px;
+      line-height: 1.3;
+      color: #f9fafb;
+      margin: 4px 0 10px;
+    }
+
+    .hero-title span.highlight {
+      color: var(--accent-soft);
+    }
+
+    .hero-subtitle {
+      font-size: 13px;
+      color: var(--text-sub);
+      line-height: 1.8;
+      margin-bottom: 18px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .btn-main {
+      padding: 9px 18px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: linear-gradient(to right, #22c55e, #38bdf8);
+      color: #020617;
+      box-shadow: 0 14px 40px rgba(34,197,94,0.7);
+    }
+
+    .btn-ghost {
+      padding: 9px 15px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.9);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-sub);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-ghost:hover {
+      border-color: rgba(248,250,252,0.9);
+      color: #e5e7eb;
+    }
+
+    .hero-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .hero-meta span.badge {
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.95);
+      color: var(--text-sub);
+    }
+
+    .hero-side-card {
+      background: rgba(15,23,42,0.96);
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,0.35);
+      padding: 12px 14px;
+      font-size: 12px;
+      color: var(--text-sub);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-side-title {
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .hero-side-metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .metric-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+    .metric-tag {
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(234,179,8,0.7);
+      color: #facc15;
+      font-size: 11px;
+    }
+
+    .hero-side-note {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ========= Section 通用 ========= */
+    section {
+      margin-bottom: 32px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      margin: 0 0 10px;
+      color: #f9fafb;
+    }
+
+    .section-sub {
+      font-size: 13px;
+      color: var(--text-sub);
+      margin-bottom: 16px;
+      line-height: 1.8;
+    }
+
+    /* ========= About ========= */
+    .about-grid {
+      display: grid;
+      grid-template-columns: minmax(0,1.2fr) minmax(0,1fr);
+      gap: 18px;
+    }
+
+    .card-soft {
+      background: rgba(15,23,42,0.96);
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,0.35);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--text-sub);
+      line-height: 1.8;
+    }
+
+    .about-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 11px;
+    }
+
+    .tag-pill {
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.9);
+      color: var(--text-sub);
+    }
+
+    .coach-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f9fafb;
+      margin-bottom: 4px;
+    }
+
+    .coach-title {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    /* ========= Services ========= */
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(3,minmax(0,1fr));
+      gap: 14px;
+    }
+
+    .service-card {
+      background: rgba(15,23,42,0.96);
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,0.35);
+      padding: 12px 13px;
+      font-size: 12px;
+      color: var(--text-sub);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .service-title {
+      font-size: 13px;
+      color: #f9fafb;
+      font-weight: 600;
+    }
+
+    .service-tag {
+      font-size: 11px;
+      color: var(--accent-soft);
+    }
+
+    .service-list {
+      list-style: none;
+      padding: 0;
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .service-list li::before {
+      content: "• ";
+      color: var(--accent);
+    }
+
+    /* ========= Contact ========= */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0,1.2fr) minmax(0,1fr);
+      gap: 18px;
+    }
+
+    .contact-card {
+      background: rgba(15,23,42,0.96);
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,0.35);
+      padding: 14px 15px;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    .contact-row {
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .contact-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      margin-bottom: 2px;
+    }
+
+    .contact-main {
+      font-size: 13px;
+      color: #f9fafb;
+    }
+
+    .contact-main a {
+      color: var(--accent-soft);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .contact-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      line-height: 1.7;
+    }
+
+    .contact-mini-form {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .field label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .field input,
+    .field textarea {
+      border-radius: 10px;
+      border: 1px solid rgba(30,64,175,0.7);
+      background: rgba(15,23,42,0.95);
+      color: #f9fafb;
+      padding: 7px 9px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: rgba(56,189,248,0.9);
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.6);
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .btn-send {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.95);
+      color: var(--text-sub);
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .btn-send:hover {
+      border-color: rgba(248,250,252,0.9);
+      color: #e5e7eb;
+    }
+
+    /* ========= Footer ========= */
+    footer {
+      margin-top: 10px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(15,23,42,0.9);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    footer .links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    footer .links a {
+      padding: 3px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(31,41,55,0.8);
+      background: rgba(15,23,42,0.9);
+    }
+
+    /* ========= RWD ========= */
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: minmax(0,1fr);
+      }
+      .hero-side {
+        order: -1;
+      }
+      .about-grid,
+      .service-grid,
+      .contact-grid {
+        grid-template-columns: minmax(0,1fr);
+      }
+      .service-grid {
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      header.site-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      nav {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+      .hero {
+        padding: 18px 16px;
+      }
+      .hero-title {
+        font-size: 22px;
+      }
+      .page {
+        padding-inline: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <!-- ========= 頂部導覽 ========= -->
+  <header class="site-header">
+    <div class="brand">
+      <img
+        src="https://yijintennis.github.io/logo.jpeg"
+        alt="奕晉網球學院 Logo"
+        class="brand-logo"
+      />
+      <div>
+        <div class="brand-text-main">MATCH POINT PERFORMANCE LAB</div>
+        <div class="brand-text-sub">奕晉網球學院｜Tennis Performance & Conditioning</div>
+      </div>
+    </div>
+    <nav>
+      <a href="#about">關於學院</a>
+      <a href="#services">訓練方案</a>
+      <a href="#contact" class="nav-cta">預約訓練</a>
+    </nav>
+  </header>
+
+  <!-- ========= HERO ========= -->
+  <section class="hero">
+    <div class="hero-main">
+      <div class="hero-pill">
+        <span class="dot"></span>
+        <span>不是多練，而是練在關鍵參數上</span>
+      </div>
+      <h1 class="hero-title">
+        讓你的每一次揮拍，<br />
+        都有<span class="highlight">數據在背後撐腰</span>。
+      </h1>
+      <p class="hero-subtitle">
+        奕晉網球學院結合運動科學與實戰經驗，<br />
+        幫助青少年選手與成人球友，用系統化的測試、訓練與追蹤，穩定提升移動速度、
+        爆發力與比賽表現，而不是只在場上「打到累」。
+      </p>
+      <div class="hero-actions">
+        <a href="#contact">
+          <button class="btn-main">預約體能評估</button>
+        </a>
+        <a href="#services">
+          <button class="btn-ghost">看看有哪些訓練方案 →</button>
+        </a>
+      </div>
+      <div class="hero-meta">
+        <span class="badge">一對一 / 小團體訓練</span>
+        <span class="badge">青少年選手長期規劃</span>
+        <span class="badge">成人業餘比賽備戰</span>
+      </div>
+    </div>
+
+    <div class="hero-side">
+      <div class="hero-side-card">
+        <div class="hero-side-title">PERFORMANCE SNAPSHOT</div>
+        <div class="hero-side-metric-row">
+          <div class="metric-label">下肢爆發力綜合 Z</div>
+          <div class="metric-value">+0.92</div>
+        </div>
+        <div class="hero-side-metric-row">
+          <div class="metric-label">敏捷變向（505 Test）</div>
+          <div class="metric-value">優於同級 18%</div>
+        </div>
+        <div class="hero-side-metric-row">
+          <div class="metric-label">賽季傷害紀錄</div>
+          <div class="metric-value">0 次中斷</div>
+        </div>
+        <div class="metric-tag">
+          🔬 這不是廣告數字，而是我們每天在看的東西。
+        </div>
+        <div class="hero-side-note">
+          透過 IMTP、跳躍測試與變向速度，我們不是只說「多跑一圈」，
+          而是一起看清楚：現在的你，和你想成為的選手，中間到底差在哪裡。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========= About ========= -->
+  <section id="about">
+    <div class="section-label">ABOUT</div>
+    <h2 class="section-title">這不是補習班式的團練，而是你專屬的訓練實驗室。</h2>
+    <p class="section-sub">
+      我們相信：好的訓練，應該要讓你更了解自己，而不是更迷惘。
+      奕晉網球學院的每一堂課，都建立在「測試 → 分析 → 設計 → 回測」的流程上，
+      將體能、技術與比賽心態串成一條路，而不是一堆分開的課表。
+    </p>
+
+    <div class="about-grid">
+      <div class="card-soft">
+        <p>
+          無論你是想拚排名的青少年選手、準備參加業餘盃賽的上班族，或正在傷後尋找回場節奏的球員，
+          這裡都是一個可以安心「說實話」的地方：你的目標、你的擔心、你的時間與能量限制。
+        </p>
+        <p>
+          我們會一起把這些條件攤開，轉換成有順序、有優先順位的訓練藍圖──
+          包含你該專注的體能參數、每一週大概要做到的最低訓練量，
+          以及賽季前後要如何安排減量與恢復。
+        </p>
+        <div class="about-tags">
+          <span class="tag-pill">💡 量身打造訓練藍圖</span>
+          <span class="tag-pill">📊 可視化測試報告</span>
+          <span class="tag-pill">🎾 結合場上技戰術</span>
+        </div>
+      </div>
+
+      <div class="card-soft">
+        <div class="coach-name">教練姓名（請填入你的名字）</div>
+        <div class="coach-title">奕晉網球學院主責教練｜體能與表現教練</div>
+        <p>
+          專長青少年競技選手與成人業餘球友的體能訓練與表現優化。
+          過去協助多位選手從「容易抽筋、比賽掉拍」，
+          走到能穩定完成長盤賽、關鍵分不再只靠運氣。
+        </p>
+        <p>
+          訓練風格是務實、直接，但保留幽默與彈性。你可以說出真實狀況，
+          我會根據你現在的人生節奏，開出「做得到、也會有感」的處方。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========= Services ========= -->
+  <section id="services">
+    <div class="section-label">SERVICES</div>
+    <h2 class="section-title">我們可以一起做的三件事</h2>
+    <p class="section-sub">
+      不同階段的球員，需要的不是同一份課表。
+      以下三種服務可以單獨選擇，也可以依照你的賽季節奏做組合。
+    </p>
+
+    <div class="service-grid">
+      <div class="service-card">
+        <div class="service-title">1｜體能評估與報告解析</div>
+        <div class="service-tag">Performance Assessment & Report</div>
+        <ul class="service-list">
+          <li>IMTP、跳躍測試、敏捷與變向速度測驗</li>
+          <li>與同級選手比較的 Z 分數雷達圖</li>
+          <li>一份你看得懂、也能拿去和教練討論的完整報告</li>
+        </ul>
+      </div>
+
+      <div class="service-card">
+        <div class="service-title">2｜長期訓練與賽季規劃</div>
+        <div class="service-tag">Season Planning & Long-Term Development</div>
+        <ul class="service-list">
+          <li>依照學校、工作與比賽行程，安排周期化訓練</li>
+          <li>區分「必做」、「加分」與「可以捨棄」的訓練項目</li>
+          <li>每 4–8 週回測一次，確保你真的在前進</li>
+        </ul>
+      </div>
+
+      <div class="service-card">
+        <div class="service-title">3｜賽前 6 週備戰與恢復管理</div>
+        <div class="service-tag">Pre-Competition & Recovery Management</div>
+        <ul class="service-list">
+          <li>比賽前的體能衝刺與「剛好」的減量安排</li>
+          <li>睡眠、飲食與簡易恢復策略建議</li>
+          <li>賽後調整計畫，避免賽季後半段崩盤</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========= Contact ========= -->
+  <section id="contact">
+    <div class="section-label">CONTACT</div>
+    <h2 class="section-title">如果你準備好，歡迎把你的目標告訴我。</h2>
+    <p class="section-sub">
+      不需要先想好完美的計畫，只要誠實說出你現在在哪裡、想走到哪裡，
+      我們可以從一次體能評估開始，把那條路畫出來。
+    </p>
+
+    <div class="contact-grid">
+      <div class="contact-card">
+        <div class="contact-row">
+          <div class="contact-label">EMAIL</div>
+          <div class="contact-main">
+            <!-- 這裡把信箱改成你的 -->
+            <a href="mailto:coach@example.com">coach@example.com</a>
+          </div>
+        </div>
+        <div class="contact-row">
+          <div class="contact-label">PREFERRED CONTACT</div>
+          <div class="contact-main">
+            建議先以 Email 或訊息簡單介紹：「目前程度、最近訓練頻率、想改善的三件事」，
+            我會在空檔時回覆你，討論是否適合安排第一次評估。
+          </div>
+        </div>
+        <div class="contact-note">
+          ※ 若你已經是合作教練或學校球隊的一員，也可以透過既有管道聯繫，
+          我們可以一起討論如何把測試與訓練內容整合進你們的訓練系統裡。
+        </div>
+      </div>
+
+      <div class="contact-card contact-mini-form">
+        <div class="contact-label">SHORT FORM (OPTIONAL)</div>
+        <p style="margin-top:4px;margin-bottom:8px;">
+          這裡是一個示意表單，之後你可以改成 Google 表單或其他系統。
+        </p>
+        <form onsubmit="alert('表單送出示意：實際使用時請改成你的後端或 Google 表單連結。'); return false;">
+          <div class="field">
+            <label for="name">你的名字 / 暱稱</label>
+            <input id="name" type="text" placeholder="例：Kevin（高一右手握拍）" />
+          </div>
+          <div class="field">
+            <label for="goal">想改善的三件事</label>
+            <textarea id="goal" placeholder="例：比賽到第三盤腿會軟、反手救球速度太慢、賽前常睡不好⋯⋯"></textarea>
+          </div>
+          <button type="submit" class="btn-send">送出意願（示意）</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========= Footer ========= -->
+  <footer>
+    <div>© <span id="year"></span> 奕晉網球學院 Match Point Performance Lab</div>
+    <div class="links">
+      <!-- 下面連結可以之後換成 IG / YouTube / Line 官方帳號 -->
+      <a href="#about">關於學院</a>
+      <a href="#services">訓練方案</a>
+      <a href="#contact">預約評估</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+  // 動態年份
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

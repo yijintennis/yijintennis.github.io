@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>發球速度提升決策模組｜Match Point Performance Lab</title>
+  <meta name="description" content="發球速度提升決策模組：從動作觀察、能力檢測到訓練方向，建立一套教練可複製的發球表現分析流程。" />
+  <style>
+    :root {
+      --bg-page: #020617;
+      --bg-deep: #00040f;
+      --bg-card: rgba(15, 23, 42, 0.94);
+      --bg-card-soft: rgba(15, 23, 42, 0.72);
+      --accent: #22c55e;
+      --accent-alt: #38bdf8;
+      --accent-warm: #facc15;
+      --accent-danger: #fb7185;
+      --text-main: #f8fafc;
+      --text-sub: #cbd5e1;
+      --text-muted: #94a3b8;
+      --border-subtle: rgba(148, 163, 184, 0.28);
+      --border-strong: rgba(56, 189, 248, 0.56);
+      --shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.42);
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-sm: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.16), transparent 34%),
+        radial-gradient(circle at 92% 6%, rgba(34, 197, 94, 0.18), transparent 34%),
+        radial-gradient(circle at 50% 100%, rgba(250, 204, 21, 0.08), transparent 34%),
+        linear-gradient(180deg, #020617 0%, #000 100%);
+      color: var(--text-main);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    button, input, textarea, select { font-family: inherit; }
+
+    .page {
+      width: min(1160px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 18px 0 56px;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 0;
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 240px;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(34, 197, 94, 0.88);
+      background: radial-gradient(circle at 30% 30%, #22c55e, #16a34a 52%, #064e3b 100%);
+      box-shadow: 0 0 22px rgba(34, 197, 94, 0.54);
+    }
+
+    .brand-main {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .brand-sub {
+      margin-top: 2px;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .nav {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--text-sub);
+      font-size: 13px;
+    }
+
+    .nav a {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      transition: 0.2s ease;
+    }
+
+    .nav a:hover {
+      border-color: var(--border-subtle);
+      background: rgba(15, 23, 42, 0.72);
+      color: #fff;
+    }
+
+    .nav .nav-cta {
+      border-color: rgba(34, 197, 94, 0.72);
+      color: #dcfce7;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.16);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      margin-top: 10px;
+      padding: 34px;
+      border-radius: 30px;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      background:
+        radial-gradient(circle at 7% 12%, rgba(56, 189, 248, 0.2), transparent 35%),
+        radial-gradient(circle at 88% 0%, rgba(34, 197, 94, 0.24), transparent 35%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.92));
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+      gap: 28px;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      border: 1px solid rgba(56, 189, 248, 0.32);
+      right: -96px;
+      top: -132px;
+      box-shadow: 0 0 72px rgba(56, 189, 248, 0.2);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      border: 1px solid rgba(34, 197, 94, 0.34);
+      left: -106px;
+      bottom: -110px;
+      box-shadow: 0 0 72px rgba(34, 197, 94, 0.16);
+    }
+
+    .hero-main, .hero-panel { position: relative; z-index: 1; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      color: #bbf7d0;
+      background: rgba(15, 23, 42, 0.82);
+      border: 1px solid rgba(34, 197, 94, 0.36);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-bottom: 14px;
+    }
+
+    .pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 14px var(--accent);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1.08;
+      letter-spacing: -0.055em;
+    }
+
+    .highlight {
+      background: linear-gradient(90deg, #bbf7d0, #38bdf8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-lead {
+      max-width: 680px;
+      margin: 18px 0 22px;
+      color: var(--text-sub);
+      font-size: 16px;
+      line-height: 1.9;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 11px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      color: #020617;
+      background: linear-gradient(90deg, #22c55e, #38bdf8);
+      box-shadow: 0 18px 44px rgba(34, 197, 94, 0.24);
+    }
+
+    .btn-ghost {
+      color: var(--text-sub);
+      background: rgba(15, 23, 42, 0.76);
+      border-color: rgba(148, 163, 184, 0.36);
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: var(--text-sub);
+      font-size: 12px;
+      background: rgba(2, 6, 23, 0.58);
+      border: 1px solid rgba(148, 163, 184, 0.24);
+    }
+
+    .hero-panel {
+      align-self: stretch;
+      padding: 18px;
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      background: rgba(2, 6, 23, 0.64);
+      backdrop-filter: blur(14px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .panel-title {
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .flow-card {
+      display: grid;
+      gap: 10px;
+    }
+
+    .flow-step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 11px;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.20);
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+    .step-num {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #020617;
+      background: linear-gradient(135deg, #22c55e, #38bdf8);
+      font-weight: 900;
+    }
+
+    .step-name {
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .step-desc {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    section { margin-top: 58px; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    .section-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(25px, 3vw, 40px);
+      letter-spacing: -0.04em;
+      line-height: 1.16;
+    }
+
+    .section-copy {
+      margin: 0;
+      color: var(--text-sub);
+      line-height: 1.9;
+      font-size: 15px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      box-shadow: 0 14px 42px rgba(0, 0, 0, 0.24);
+    }
+
+    .card.soft { background: var(--bg-card-soft); }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--text-sub);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .mini-kicker {
+      display: inline-flex;
+      margin-bottom: 10px;
+      color: #bbf7d0;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pain-list, .check-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .pain-list li, .check-list li {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 8px;
+      color: var(--text-sub);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .icon-dot {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(34, 197, 94, 0.14);
+      color: #bbf7d0;
+      font-size: 12px;
+      margin-top: 1px;
+    }
+
+    .ability-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .ability-card {
+      padding: 16px;
+      min-height: 250px;
+      border-radius: 22px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.86));
+    }
+
+    .ability-num {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: rgba(56, 189, 248, 0.12);
+      color: #7dd3fc;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .ability-card h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+
+    .ability-card p {
+      margin: 0 0 12px;
+      color: var(--text-sub);
+      font-size: 13px;
+      line-height: 1.75;
+    }
+
+    .test-chip {
+      display: inline-flex;
+      margin: 4px 4px 0 0;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: #dbeafe;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(96, 165, 250, 0.22);
+    }
+
+    .curriculum {
+      display: grid;
+      gap: 12px;
+    }
+
+    .module {
+      display: grid;
+      grid-template-columns: 110px 1fr auto;
+      gap: 16px;
+      align-items: center;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.78);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .module-code {
+      color: #7dd3fc;
+      font-weight: 900;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+    }
+
+    .module-title {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .module-desc {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .module-badge {
+      white-space: nowrap;
+      color: #bbf7d0;
+      font-size: 12px;
+      border: 1px solid rgba(34, 197, 94, 0.32);
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    .tool-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .tool-box {
+      padding: 18px;
+      border-radius: 24px;
+      border: 1px solid rgba(56, 189, 248, 0.30);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.14), transparent 42%),
+        rgba(15, 23, 42, 0.92);
+    }
+
+    .tool-box h3 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+
+    .notice {
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(250, 204, 21, 0.10);
+      border: 1px solid rgba(250, 204, 21, 0.24);
+      color: #fde68a;
+      line-height: 1.7;
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+
+    .form-section {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(2, 6, 23, 0.34);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .form-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .form-title span {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 13px;
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      background: rgba(2, 6, 23, 0.72);
+      color: var(--text-main);
+      outline: none;
+      font-size: 14px;
+    }
+
+    .field textarea { resize: vertical; min-height: 82px; }
+
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: rgba(56, 189, 248, 0.7);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.12);
+    }
+
+    .yn-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .yn-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: rgba(15, 23, 42, 0.56);
+    }
+
+    .yn-row span {
+      color: var(--text-sub);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .switches {
+      display: flex;
+      gap: 6px;
+    }
+
+    .switches label {
+      cursor: pointer;
+    }
+
+    .switches input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switches b {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      height: 32px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      color: var(--text-muted);
+      font-size: 12px;
+      transition: 0.15s ease;
+    }
+
+    .switches input:checked + b.yes {
+      color: #020617;
+      background: #facc15;
+      border-color: #facc15;
+    }
+
+    .switches input:checked + b.no {
+      color: #020617;
+      background: #22c55e;
+      border-color: #22c55e;
+    }
+
+    .score-row {
+      display: grid;
+      grid-template-columns: minmax(220px, 1.25fr) minmax(260px, 1fr);
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .score-row label {
+      color: var(--text-sub);
+      font-size: 13px;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    .score-row select {
+      padding: 9px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      color: var(--text-main);
+      background: rgba(2, 6, 23, 0.72);
+    }
+
+    .tool-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .report {
+      position: sticky;
+      top: 82px;
+      padding: 18px;
+      border-radius: 24px;
+      border: 1px solid rgba(34, 197, 94, 0.28);
+      background:
+        radial-gradient(circle at 100% 0%, rgba(34, 197, 94, 0.16), transparent 40%),
+        rgba(2, 6, 23, 0.82);
+      box-shadow: 0 18px 48px rgba(0,0,0,0.28);
+    }
+
+    .report h3 {
+      margin: 0 0 6px;
+      font-size: 20px;
+    }
+
+    .report-sub {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+
+    .result-card {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.74);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      margin-bottom: 12px;
+    }
+
+    .result-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .result-main {
+      font-weight: 900;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    .result-main.danger { color: #fecdd3; }
+    .result-main.warn { color: #fde68a; }
+    .result-main.good { color: #bbf7d0; }
+
+    .result-text {
+      color: var(--text-sub);
+      line-height: 1.75;
+      font-size: 14px;
+      white-space: pre-line;
+    }
+
+    .report-list {
+      margin: 8px 0 0;
+      padding-left: 20px;
+      color: var(--text-sub);
+      line-height: 1.75;
+      font-size: 14px;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .price-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(15, 23, 42, 0.90);
+      border: 1px solid rgba(148, 163, 184, 0.24);
+    }
+
+    .price-card.featured {
+      border-color: rgba(34, 197, 94, 0.54);
+      box-shadow: 0 0 0 1px rgba(34,197,94,0.08), 0 24px 70px rgba(34,197,94,0.08);
+    }
+
+    .price-name { font-weight: 900; font-size: 18px; }
+    .price-meta { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+    .price-value { font-weight: 950; font-size: 28px; letter-spacing: -0.04em; }
+
+    .cta-band {
+      padding: 28px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.18), transparent 42%),
+        radial-gradient(circle at 100% 0, rgba(34, 197, 94, 0.20), transparent 42%),
+        rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .cta-band h2 { margin-bottom: 10px; }
+    .cta-band p { color: var(--text-sub); line-height: 1.8; margin: 0; }
+
+    .contact-box {
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(2, 6, 23, 0.54);
+      border: 1px solid rgba(148, 163, 184, 0.24);
+    }
+
+    .footer {
+      margin-top: 40px;
+      padding-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(148, 163, 184, 0.16);
+      font-size: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .hero, .tool-shell, .cta-band, .section-head {
+        grid-template-columns: 1fr;
+      }
+      .ability-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .grid-3, .pricing-grid { grid-template-columns: 1fr; }
+      .report { position: relative; top: auto; }
+    }
+
+    @media (max-width: 720px) {
+      .page { width: min(100% - 24px, 1160px); }
+      .site-header { position: relative; align-items: flex-start; flex-direction: column; }
+      .nav { justify-content: flex-start; }
+      .hero { padding: 22px; grid-template-columns: 1fr; }
+      .hero-panel { padding: 14px; }
+      .ability-grid, .grid-2, .field-grid { grid-template-columns: 1fr; }
+      .module { grid-template-columns: 1fr; }
+      .module-badge { justify-self: start; }
+      .yn-row { grid-template-columns: 1fr; }
+      .score-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <a href="#top" class="brand" aria-label="Match Point Performance Lab">
+        <img src="https://yijintennis.github.io/logo.jpeg" alt="奕晉網球學院 Logo" class="brand-logo" />
+        <div>
+          <div class="brand-main">MATCH POINT PERFORMANCE LAB</div>
+          <div class="brand-sub">奕晉網球學院｜Tennis Performance Decision System</div>
+        </div>
+      </a>
+      <nav class="nav" aria-label="主選單">
+        <a href="#system">系統介紹</a>
+        <a href="#ability">能力樹</a>
+        <a href="#course">課程大綱</a>
+        <a href="#tool">決策工具</a>
+        <a href="#contact" class="nav-cta">預約諮詢</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-main">
+          <div class="eyebrow"><span class="pulse"></span> 發球速度提升決策模組</div>
+          <h1>不是多做檢測，<br><span class="highlight">而是判斷更準。</span></h1>
+          <p class="hero-lead">
+            一套給網球教練與體能教練使用的發球表現分析流程。從動作觀察、能力檢測、交叉驗證到訓練方向，幫助教練快速判斷：選手發球速度卡住的真正原因是什麼，下一步該先練哪裡。
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#tool">開始體驗決策工具 →</a>
+            <a class="btn btn-ghost" href="#course">查看課程架構</a>
+          </div>
+          <div class="hero-tags">
+            <span class="tag">🎾 發球速度</span>
+            <span class="tag">🧭 決策導航</span>
+            <span class="tag">📊 教練操作表</span>
+            <span class="tag">🏋️ 訓練方向輸出</span>
+          </div>
+        </div>
+
+        <aside class="hero-panel" aria-label="決策流程摘要">
+          <div class="panel-title">DECISION FLOW</div>
+          <div class="flow-card">
+            <div class="flow-step"><div class="step-num">1</div><div><div class="step-name">先看動作品質</div><div class="step-desc">拋球、蹬地、髖肩分離、擊球點與隨揮是否順暢。</div></div></div>
+            <div class="flow-step"><div class="step-num">2</div><div><div class="step-name">再看能力數據</div><div class="step-desc">下肢爆發、軀幹旋轉、上肢加速與肩穩定。</div></div></div>
+            <div class="flow-step"><div class="step-num">3</div><div><div class="step-name">交叉驗證</div><div class="step-desc">一個現象只是線索，兩個證據才是方向。</div></div></div>
+            <div class="flow-step"><div class="step-num">4</div><div><div class="step-name">輸出訓練優先順序</div><div class="step-desc">讓教練知道 4–6 週內最該先處理哪一件事。</div></div></div>
+          </div>
+        </aside>
+      </section>
+
+      <section id="system">
+        <div class="section-head">
+          <div>
+            <div class="section-label">WHY THIS SYSTEM</div>
+            <h2>發球不快，不一定是手臂不夠強。</h2>
+          </div>
+          <p class="section-copy">
+            很多選手看起來很用力，球卻不快；很多教練也知道「怪怪的」，卻很難判斷到底是下肢、軀幹、手臂、協調，還是肩膀穩定出了問題。這套系統的目的，不是增加更多測驗，而是把判斷路線變清楚。
+          </p>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <span class="mini-kicker">痛點 01</span>
+            <h3>測了很多，卻不知道怎麼用</h3>
+            <p>跳高、跑快、丟遠都只是資料。真正有價值的是把資料轉成「下一步訓練方向」。</p>
+          </div>
+          <div class="card">
+            <span class="mini-kicker">痛點 02</span>
+            <h3>看得出問題，卻說不清楚</h3>
+            <p>教練經驗很重要，但如果沒有標準化流程，團隊很難複製同樣品質的判斷。</p>
+          </div>
+          <div class="card">
+            <span class="mini-kicker">痛點 03</span>
+            <h3>練很多，卻沒有練在關鍵</h3>
+            <p>下肢、旋轉、手臂、協調、肩穩定都重要，但不是每個選手都該從同一件事開始。</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div>
+            <div class="section-label">PRODUCT POSITIONING</div>
+            <h2>這不是檢測系統，是教練決策導航系統。</h2>
+          </div>
+          <p class="section-copy">
+            一般檢測告訴你「數字多少」，決策導航則告訴你「這代表什麼、是不是主要問題、下一步怎麼練」。我們把發球速度拆成一條可以操作的流程，讓中等教練也能做出高品質判斷。
+          </p>
+        </div>
+        <div class="grid-2">
+          <div class="card soft">
+            <h3>一般檢測只回答</h3>
+            <ul class="pain-list">
+              <li><span class="icon-dot">?</span><span>跳多高、丟多遠、跑多快。</span></li>
+              <li><span class="icon-dot">?</span><span>哪一項測驗比較弱。</span></li>
+              <li><span class="icon-dot">?</span><span>選手跟平均值差多少。</span></li>
+            </ul>
+          </div>
+          <div class="card soft">
+            <h3>決策導航要回答</h3>
+            <ul class="check-list">
+              <li><span class="icon-dot">✓</span><span>這個弱點是否真的影響發球？</span></li>
+              <li><span class="icon-dot">✓</span><span>主要限制因素與次要限制因素是什麼？</span></li>
+              <li><span class="icon-dot">✓</span><span>如果只有 4–6 週，應該先練哪一件事？</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="ability">
+        <div class="section-head">
+          <div>
+            <div class="section-label">ABILITY TREE</div>
+            <h2>發球速度五大能力樹</h2>
+          </div>
+          <p class="section-copy">
+            發球速度不是單點能力，而是從地面開始，經過下肢、髖部、軀幹、肩膀，最後傳到球拍的力量鏈。這套模組先把複雜問題拆成五個教練可以判斷的能力區塊。
+          </p>
+        </div>
+        <div class="ability-grid">
+          <div class="ability-card">
+            <div class="ability-num">01</div>
+            <h3>下肢爆發力</h3>
+            <p>判斷選手能不能有效從地面產生力量，避免發球只剩上半身硬打。</p>
+            <span class="test-chip">CMJ</span><span class="test-chip">Broad Jump</span>
+          </div>
+          <div class="ability-card">
+            <div class="ability-num">02</div>
+            <h3>軀幹旋轉能力</h3>
+            <p>判斷髖部與軀幹是否能把力量往上傳，包含髖肩分離與旋轉輸出。</p>
+            <span class="test-chip">Med Ball Rotational Throw</span>
+          </div>
+          <div class="ability-card">
+            <div class="ability-num">03</div>
+            <h3>上肢加速能力</h3>
+            <p>判斷最後輸出端是否能有效加速，避免球速尾段出不來。</p>
+            <span class="test-chip">Seated Shot Put</span>
+          </div>
+          <div class="ability-card">
+            <div class="ability-num">04</div>
+            <h3>動作協調與連動</h3>
+            <p>判斷力量是否能依照正確順序傳遞，避免體能很好但球速無法轉換。</p>
+            <span class="test-chip">影片觀察</span><span class="test-chip">分段發球</span>
+          </div>
+          <div class="ability-card">
+            <div class="ability-num">05</div>
+            <h3>肩關節穩定</h3>
+            <p>判斷肩膀是否能承受高速度發球的反覆負荷，優先排除疼痛與風險。</p>
+            <span class="test-chip">CKCUEST</span><span class="test-chip">肩胛觀察</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="course">
+        <div class="section-head">
+          <div>
+            <div class="section-label">COURSE OUTLINE</div>
+            <h2>課程大綱：從觀察到輸出</h2>
+          </div>
+          <p class="section-copy">
+            這堂課不是給教練一堆訓練動作，而是建立一套可以反覆使用的判斷流程。最後產出的不是「萬用課表」，而是一份有邏輯的訓練優先順序。
+          </p>
+        </div>
+        <div class="curriculum">
+          <div class="module"><div class="module-code">MODULE 01</div><div><div class="module-title">重新理解發球速度</div><div class="module-desc">發球速度不是手臂力量，而是力量傳遞鏈。</div></div><div class="module-badge">觀念建立</div></div>
+          <div class="module"><div class="module-code">MODULE 02</div><div><div class="module-title">發球速度五大能力樹</div><div class="module-desc">把複雜問題拆成下肢、旋轉、上肢、協調、肩穩定。</div></div><div class="module-badge">能力拆解</div></div>
+          <div class="module"><div class="module-code">MODULE 03</div><div><div class="module-title">發球動作品質觀察</div><div class="module-desc">先看動作，再看數據。判斷是否存在明顯斷鏈。</div></div><div class="module-badge">影片分析</div></div>
+          <div class="module"><div class="module-code">MODULE 04</div><div><div class="module-title">發球能力檢測工具</div><div class="module-desc">每個測驗只回答一個問題，避免測很多卻無法決策。</div></div><div class="module-badge">工具選擇</div></div>
+          <div class="module"><div class="module-code">MODULE 05</div><div><div class="module-title">判斷邏輯與交叉驗證</div><div class="module-desc">一個現象只是線索，兩個證據才是方向。</div></div><div class="module-badge">系統核心</div></div>
+          <div class="module"><div class="module-code">MODULE 06</div><div><div class="module-title">訓練方向輸出與回測</div><div class="module-desc">把診斷結果轉成 4–6 週訓練方向，並設定回測指標。</div></div><div class="module-badge">落地執行</div></div>
+        </div>
+      </section>
+
+      <section id="tool">
+        <div class="section-head">
+          <div>
+            <div class="section-label">INTERACTIVE TOOL</div>
+            <h2>發球判讀工具</h2>
+          </div>
+          <p class="section-copy">
+            這是第一版教練用判讀表。教練可以依序填入疼痛風險、動作品質與能力檢查結果，整理出目前較需要優先留意的方向。正式版可再加入選手資料儲存、影片上傳、評估摘要匯出與後續追蹤提醒。
+          </p>
+        </div>
+
+        <div class="tool-shell">
+          <div class="tool-box">
+            <h3>教練操作表</h3>
+            <div class="notice">提醒：若選手有明顯疼痛、麻感、近期急性受傷或發球後不適，請優先安排醫療或物理治療評估。本工具用於訓練決策輔助，不取代醫療診斷。</div>
+
+            <div class="form-section">
+              <div class="form-title">A. 基本資料 <span>選填</span></div>
+              <div class="field-grid">
+                <div class="field"><label for="athleteName">選手姓名</label><input id="athleteName" placeholder="例：Kevin" /></div>
+                <div class="field"><label for="athleteLevel">程度</label><select id="athleteLevel"><option>成人業餘</option><option>青少年選手</option><option>校隊</option><option>競賽選手</option><option>職業培訓</option></select></div>
+              </div>
+              <div class="field"><label for="mainGoal">本次目標</label><input id="mainGoal" placeholder="例：提升一發球速、降低肩膀不適、改善二發品質" /></div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-title">B. 安全檢查 <span>任一 YES 先停</span></div>
+              <div class="yn-grid">
+                <div class="yn-row"><span>發球時是否有明顯疼痛？</span><div class="switches"><label><input type="radio" name="pain" value="yes"><b class="yes">YES</b></label><label><input type="radio" name="pain" value="no" checked><b class="no">NO</b></label></div></div>
+                <div class="yn-row"><span>肩膀是否有不穩、刺痛、麻感？</span><div class="switches"><label><input type="radio" name="nerve" value="yes"><b class="yes">YES</b></label><label><input type="radio" name="nerve" value="no" checked><b class="no">NO</b></label></div></div>
+                <div class="yn-row"><span>最近 3 個月是否有急性受傷？</span><div class="switches"><label><input type="radio" name="injury" value="yes"><b class="yes">YES</b></label><label><input type="radio" name="injury" value="no" checked><b class="no">NO</b></label></div></div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-title">C. 動作品質評分 <span>0–2 分</span></div>
+              <div class="score-row"><label>拋球穩定</label><select class="motion-score"><option value="0">0｜明顯不穩</option><option value="1">1｜偶爾偏移</option><option value="2" selected>2｜穩定可預測</option></select></div>
+              <div class="score-row"><label>下肢參與</label><select class="motion-score"><option value="0">0｜幾乎沒有蹬地</option><option value="1" selected>1｜有但不連續</option><option value="2">2｜明確且能銜接</option></select></div>
+              <div class="score-row"><label>髖肩分離</label><select class="motion-score"><option value="0">0｜幾乎沒有</option><option value="1" selected>1｜有但不明顯</option><option value="2">2｜明顯且自然</option></select></div>
+              <div class="score-row"><label>軀幹旋轉節奏</label><select class="motion-score"><option value="0">0｜幾乎不轉</option><option value="1" selected>1｜太早或太晚</option><option value="2">2｜節奏順暢</option></select></div>
+              <div class="score-row"><label>擊球點</label><select class="motion-score"><option value="0">0｜太低或太後</option><option value="1" selected>1｜偶爾偏差</option><option value="2">2｜穩定合理</option></select></div>
+              <div class="score-row"><label>手臂加速</label><select class="motion-score"><option value="0">0｜用推的</option><option value="1" selected>1｜有加速但不順</option><option value="2">2｜自然且完整</option></select></div>
+              <div class="score-row"><label>隨揮落地</label><select class="motion-score"><option value="0">0｜卡住或不完整</option><option value="1" selected>1｜完成但不穩</option><option value="2">2｜順暢且平衡</option></select></div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-title">D. 能力檢查與判讀 <span>簡化版</span></div>
+              <div class="score-row"><label>下肢爆發（CMJ / Broad Jump）</label><select id="lower"><option value="low">兩項都偏低</option><option value="mixed" selected>其中一項偏低</option><option value="ok">表現可接受</option></select></div>
+              <div class="score-row"><label>軀幹旋轉（左 / 右）與旋轉藥球丟擲</label><select id="rotation"><option value="low" selected>左右差異明顯 / 旋轉受限</option><option value="mixed">略有差異</option><option value="ok">左右表現接近</option></select></div>
+              <div class="score-row"><label>上肢輸出（Seated Shot Put）</label><select id="upper"><option value="low">明顯偏低</option><option value="mixed" selected>略低</option><option value="ok">表現可接受</option></select></div>
+              <div class="score-row"><label>肩部穩定（CKCUEST / 肩胛控制）</label><select id="shoulder"><option value="risk">偏低或發球後不適</option><option value="mixed" selected>需注意</option><option value="ok">表現可接受</option></select></div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-title">E. 教練補充觀察 <span>選填</span></div>
+              <div class="field"><label for="coachNote">你看到的主要現象</label><textarea id="coachNote" placeholder="例：身體太早打開、用手硬打、蹬地後沒有接到軀幹旋轉……"></textarea></div>
+            </div>
+
+            <div class="tool-actions">
+              <button class="btn btn-primary" type="button" id="generateBtn">查看判讀結果</button>
+              <button class="btn btn-ghost" type="button" id="resetBtn">重設示範資料</button>
+            </div>
+          </div>
+
+          <aside class="report" aria-live="polite">
+            <h3>本次判讀結果</h3>
+            <div class="report-sub">填寫左側資料後，整理出一份方便教練查看的評估摘要。</div>
+
+            <div class="result-card">
+              <div class="result-label">動作品質分數</div>
+              <div class="result-main" id="motionScore">—</div>
+              <div class="result-text" id="motionText">尚未產生結果。</div>
+            </div>
+
+            <div class="result-card">
+              <div class="result-label">優先處理項目</div>
+              <div class="result-main" id="mainLimit">—</div>
+              <div class="result-text" id="mainReason">請先按下「查看判讀結果」。</div>
+            </div>
+
+            <div class="result-card">
+              <div class="result-label">建議訓練方向</div>
+              <ol class="report-list" id="trainingList">
+                <li>等待輸出</li>
+              </ol>
+            </div>
+
+            <div class="result-card">
+              <div class="result-label">後續追蹤重點</div>
+              <div class="result-text" id="retestText">等待輸出</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div>
+            <div class="section-label">PRODUCT LADDER</div>
+            <h2>課程產品階梯</h2>
+          </div>
+          <p class="section-copy">
+            第一版不急著做成 APP。先用產品頁教育市場，再用互動工具展示價值，最後才升級成教練版系統或 PWA。
+          </p>
+        </div>
+        <div class="pricing-grid">
+          <div class="price-card">
+            <div class="price-name">90 分鐘入門講座</div>
+            <div class="price-meta">適合暖市場、收名單、讓教練理解「決策導航」概念。</div>
+            <div class="price-value">入門</div>
+            <ul class="check-list"><li><span class="icon-dot">✓</span><span>發球能力樹</span></li><li><span class="icon-dot">✓</span><span>三種常見卡關型</span></li><li><span class="icon-dot">✓</span><span>簡易案例示範</span></li></ul>
+          </div>
+          <div class="price-card featured">
+            <div class="price-name">半日教練工作坊</div>
+            <div class="price-meta">最適合第一波販售，讓教練實際練習判斷與輸出報告。</div>
+            <div class="price-value">主推</div>
+            <ul class="check-list"><li><span class="icon-dot">✓</span><span>動作觀察表</span></li><li><span class="icon-dot">✓</span><span>能力檢測對應表</span></li><li><span class="icon-dot">✓</span><span>判斷流程與案例演練</span></li></ul>
+          </div>
+          <div class="price-card">
+            <div class="price-name">學院導入方案</div>
+            <div class="price-meta">協助球隊或學院建立自己的測試流程、影片標準庫與回測機制。</div>
+            <div class="price-value">進階</div>
+            <ul class="check-list"><li><span class="icon-dot">✓</span><span>團隊內訓</span></li><li><span class="icon-dot">✓</span><span>選手追蹤表</span></li><li><span class="icon-dot">✓</span><span>每月回顧與修正</span></li></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact">
+        <div class="cta-band">
+          <div>
+            <div class="section-label">NEXT STEP</div>
+            <h2>想把這套系統導入你的訓練現場？</h2>
+            <p>可以從一次發球表現評估開始，也可以先加入教練工作坊等待名單。真正的目標不是做更多測驗，而是讓每一次訓練安排都有清楚理由。</p>
+          </div>
+          <div class="contact-box">
+            <div class="field"><label for="contactName">姓名 / 單位</label><input id="contactName" placeholder="例：奕晉網球學院 / Coach Kevin" /></div>
+            <div class="field"><label for="contactEmail">Email 或聯絡方式</label><input id="contactEmail" placeholder="coach@example.com" /></div>
+            <div class="field"><label for="contactNeed">想了解的內容</label><select id="contactNeed"><option>我想預約發球表現評估</option><option>我想加入教練工作坊等待名單</option><option>我想了解學院導入方案</option></select></div>
+            <button class="btn btn-primary" type="button" onclick="alert('這是示意表單：正式上線時可串接 Google 表單、Email 或後台系統。')">送出意願</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div>© <span id="year"></span> 奕晉網球學院 Match Point Performance Lab</div>
+      <div>不是多練，而是練在關鍵參數上。</div>
+    </footer>
+  </div>
+
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+    function checkedValue(name) {
+      const checked = document.querySelector(`input[name="${name}"]:checked`);
+      return checked ? checked.value : "no";
+    }
+
+    function getTrainingPlan(type) {
+      const plans = {
+        safety: {
+          list: ["暫停高強度發球與最大球速測試", "先處理疼痛、肩穩定與負荷管理", "必要時轉介醫療或物理治療評估"],
+          retest: "疼痛狀況、肩胛控制、CKCUEST、低強度發球反應。"
+        },
+        coordination: {
+          list: ["Shadow Serve 與分段式發球節奏", "Trophy Position Pause Serve", "50% → 70% → 90% 發球節奏整合", "Medicine Ball Serve Pattern Throw"],
+          retest: "發球影片連續性、一發成功率、主觀用力感、球速穩定度。"
+        },
+        lower: {
+          list: ["Countermovement Jump 與 Broad Jump 進階", "Split Squat Jump / Box Jump", "蹬地後發球影子動作", "發球時下肢與軀幹銜接練習"],
+          retest: "CMJ、Broad Jump、發球蹬地畫面、發球球速。"
+        },
+        rotation: {
+          list: ["Medicine Ball Rotational Throw", "Step-behind Rotational Throw", "Pallof Press / Cable Lift & Chop", "髖肩分離與分段式發球整合"],
+          retest: "軀幹左、右旋轉角度、旋轉藥球距離、髖肩分離畫面、發球球速。"
+        },
+        upper: {
+          list: ["Seated Shot Put", "Half-kneeling Med Ball Throw", "Overhead Med Ball Slam", "肩肘腕加速節奏練習"],
+          retest: "Seated Shot Put、發球擊球瞬間加速感、球速尾段表現。"
+        },
+        shoulder: {
+          list: ["Scap Push-up / Wall Slide", "External Rotation", "Bottom-up Carry", "CKCUEST Progression", "降低高強度發球量"],
+          retest: "CKCUEST、肩胛控制、發球後不適、隔日恢復狀況。"
+        }
+      };
+      return plans[type];
+    }
+
+    function generateReport() {
+      const hasRisk = ["pain", "nerve", "injury"].some(name => checkedValue(name) === "yes");
+      const scores = $$(".motion-score").map(select => Number(select.value));
+      const motionTotal = scores.reduce((sum, value) => sum + value, 0);
+      const lower = $("#lower").value;
+      const rotation = $("#rotation").value;
+      const upper = $("#upper").value;
+      const shoulder = $("#shoulder").value;
+      const note = $("#coachNote").value.trim();
+
+      let motionClass = "good";
+      let motionText = "動作品質基本可接受，可以進入能力檢測與限制因素判斷。";
+      if (motionTotal <= 6) {
+        motionClass = "danger";
+        motionText = "動作品質明顯不佳。建議優先處理發球節奏、拋球、蹬地與力量傳遞，不要急著做高強度球速訓練。";
+      } else if (motionTotal <= 10) {
+        motionClass = "warn";
+        motionText = "動作有部分斷鏈，需要把技術協調與能力訓練一起安排。";
+      }
+
+      $("#motionScore").textContent = `${motionTotal} / 14`;
+      $("#motionScore").className = `result-main ${motionClass}`;
+      $("#motionText").textContent = motionText;
+
+      let type = "rotation";
+      let mainLimit = "軀幹旋轉能力不足";
+      let reason = "軀幹左、右旋轉表現有明顯差異，或旋轉藥球丟擲結果偏低。建議先確認左右旋轉角度、髖肩分離，以及旋轉力量是否能接到發球節奏。";
+
+      if (hasRisk) {
+        type = "safety";
+        mainLimit = "疼痛 / 受傷風險優先";
+        reason = "安全檢查出現 YES。現階段不建議進入高強度球速提升流程，應先處理疼痛、穩定性與負荷管理。";
+      } else if (shoulder === "risk") {
+        type = "shoulder";
+        mainLimit = "肩關節穩定與負荷管理";
+        reason = "肩穩定檢測偏低或發球後不適。球速提升前應先確認肩膀能承受高速度發球的反覆負荷。";
+      } else if (motionTotal <= 10) {
+        type = "coordination";
+        mainLimit = "動作協調與力量傳遞不佳";
+        reason = "動作品質分數顯示發球存在斷鏈。此時數據只能作為背景資料，優先目標是讓下肢、軀幹與手臂接起來。";
+      } else {
+        const priority = [];
+        if (lower === "low") priority.push(["lower", 3]);
+        if (lower === "mixed") priority.push(["lower", 1]);
+        if (rotation === "low") priority.push(["rotation", 3]);
+        if (rotation === "mixed") priority.push(["rotation", 1]);
+        if (upper === "low") priority.push(["upper", 2]);
+        if (upper === "mixed") priority.push(["upper", 1]);
+        if (shoulder === "mixed") priority.push(["shoulder", 1]);
+        priority.sort((a, b) => b[1] - a[1]);
+        type = priority.length ? priority[0][0] : "coordination";
+
+        const map = {
+          lower: ["下肢爆發力不足", "CMJ / Broad Jump 顯示下肢爆發或水平推進能力不足。若發球影片也出現蹬地不明顯，這會成為主要限制因素。"],
+          rotation: ["軀幹旋轉能力不足", "軀幹左、右旋轉角度差異明顯，或旋轉藥球丟擲偏低。若搭配髖肩分離不足或身體太早打開，旋轉能力會是優先處理方向。"],
+          upper: ["上肢加速能力不足", "Seated Shot Put 表現偏低，可能代表最後輸出端不足。需要確認這不是由前段力量傳遞斷鏈造成。"],
+          shoulder: ["肩關節穩定需加強", "肩穩定略需注意。雖不一定要停止球速訓練，但應把肩胛控制與負荷管理放進課表。"],
+          coordination: ["動作協調與力量傳遞不佳", "能力檢測沒有明顯單一弱點時，應回到發球動作影片，確認力量是否能順利轉換到場上。"]
+        };
+        mainLimit = map[type][0];
+        reason = map[type][1];
+      }
+
+      if (note) {
+        reason += `\n\n教練補充觀察：${note}`;
+      }
+
+      const plan = getTrainingPlan(type);
+      $("#mainLimit").textContent = mainLimit;
+      $("#mainLimit").className = `result-main ${hasRisk || type === "shoulder" ? "warn" : "good"}`;
+      $("#mainReason").textContent = reason;
+      $("#trainingList").innerHTML = plan.list.map(item => `<li>${item}</li>`).join("");
+      $("#retestText").textContent = plan.retest;
+    }
+
+    function resetDemo() {
+      $("#athleteName").value = "";
+      $("#mainGoal").value = "";
+      $("#coachNote").value = "";
+      document.querySelector('input[name="pain"][value="no"]').checked = true;
+      document.querySelector('input[name="nerve"][value="no"]').checked = true;
+      document.querySelector('input[name="injury"][value="no"]').checked = true;
+      const defaults = [2, 1, 1, 1, 1, 1, 1];
+      $$(".motion-score").forEach((select, index) => select.value = defaults[index]);
+      $("#lower").value = "mixed";
+      $("#rotation").value = "low";
+      $("#upper").value = "mixed";
+      $("#shoulder").value = "mixed";
+      generateReport();
+    }
+
+    $("#generateBtn").addEventListener("click", generateReport);
+    $("#resetBtn").addEventListener("click", resetDemo);
+    document.getElementById("year").textContent = new Date().getFullYear();
+    resetDemo();
+  </script>
+</body>
+</html>

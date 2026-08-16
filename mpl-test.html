@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>運動員檢測數據輸入</title>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1a2e;
+      --panel2:#0c1628;
+      --card:#0f2236;
+      --card2:#0b1b2c;
+      --border: rgba(255,255,255,.10);
+      --text:#eaf0ff;
+      --muted: rgba(234,240,255,.70);
+      --muted2: rgba(234,240,255,.55);
+      --accent:#4CAF50;
+      --accent2:#3ddc97;
+      --warn:#f4c430;
+      --danger:#ff5a7a;
+      --ok:#34d399;
+      --shadow: 0 16px 40px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+      --ring: 0 0 0 4px rgba(76,175,80,.22);
+      --font: "Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    }
+
+    /* Light mode */
+    [data-theme="light"]{
+      --bg:#f3f6fb;
+      --panel:#ffffff;
+      --panel2:#ffffff;
+      --card:#ffffff;
+      --card2:#ffffff;
+      --border: rgba(15,23,42,.12);
+      --text:#0f172a;
+      --muted: rgba(15,23,42,.72);
+      --muted2: rgba(15,23,42,.55);
+      --shadow: 0 16px 40px rgba(15,23,42,.12);
+      --ring: 0 0 0 4px rgba(76,175,80,.18);
+    }
+
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family:var(--font);
+      background:
+        radial-gradient(1200px 600px at 20% -10%, rgba(76,175,80,.22), transparent 60%),
+        radial-gradient(1000px 500px at 90% 10%, rgba(61,220,151,.16), transparent 55%),
+        radial-gradient(900px 600px at 50% 120%, rgba(244,196,48,.10), transparent 60%),
+        var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      padding:24px;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
+
+    .container{
+      width:100%;
+      max-width:980px;
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .topbar{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      justify-content:space-between;
+      padding:18px 18px 10px 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
+      border-bottom:1px solid var(--border);
+    }
+
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      min-width:0;
+    }
+/* logo 外框：保留你原本的「卡片＋光暈」質感 */
+.logoWrap{
+  width:42px;height:42px;border-radius:14px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(61,220,151,.9), rgba(76,175,80,.8) 45%, rgba(15,23,42,.0) 70%),
+    linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.02));
+  border:1px solid var(--border);
+  box-shadow: 0 10px 22px rgba(0,0,0,.25);
+  padding:3px;                 /* 外框厚度 */
+  flex:0 0 auto;
+  display:block;
+}
+
+/* 圖片本體：滿版、裁切、圓角一致 */
+.logoImg{
+  width:100%;
+  height:100%;
+  display:block;
+  border-radius: 11px;         /* 14px - padding(3px) */
+  object-fit: cover;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+    .titlewrap{min-width:0}
+    h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.2px;
+      line-height:1.2;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .subtitle{
+      margin-top:4px;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .toggle{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      border-radius: 999px;
+      padding:8px 10px;
+      cursor:pointer;
+      font-size:12px;
+      transition: transform .08s ease, background .2s ease;
+      user-select:none;
+    }
+    .toggle:hover{ background: rgba(255,255,255,.08); }
+    .toggle:active{ transform: scale(.98); }
+
+    .progressWrap{
+      padding:0 18px 16px 18px;
+    }
+    .progressTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:8px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .progress{
+      width:100%;
+      height:10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.08);
+      border:1px solid var(--border);
+      overflow:hidden;
+    }
+    .progress > div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius:999px;
+      transition: width .25s ease;
+    }
+
+    form{ padding: 0 18px 18px 18px; }
+
+    .section{
+      margin-top:14px;
+      border:1px solid var(--border);
+      border-radius: var(--radius2);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      overflow:hidden;
+    }
+
+    .sectionHeader{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:14px 14px;
+      cursor:pointer;
+      background: rgba(255,255,255,.03);
+      border:0;
+      color:var(--text);
+      text-align:left;
+    }
+    .sectionHeader:hover{ background: rgba(255,255,255,.06); }
+
+    .sectionTitle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .badge{
+      width:34px;height:34px;border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      display:grid;place-items:center;
+      flex:0 0 auto;
+    }
+    .sectionTitle h2{
+      margin:0;
+      font-size:15px;
+      letter-spacing:.2px;
+    }
+    .sectionTitle .hint{
+      display:block;
+      margin-top:3px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .chev{
+      color:var(--muted);
+      font-size:14px;
+      transition: transform .18s ease;
+      flex:0 0 auto;
+    }
+    .section[data-open="true"] .chev{ transform: rotate(180deg); }
+
+    .sectionBody{
+      padding:14px;
+      display:none;
+      background: rgba(0,0,0,.06);
+    }
+    [data-theme="light"] .sectionBody{ background: rgba(15,23,42,.03); }
+
+    .section[data-open="true"] .sectionBody{ display:block; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:12px;
+    }
+
+    .field{
+      grid-column: span 6;
+      background: rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding:10px 10px 12px 10px;
+      position:relative;
+    }
+    .field.w4{ grid-column: span 4; }
+    .field.w6{ grid-column: span 6; }
+    .field.w8{ grid-column: span 8; }
+    .field.w12{ grid-column: span 12; }
+
+    .labelRow{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom:8px;
+    }
+
+    label{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+      font-size:13px;
+      color:var(--text);
+    }
+
+    .unit{
+      font-size:12px;
+      color:var(--muted2);
+      font-weight:600;
+    }
+
+    input, select{
+      width:100%;
+      padding:12px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(15,23,42,.35);
+      color: var(--text);
+      outline:none;
+      font-size:15px;
+      transition: border .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    [data-theme="light"] input, [data-theme="light"] select{
+      background: rgba(255,255,255,.80);
+      border:1px solid rgba(15,23,42,.14);
+      color: var(--text);
+    }
+
+    input::placeholder{ color: rgba(234,240,255,.45); }
+    [data-theme="light"] input::placeholder{ color: rgba(15,23,42,.38); }
+
+    input:focus, select:focus{
+      border-color: rgba(76,175,80,.7);
+      box-shadow: var(--ring);
+      background: rgba(76,175,80,.08);
+    }
+    [data-theme="light"] input:focus, [data-theme="light"] select:focus{
+      background: rgba(76,175,80,.08);
+    }
+
+    .req{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:12px;
+      color: rgba(255,255,255,.75);
+    }
+    [data-theme="light"] .req{ color: rgba(15,23,42,.70); }
+    .reqDot{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--warn);
+      box-shadow: 0 0 0 3px rgba(244,196,48,.18);
+    }
+
+    .helper{
+      margin-top:8px;
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.4;
+    }
+
+    /* sticky submit */
+    .submitBar{
+      position: sticky;
+      bottom: 14px;
+      margin-top: 16px;
+      z-index: 50;
+    }
+    .submitInner{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px;
+      border-radius: 16px;
+      border:1px solid var(--border);
+      background: rgba(15,23,42,.68);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.25);
+    }
+    [data-theme="light"] .submitInner{
+      background: rgba(255,255,255,.82);
+    }
+
+    .statusLine{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    #status{
+      font-weight:800;
+      font-size:13px;
+      min-height:18px;
+      color: var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .statusSub{
+      font-size:12px;
+      color: var(--muted2);
+    }
+
+    .btn{
+      border:0;
+      cursor:pointer;
+      border-radius: 14px;
+      padding:12px 14px;
+      font-size:15px;
+      font-weight:900;
+      color:#07120a;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      transition: transform .08s ease, filter .18s ease, opacity .18s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      white-space:nowrap;
+    }
+    .btn:hover{ filter: brightness(1.05); }
+    .btn:active{ transform: scale(.99); }
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter:none;
+    }
+
+    .btnGhost{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      font-weight:800;
+    }
+    .btnGhost:hover{ background: rgba(255,255,255,.08); }
+    .btnGhost:disabled{ opacity:.55; }
+
+    /* toast */
+    .toast{
+      position: fixed;
+      right: 18px;
+      top: 18px;
+      z-index: 9999;
+      max-width: 340px;
+      padding: 12px 12px;
+      border-radius: 16px;
+      border:1px solid var(--border);
+      background: rgba(15,23,42,.78);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 18px 44px rgba(0,0,0,.35);
+      color: var(--text);
+      display:none;
+      gap:10px;
+      align-items:flex-start;
+    }
+    [data-theme="light"] .toast{ background: rgba(255,255,255,.86); }
+    .toast.show{ display:flex; }
+    .toastIcon{
+      width:34px;height:34px;border-radius: 14px;
+      display:grid;place-items:center;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      flex: 0 0 auto;
+    }
+    .toastTitle{ font-weight:900; margin:0; font-size:13px; }
+    .toastMsg{ margin:2px 0 0 0; color: var(--muted); font-size:12px; line-height:1.4; }
+
+    /* small screens */
+    @media (max-width: 760px){
+      body{ padding:14px; }
+      .topbar{ gap:10px; }
+      .chip{ display:none; }
+      .field{ grid-column: span 12; }
+      .field.w4,.field.w6,.field.w8,.field.w12{ grid-column: span 12; }
+      .submitInner{ flex-direction:column; align-items:stretch; }
+      .btn, .btnGhost{ width:100%; justify-content:center; }
+      #status{ text-align:center; }
+      .statusSub{ text-align:center; }
+    }
+  </style>
+</head>
+
+<body>
+             
+  <div class="container" id="app">
+    <div class="topbar">
+      <div class="brand">
+        <img class="logo" src="https://yijintennis.github.io/logo.jpeg" alt="logo" />
+        <div class="titlewrap">
+          <h1>運動員檢測數據輸入</h1>
+          <div class="subtitle">更好填、更好看、更不容易填錯（教練版 UI）</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="chip" id="filledChip">已填：0 / 0</div>
+        <button class="toggle" type="button" id="themeBtn">🌓 切換模式</button>
+      </div>
+    </div>
+
+    <div class="progressWrap">
+      <div class="progressTop">
+        <div>完成度</div>
+        <div id="progressText">0%</div>
+      </div>
+      <div class="progress" aria-label="form progress">
+        <div id="progressBar"></div>
+      </div>
+    </div>
+
+    <form id="dataForm" novalidate>
+      <!-- 基本資料 -->
+      <div class="section" data-open="true">
+        <button type="button" class="sectionHeader" data-section-toggle>
+          <div class="sectionTitle">
+            <div class="badge">👤</div>
+            <div>
+              <h2>基本資料 <span class="req"><span class="reqDot"></span>必填包含姓名、日期</span></h2>
+              <span class="hint">先把「人」選對，後面才不會變成亂入的數據鬼故事</span>
+            </div>
+          </div>
+          <div class="chev">▾</div>
+        </button>
+
+        <div class="sectionBody">
+          <div class="grid">
+            <div class="field w6">
+              <div class="labelRow">
+                <label for="name">姓名 <span class="unit">必填</span></label>
+              </div>
+              <input id="name" type="text" name="姓名" required placeholder="選手姓名" autocomplete="name" />
+              <div class="helper">建議用「真實姓名或固定代碼」，避免同名造成查詢混亂。</div>
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label for="gender">性別</label>
+              </div>
+              <select id="gender" name="性別">
+                <option value="男">男</option>
+                <option value="女">女</option>
+              </select>
+              <div class="helper">如果之後要做分組比較（同齡/同項），這欄很有用。</div>
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label for="age">年齡 (U層級)</label>
+              </div>
+              <select id="age" name="年齡">
+                <option value="U16">U16</option>
+                <option value="U18">U18</option>
+                <option value="Adult">Adult</option>
+              </select>
+              <div class="helper">維持固定分類，後面圖表會更乾淨。</div>
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label for="date">檢測日期 <span class="unit">必填</span></label>
+              </div>
+              <input id="date" type="date" name="檢測日期" required />
+              <div class="helper">預設今天。若是補登資料，記得改成實際測驗日。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 跳躍與爆發力 -->
+      <div class="section" data-open="true">
+        <button type="button" class="sectionHeader" data-section-toggle>
+          <div class="sectionTitle">
+            <div class="badge">🚀</div>
+            <div>
+              <h2>跳躍與爆發力</h2>
+              <span class="hint">這區數字會很直覺地反映「起爆」與「輸出」</span>
+            </div>
+          </div>
+          <div class="chev">▾</div>
+        </button>
+
+        <div class="sectionBody">
+          <div class="grid">
+            <div class="field w6">
+              <div class="labelRow">
+                <label>CMJ</label><span class="unit">cm</span>
+              </div>
+              <input type="number" step="0.1" name="CMJ(cm)" inputmode="decimal" placeholder="0.0" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>Hop test 10/5</label><span class="unit">m/s</span>
+              </div>
+              <input type="number" step="0.01" name="Hop test 10/5(m/s)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>側跳（左）</label><span class="unit">m</span>
+              </div>
+              <input type="number" step="0.01" name="側跳(左)(m)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>側跳（右）</label><span class="unit">m</span>
+              </div>
+              <input type="number" step="0.01" name="側跳(右)(m)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>Broad jump</label><span class="unit">m</span>
+              </div>
+              <input type="number" step="0.01" name="Broad jump(m)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>IMTP</label><span class="unit">N</span>
+              </div>
+              <input type="number" name="IMTP(N)" inputmode="numeric" placeholder="0" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 力量表現 -->
+      <div class="section" data-open="false">
+        <button type="button" class="sectionHeader" data-section-toggle>
+          <div class="sectionTitle">
+            <div class="badge">💪</div>
+            <div>
+              <h2>力量表現</h2>
+              <span class="hint">如果要看「底盤穩不穩」，這區很關鍵</span>
+            </div>
+          </div>
+          <div class="chev">▾</div>
+        </button>
+
+        <div class="sectionBody">
+          <div class="grid">
+            <div class="field w6">
+              <div class="labelRow">
+                <label>硬拉</label><span class="unit">kg</span>
+              </div>
+              <input type="number" step="0.1" name="硬拉(kg)" inputmode="decimal" placeholder="0.0" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>Grip strength</label><span class="unit">kg（或你原本單位）</span>
+              </div>
+              <input type="number" step="0.1" name="Grip strength" inputmode="decimal" placeholder="0.0" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 拋球與跨步 -->
+      <div class="section" data-open="false">
+        <button type="button" class="sectionHeader" data-section-toggle>
+          <div class="sectionTitle">
+            <div class="badge">⚡</div>
+            <div>
+              <h2>拋球與跨步</h2>
+              <span class="hint">上肢/核心到下肢的「能量傳遞」，往往藏在這裡</span>
+            </div>
+          </div>
+          <div class="chev">▾</div>
+        </button>
+
+        <div class="sectionBody">
+          <div class="grid">
+            <div class="field w6">
+              <div class="labelRow">
+                <label>跪姿過頂拋</label><span class="unit">m</span>
+              </div>
+              <input type="number" step="0.01" name="跪姿過頂拋(m)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>過頂拋</label><span class="unit">m</span>
+              </div>
+              <input type="number" step="0.01" name="過頂拋(m)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>跪姿水平拋（左）</label><span class="unit">m</span>
+              </div>
+              <input type="number" step="0.01" name="跪姿水平拋(左)(m)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>跪姿水平拋（右）</label><span class="unit">m</span>
+              </div>
+              <input type="number" step="0.01" name="跪姿水平拋(右)(m)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>水平拋（左）</label><span class="unit">m</span>
+              </div>
+              <input type="number" step="0.01" name="水平拋(左)(m)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>水平拋（右）</label><span class="unit">m</span>
+              </div>
+              <input type="number" step="0.01" name="水平拋(右)(m)" inputmode="decimal" placeholder="0.00" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 核心與肌耐力 -->
+      <div class="section" data-open="false">
+        <button type="button" class="sectionHeader" data-section-toggle>
+          <div class="sectionTitle">
+            <div class="badge">🧱</div>
+            <div>
+              <h2>核心與肌耐力</h2>
+              <span class="hint">最常被忽略，但最常造成「動作型態崩壞」</span>
+            </div>
+          </div>
+          <div class="chev">▾</div>
+        </button>
+
+        <div class="sectionBody">
+          <div class="grid">
+            <div class="field w6">
+              <div class="labelRow">
+                            <div class="field w4">
+              <div class="labelRow">
+                <label>Push up</label><span class="unit">次</span>
+              </div>
+              <input type="number" name="Push up(次數)" inputmode="numeric" placeholder="0" />
+            </div>
+
+            <div class="field w4">
+              <div class="labelRow">
+                <label>Inverted row</label><span class="unit">次</span>
+              </div>
+              <input type="number" name="Inverted row(次數)" inputmode="numeric" placeholder="0" />
+            </div>
+
+            <div class="field w4">
+              <div class="labelRow">
+                <label>Plank</label><span class="unit">秒</span>
+              </div>
+              <input type="number" name="Plank(秒)" inputmode="numeric" placeholder="0" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 衝刺與其他 -->
+      <div class="section" data-open="true">
+        <button type="button" class="sectionHeader" data-section-toggle>
+          <div class="sectionTitle">
+            <div class="badge">🏃</div>
+            <div>
+              <h2>衝刺與其他</h2>
+              <span class="hint">速度與敏捷：最容易「少打一個小數點就出事」的地方</span>
+            </div>
+          </div>
+          <div class="chev">▾</div>
+        </button>
+
+        <div class="sectionBody">
+          <div class="grid">
+            <div class="field w6">
+              <div class="labelRow">
+                <label>10米衝刺</label><span class="unit">秒</span>
+              </div>
+              <input type="number" step="0.01" name="10米衝刺(秒)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>20米衝刺</label><span class="unit">秒</span>
+              </div>
+              <input type="number" step="0.01" name="20米衝刺(秒)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>505敏捷跑（右）</label><span class="unit">秒</span>
+              </div>
+              <input type="number" step="0.01" name="505敏捷跑(右)(秒)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>505敏捷跑（左）</label><span class="unit">秒</span>
+              </div>
+              <input type="number" step="0.01" name="505敏捷跑(左)(秒)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>蜘蛛跑</label><span class="unit">秒</span>
+              </div>
+              <input type="number" step="0.01" name="蜘蛛跑(秒)" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="field w6">
+              <div class="labelRow">
+                <label>反應燈測試</label><span class="unit">次</span>
+              </div>
+              <input type="number" name="反應燈測試(次數)" inputmode="numeric" placeholder="0" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sticky submit bar -->
+      <div class="submitBar">
+        <div class="submitInner">
+          <div class="statusLine">
+            <div id="status">準備就緒：填完就送（別擔心，我不會把你的小數點吞掉）</div>
+            <div class="statusSub" id="statusSub">提示：可點各區標題收合/展開，加快現場操作。</div>
+          </div>
+
+          <div style="display:flex; gap:10px; width:100%; justify-content:flex-end;">
+            <button class="btn btnGhost" type="button" id="resetBtn">🧹 清空表單</button>
+            <button class="btn" type="submit" id="submitBtn">📤 送出資料</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <div class="toastIcon" id="toastIcon">✅</div>
+    <div>
+      <p class="toastTitle" id="toastTitle">完成</p>
+      <p class="toastMsg" id="toastMsg">已寫入資料。</p>
+    </div>
+  </div>
+
+  <script>
+    // ✅ 你的 Apps Script 網址 (維持不變)
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxb8LVDD2OyyAHB-p93iZT8PjyrIzLHy16bqF7V_3xkdmMXaBbUZ1eFP1Gzi5G0ycuKNA/exec';
+
+    const app = document.getElementById('app');
+    const form = document.getElementById('dataForm');
+    const btn = document.getElementById('submitBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusMsg = document.getElementById('status');
+    const statusSub = document.getElementById('statusSub');
+
+    // progress
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const filledChip = document.getElementById('filledChip');
+
+    // toast
+    const toast = document.getElementById('toast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastMsg = document.getElementById('toastMsg');
+    let toastTimer = null;
+
+    function showToast(type, title, msg){
+      clearTimeout(toastTimer);
+      toastIcon.textContent = type === 'ok' ? '✅' : (type === 'warn' ? '⚠️' : '❌');
+      toastTitle.textContent = title;
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    // theme toggle (remember)
+    const themeBtn = document.getElementById('themeBtn');
+    const savedTheme = localStorage.getItem('athlete_form_theme');
+    if(savedTheme){
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+    themeBtn.addEventListener('click', () => {
+      const now = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', now);
+      localStorage.setItem('athlete_form_theme', now);
+    });
+
+    // sections collapse
+    document.querySelectorAll('[data-section-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const section = btn.closest('.section');
+        const open = section.getAttribute('data-open') === 'true';
+        section.setAttribute('data-open', open ? 'false' : 'true');
+      });
+    });
+
+    // default date = today
+    function setToday(){
+      const today = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementsByName("檢測日期")[0];
+      if(dateInput) dateInput.value = today;
+    }
+    document.addEventListener('DOMContentLoaded', setToday);
+
+    // progress calc
+    const inputs = Array.from(form.querySelectorAll('input, select'))
+      .filter(el => el.name && el.type !== 'button' && el.type !== 'submit');
+
+    function isFilled(el){
+      if(el.tagName === 'SELECT') return !!el.value;
+      if(el.type === 'date') return !!el.value;
+      return (el.value !== null && String(el.value).trim() !== '');
+    }
+
+    function updateProgress(){
+      const total = inputs.length;
+      const filled = inputs.reduce((acc, el) => acc + (isFilled(el) ? 1 : 0), 0);
+      const pct = total === 0 ? 0 : Math.round((filled / total) * 100);
+
+      progressBar.style.width = pct + '%';
+      progressText.textContent = pct + '%';
+      filledChip.textContent = `已填：${filled} / ${total}`;
+    }
+
+    inputs.forEach(el => el.addEventListener('input', updateProgress));
+    inputs.forEach(el => el.addEventListener('change', updateProgress));
+    updateProgress();
+
+    // required validation highlight (姓名、檢測日期)
+    function validateRequired(){
+      const requiredFields = Array.from(form.querySelectorAll('[required]'));
+      let ok = true;
+      requiredFields.forEach(el => {
+        const wrapper = el.closest('.field');
+        if(!isFilled(el)){
+          ok = false;
+          if(wrapper) wrapper.style.boxShadow = '0 0 0 4px rgba(255,90,122,.18)';
+          el.style.borderColor = 'rgba(255,90,122,.65)';
+        }else{
+          if(wrapper) wrapper.style.boxShadow = '';
+          el.style.borderColor = '';
+        }
+      });
+      return ok;
+    }
+
+    // reset button
+    resetBtn.addEventListener('click', () => {
+      form.reset();
+      setToday();
+      updateProgress();
+      statusMsg.style.color = '';
+      statusMsg.textContent = '已清空：重新填寫也沒關係，數據不會記仇。';
+      showToast('warn', '已清空', '表單已重置（日期已回到今天）。');
+      // remove highlights
+      form.querySelectorAll('.field').forEach(f => f.style.boxShadow = '');
+      form.querySelectorAll('input, select').forEach(el => el.style.borderColor = '');
+    });
+
+    // submit
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+
+      // validate
+      const ok = validateRequired();
+      if(!ok){
+        statusMsg.style.color = 'var(--danger)';
+        statusMsg.textContent = '❌ 先把必填的「姓名、檢測日期」補上，再送出。';
+        showToast('error', '缺少必填', '請填寫姓名與檢測日期。');
+        return;
+      }
+
+      btn.disabled = true;
+      resetBtn.disabled = true;
+      btn.textContent = "⏳ 資料傳送中...";
+      statusMsg.style.color = '';
+      statusMsg.textContent = "傳送中…（no-cors 模式下瀏覽器不會回傳結果，但你已經能寫入）";
+      statusSub.textContent = "送出後會自動清空（日期保留今天）。";
+
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => {
+        if(value !== null && String(value).trim() !== '') data[key] = value;
+      });
+
+      console.log("傳送資料:", data);
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(() => {
+        statusMsg.style.color = 'var(--ok)';
+        statusMsg.textContent = "✅ 已送出！資料已寫入（表單已清空）";
+        showToast('ok', '已送出', '資料已寫入，表單已清空（日期保留今天）。');
+
+        form.reset();
+        setToday();
+        updateProgress();
+
+        // remove highlights
+        form.querySelectorAll('.field').forEach(f => f.style.boxShadow = '');
+        form.querySelectorAll('input, select').forEach(el => el.style.borderColor = '');
+
+        setTimeout(() => {
+          btn.disabled = false;
+          resetBtn.disabled = false;
+          btn.textContent = "📤 送出資料";
+          statusMsg.style.color = '';
+          statusMsg.textContent = "準備就緒：下一位選手上場（我知道你們都在趕時間）";
+          statusSub.textContent = "小提醒：若數值是「0」也請直接填 0，避免被當成空值。";
+        }, 1400);
+      })
+      .catch(error => {
+        console.error('Error!', error.message);
+        statusMsg.style.color = 'var(--danger)';
+        statusMsg.textContent = "❌ 發生錯誤：請檢查網路或 Apps Script 部署";
+        statusSub.textContent = "若你要做到「確定寫入成功才顯示✅」，就不能用 no-cors（我也可以幫你改成可回傳結果的版本）。";
+        showToast('error', '傳送失敗', '請檢查網路或 Apps Script 設定。');
+
+        btn.disabled = false;
+        resetBtn.disabled = false;
+        btn.textContent = "📤 送出資料";
+      });
+    });
+  </script>
+</body>
+</html>

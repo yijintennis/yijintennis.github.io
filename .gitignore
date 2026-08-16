@@ -1,0 +1,8 @@
+Code.gs
+STATUS.md
+.DS_Store
+
+# 球員照片不得進入公開 repo（含真實姓名的未成年人照片，2026-08-15 移除）
+# 照片改存試算表 02 檢測紀錄 col62，不再放檔案系統
+assets/players/
+assets:players:*

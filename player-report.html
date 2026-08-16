@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>奕晉網球學院｜體能檢測報告（球員版/教練版）</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- PapaParse -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+  <!-- PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg0:#020617;
+      --bg1:#071024;
+      --card:#0b1226;
+      --card2:#0b1a2f;
+      --line:rgba(148,163,184,.22);
+      --text:#e5e7eb;
+      --sub:#94a3b8;
+      --muted:#64748b;
+      --good:#22c55e;
+      --warn:#facc15;
+      --bad:#f87171;
+      --blue:#38bdf8;
+      --radius:18px;
+      --shadow: 0 24px 70px rgba(0,0,0,.55);
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 20% 0%, rgba(56,189,248,.18) 0, transparent 55%),
+        radial-gradient(circle at 80% 0%, rgba(34,197,94,.18) 0, transparent 55%),
+        radial-gradient(circle at 50% 120%, #020617 0, #000 62%);
+      min-height:100vh;
+    }
+
+    .wrap{
+      max-width: 1180px;
+      margin: 24px auto 60px;
+      padding: 0 14px;
+    }
+
+    .topbar{
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(10,18,38,.92), rgba(6,10,20,.92));
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .topbar::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(circle at 15% 0, rgba(56,189,248,.22), transparent 55%),
+        radial-gradient(circle at 85% 0, rgba(34,197,94,.22), transparent 55%);
+      pointer-events:none;
+      opacity:.9;
+    }
+
+    .topbar-inner{
+      position:relative;
+      padding: 16px 16px 14px;
+    }
+
+    .brand{
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      margin-bottom: 12px;
+    }
+
+    .brand-left{
+      display:flex; align-items:center; gap:12px;
+    }
+
+    .logo{
+      width:38px; height:38px; border-radius:999px;
+      border:2px solid rgba(34,197,94,.85);
+      box-shadow: 0 0 24px rgba(34,197,94,.5);
+      object-fit:cover;
+      background: radial-gradient(circle at 30% 30%, #22c55e, #16a34a);
+    }
+
+    .brand-title{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .brand-title b{
+      font-size: 16px;
+      letter-spacing:.12em;
+    }
+    .brand-title span{
+      font-size: 12px;
+      color: var(--sub);
+    }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.35);
+      background: rgba(2,6,23,.55);
+      color: var(--sub);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .pill .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: var(--good);
+      box-shadow: 0 0 12px var(--good);
+    }
+
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      padding-top: 6px;
+    }
+
+    label{ color: var(--sub); font-size: 13px; }
+
+    select{
+      min-width: 220px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.35);
+      background: rgba(2,6,23,.45);
+      color: var(--text);
+      outline:none;
+    }
+
+    .btn{
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.35);
+      background: rgba(2,6,23,.45);
+      color: var(--sub);
+      cursor:pointer;
+      font-size: 13px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{ border-color: rgba(248,250,252,.65); color: var(--text); }
+
+    .btn-primary{
+      border: none;
+      background: linear-gradient(90deg, rgba(34,197,94,.95), rgba(56,189,248,.95));
+      color:#021018;
+      font-weight: 800;
+      box-shadow: 0 14px 40px rgba(34,197,94,.25);
+    }
+
+    .btn-tab{
+      border: 1px solid rgba(148,163,184,.30);
+      background: rgba(2,6,23,.35);
+      color: var(--sub);
+    }
+    .btn-tab.active{
+      border-color: rgba(34,197,94,.75);
+      box-shadow: 0 0 0 3px rgba(34,197,94,.14);
+      color: #d1fae5;
+    }
+
+    .status{
+      margin-left:auto;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .grid{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .card{
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(11,18,38,.92), rgba(6,10,20,.92));
+      box-shadow: 0 18px 52px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+
+    .card-h{
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.16);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .card-h b{
+      font-size: 13px;
+      letter-spacing:.16em;
+      color: rgba(226,232,240,.92);
+      text-transform: uppercase;
+    }
+    .card-h span{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .card-b{
+      padding: 14px 16px 16px;
+    }
+
+    .muted{ color: var(--sub); font-size: 12px; line-height:1.65; }
+
+    .player-hero{
+      display:grid;
+      grid-template-columns: 220px 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .photo{
+      border: 1px dashed rgba(148,163,184,.28);
+      border-radius: 16px;
+      min-height: 220px;
+      background: rgba(2,6,23,.35);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .photo img{ width:100%; height:100%; object-fit: cover; display:block; }
+    .photo .ph-txt{ color: rgba(148,163,184,.7); font-size: 12px; text-align:center; line-height:1.6; padding: 10px; }
+
+    .player-info h2{
+      margin: 2px 0 8px;
+      font-size: 22px;
+      letter-spacing: .06em;
+    }
+    .chips{ display:flex; flex-wrap:wrap; gap:8px; margin: 8px 0 10px; }
+    .chip{
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.24);
+      background: rgba(2,6,23,.35);
+      color: var(--sub);
+      font-size: 12px;
+      display:inline-flex; gap:8px; align-items:center;
+    }
+    .chip b{ color: rgba(226,232,240,.94); font-weight:700; }
+
+    .two-cols{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .radar-wrap{
+      height: 360px;
+      padding: 10px 6px 0;
+    }
+
+    .todo{
+      border:1px solid rgba(148,163,184,.18);
+      border-radius: 16px;
+      padding: 12px 12px;
+      background: rgba(2,6,23,.25);
+    }
+    .todo ol{ margin: 0; padding-left: 18px; }
+    .todo li{ margin: 8px 0; color: rgba(226,232,240,.9); line-height:1.7; }
+    .todo .tag{
+      display:inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 8px;
+      font-size: 11px;
+      border: 1px solid rgba(148,163,184,.22);
+      color: var(--sub);
+      background: rgba(2,6,23,.35);
+    }
+
+    .badge-row{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+      margin-top: 12px;
+    }
+    .badge{
+      display:flex; gap:10px; align-items:flex-start;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.22);
+      font-size: 13px;
+      line-height:1.7;
+      color: rgba(226,232,240,.88);
+    }
+    .badge .dot{
+      width:10px; height:10px; border-radius:999px;
+      margin-top: 6px;
+      background: var(--blue);
+      box-shadow: 0 0 14px rgba(56,189,248,.55);
+      flex: 0 0 auto;
+    }
+    .badge.good .dot{ background: var(--good); box-shadow: 0 0 14px rgba(34,197,94,.55); }
+    .badge.bad .dot{ background: var(--bad); box-shadow: 0 0 14px rgba(248,113,113,.55); }
+
+    .coach-note-box{
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.22);
+      border-radius: 16px;
+      padding: 12px 12px;
+      line-height:1.75;
+      color: rgba(226,232,240,.88);
+      font-size: 13px;
+    }
+    .coach-note-box b{ color: #bbf7d0; }
+
+    .coach-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .chart-box{ height: 260px; }
+    .table{
+      width:100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      overflow:hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.25);
+    }
+    .table th,.table td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.12);
+      text-align:right;
+      color: rgba(226,232,240,.9);
+      white-space: nowrap;
+    }
+    .table th:first-child,.table td:first-child{ text-align:left; white-space: normal; width: 28%; }
+    .table thead th{ color: rgba(226,232,240,.8); font-weight: 700; background: rgba(2,6,23,.35); }
+
+    .tagpill{
+      display:inline-flex;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.35);
+      color: var(--sub);
+      align-items:center;
+      gap:8px;
+      justify-content:center;
+    }
+    .tagpill.good{ border-color: rgba(34,197,94,.55); color:#bbf7d0; }
+    .tagpill.mid{ border-color: rgba(250,204,21,.55); color:#fde68a; }
+    .tagpill.bad{ border-color: rgba(248,113,113,.55); color:#fecaca; }
+    .tagpill.key{ border-color: rgba(59,130,246,.55); color:#bfdbfe; }
+
+    .pdf-surface{
+      border-radius: 22px;
+      overflow:hidden;
+    }
+
+    .hide{ display:none !important; }
+
+    .print-only{ display:none !important; }
+    body.exporting-player .no-print,
+    body.exporting-coach  .no-print{ display:none !important; }
+
+    body.exporting-player .print-only,
+    body.exporting-coach  .print-only{ display:block !important; }
+
+    textarea{
+      width:100%;
+      min-height: 124px;
+      resize: vertical;
+      border-radius: 14px;
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.35);
+      color: var(--text);
+      padding: 10px 10px;
+      outline: none;
+      line-height: 1.75;
+      font-size: 13px;
+    }
+
+    .editor-actions{
+      display:flex;
+      gap:10px;
+      margin-top:10px;
+      flex-wrap: wrap;
+      align-items:center;
+      justify-content: space-between;
+    }
+    .editor-actions .left{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    }
+
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* =========================================================
+       ✅ 你要的：訓練建議深色欄位 → 全白字
+    ========================================================= */
+    #playerView .todo,
+    #playerView .todo *{
+      color: rgba(255,255,255,.96) !important;
+    }
+    #playerView .todo{
+      border-color: rgba(255,255,255,.22);
+      background: rgba(0,0,0,.22);
+    }
+    #playerView .todo .tag{
+      border-color: rgba(255,255,255,.30);
+      background: rgba(0,0,0,.18);
+      color: rgba(255,255,255,.92) !important;
+    }
+
+    /* =========================================================
+       ✅ PDF 專用 Header（放在 mainSurface 裡，html2canvas 一定拍得到）
+       - 只在 exporting-player 顯示
+    ========================================================= */
+    .pdf-header{
+      display:none;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid rgba(15,23,42,.10);
+      background:#fff;
+    }
+    body.exporting-player .pdf-header{
+      display:block;
+    }
+    .pdf-brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .pdf-logo{
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      object-fit:cover;
+      border:2px solid rgba(34,197,94,.65);
+    }
+    .pdf-title .pdf-main{
+      font-size: 15px;
+      font-weight: 900;
+      color:#0f172a;
+      letter-spacing:.06em;
+    }
+    .pdf-title .pdf-sub{
+      font-size: 12px;
+      color:#334155;
+      margin-top:2px;
+    }
+
+    /* =========================================================
+       ✅ A4 匯出模式（球員版：白底黑字、縮高度避免爆 A4）
+    ========================================================= */
+    body.exporting-player{
+      background:#fff !important;
+    }
+    body.exporting-player .wrap{
+      max-width: 980px !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
+    }
+    body.exporting-player .topbar{ display:none !important; }
+    body.exporting-player #weightCard{ display:none !important; }
+
+    body.exporting-player .card{
+      box-shadow: none !important;
+    }
+
+    /* 只把 mainSurface 變成白底黑字（避免全站變色） */
+    body.exporting-player #mainSurface{
+      background:#fff !important;
+      color:#0f172a !important;
+    }
+
+    /* 球員版 PDF 不需要這個 screen header（避免重複） */
+    body.exporting-player #mainSurface > .card-h{
+      display:none !important;
+    }
+
+    body.exporting-player .player-info h2{
+      font-size: 30px !important;
+      letter-spacing:.04em !important;
+      color:#0f172a !important;
+    }
+    body.exporting-player .chip{
+      font-size: 13px !important;
+      padding: 7px 11px !important;
+      background: rgba(2,6,23,.04) !important;
+      border-color: rgba(15,23,42,.10) !important;
+      color:#334155 !important;
+    }
+    body.exporting-player .chip b{ color:#0f172a !important; }
+
+    body.exporting-player .badge{
+      font-size: 14px !important;
+      background: rgba(2,6,23,.03) !important;
+      border-color: rgba(15,23,42,.10) !important;
+      color:#0f172a !important;
+    }
+
+    body.exporting-player .coach-note-box{
+      font-size: 14px !important;
+      line-height: 1.8 !important;
+      background: rgba(2,6,23,.03) !important;
+      border-color: rgba(15,23,42,.10) !important;
+      color:#0f172a !important;
+    }
+    body.exporting-player .coach-note-box b{ color:#065f46 !important; }
+
+    body.exporting-player .radar-wrap{
+      height: 280px !important;
+      padding-top: 0 !important;
+    }
+    body.exporting-player .card-b{
+      padding: 14px 16px !important;
+    }
+    body.exporting-player .player-hero{
+      grid-template-columns: 240px 1fr !important;
+      gap: 12px !important;
+    }
+    body.exporting-player .photo{
+      min-height: 240px !important;
+      border-color: rgba(15,23,42,.14) !important;
+      background: rgba(2,6,23,.02) !important;
+    }
+    body.exporting-player .muted{
+      color:#475569 !important;
+    }
+
+    /* =========================================================
+       ✅ 教練版匯出：保留深色風格（只隱藏 topbar）
+    ========================================================= */
+    body.exporting-coach{
+      background:#020617 !important;
+    }
+    body.exporting-coach .wrap{
+      max-width: 1180px !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
+    }
+    body.exporting-coach .topbar{ display:none !important; }
+    body.exporting-coach .pdf-header{ display:none !important; } /* 教練版不需要 logo header（你要的話我也能加） */
+
+    @media (max-width: 980px){
+      .player-hero{ grid-template-columns: 1fr; }
+      .two-cols{ grid-template-columns: 1fr; }
+      .coach-grid{ grid-template-columns: 1fr; }
+      .status{ width: 100%; margin-left:0; }
+    }
+    /* =========================
+   ✅ FIX: 球員版 PDF 好閱讀（公司門面版）
+   放在 <style> 最下面！
+========================= */
+body.exporting-player #mainSurface{
+  background:#ffffff !important;
+  color:#0f172a !important;
+}
+
+/* ✅ 關鍵：把 mainSurface 裡所有卡片都變白底（不要再深色漸層） */
+body.exporting-player #mainSurface.card,
+body.exporting-player #mainSurface .card{
+  background:#ffffff !important;
+  background-image:none !important;
+  box-shadow:none !important;
+  border-color:rgba(15,23,42,.12) !important;
+}
+
+/* 卡片標題列也一起變成白底＋黑字 */
+body.exporting-player #mainSurface .card-h{
+  background:#ffffff !important;
+  border-bottom:1px solid rgba(15,23,42,.10) !important;
+}
+body.exporting-player #mainSurface .card-h b{
+  color:#0f172a !important;
+}
+body.exporting-player #mainSurface .card-h span{
+  color:#334155 !important;
+}
+
+/* ✅ 讓 PDF 裡的小字變清楚 */
+body.exporting-player #mainSurface .muted{
+  color:#334155 !important;
+  opacity:1 !important;
+}
+
+/* ✅ COACH NOTE：強制白底黑字（你紅框那塊） */
+body.exporting-player #mainSurface .coach-note-box,
+body.exporting-player #mainSurface #p_coachNote{
+  background:#ffffff !important;
+  border:1px solid rgba(15,23,42,.12) !important;
+  color:#0f172a !important;
+}
+body.exporting-player #mainSurface #p_coachNote *{
+  color:#0f172a !important;
+  opacity:1 !important;
+}
+body.exporting-player #mainSurface #p_coachNote b{
+  color:#065f46 !important; /* 保留教練重點的綠色 */
+}
+
+/* ✅ 下面那條淡淡的分隔線避免太搶戲 */
+body.exporting-player #mainSurface .card{
+  border-radius:18px !important;
+}
+
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-left">
+            <img class="logo" src="https://yijintennis.github.io/logo.jpeg" alt="logo" />
+            <div class="brand-title">
+              <b>奕晉網球學院｜體能檢測報告</b>
+              <span>球員版（含家長） / 教練版（完整版）｜同級比較自動算 Z → 轉成 0–100（50=同級平均）</span>
+            </div>
+          </div>
+          <div class="pill"><span class="dot"></span><span>連線試算表 · 自動更新</span></div>
+        </div>
+
+        <div class="controls">
+          <label for="studentSelect">選擇學員：</label>
+          <select id="studentSelect" disabled>
+            <option value="">資料載入中...</option>
+          </select>
+
+          <button class="btn" id="reloadBtn">🔄 重新載入</button>
+
+          <button class="btn btn-tab active" id="tabPlayer">🟢 球員版（含家長）</button>
+          <button class="btn btn-tab" id="tabCoach">📊 教練版（完整版）</button>
+
+          <button class="btn btn-primary" id="pdfPlayerBtn">📄 球員版 PDF（A4滿版）</button>
+          <button class="btn btn-primary" id="pdfCoachBtn">📄 教練版 PDF</button>
+
+          <span class="status" id="statusMsg">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card pdf-surface" id="mainSurface">
+
+        <!-- ✅ PDF Header：只會在 exporting-player 顯示（所以球員 PDF 一定有 logo） -->
+        <div class="pdf-header" id="pdfHeader">
+          <div class="pdf-brand">
+            <img class="pdf-logo" src="https://yijintennis.github.io/logo.jpeg" alt="logo" crossorigin="anonymous" />
+            <div class="pdf-title">
+              <div class="pdf-main">奕晉網球學院｜體能檢測報告</div>
+              <div class="pdf-sub" id="pdfSubLine">球員版（含家長）</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-h">
+          <b id="viewTitle">PLAYER VERSION</b>
+          <span id="viewSubtitle">看得懂、看得重點：照片 / 基本資料 / 雷達圖 / 本週 3 件事 / 教練提醒</span>
+        </div>
+
+        <div class="card-b">
+
+          <!-- ============ 球員版 ============ -->
+          <section id="playerView">
+            <div class="player-hero">
+              <div class="photo" id="playerPhotoBox">
+                <div class="ph-txt">
+                  （可選）放球員打球照片<br/>
+                  欄位：<b>照片</b>（URL）
+                </div>
+              </div>
+
+              <div class="player-info">
+                <h2 id="p_name">—</h2>
+                <div class="chips">
+                  <div class="chip">性別：<b id="p_sex">—</b></div>
+                  <div class="chip">分級：<b id="p_level">—</b></div>
+                  <div class="chip">身高：<b id="p_height">—</b></div>
+                  <div class="chip">體重：<b id="p_weight">—</b></div>
+                  <div class="chip">同級比較：<b id="p_groupKey">—</b></div>
+                  <div class="chip">最近檢測：<b id="p_date">—</b></div>
+                </div>
+
+                <div class="badge-row">
+                  <div class="badge good" id="p_bestBadge">
+                    <span class="dot"></span>
+                    <div>
+                      <b>你最強的方向：</b>
+                      <span id="p_bestText">—</span>
+                    </div>
+                  </div>
+                  <div class="badge bad" id="p_weakBadge">
+                    <span class="dot"></span>
+                    <div>
+                      <b>優先補強：</b>
+                      <span id="p_weakText">—</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="margin-top:12px" class="muted">
+                  <br/> 雷達圖分數為 0–100，其中 <b>50 代表同級平均</b>（同組 = 性別 × 分級）。
+                </div>
+              </div>
+            </div>
+
+            <div class="two-cols">
+              <div class="card" style="box-shadow:none">
+                <div class="card-h">
+                  <b>8 大指標雷達圖</b>
+                  <span>0–100（50=同級平均）</span>
+                </div>
+                <div class="card-b">
+                  <div class="radar-wrap">
+                    <canvas id="playerRadar"></canvas>
+                  </div>
+                  <div class="muted" style="margin-top:6px">
+                    灰色線 = 固定 50（同級平均基準）。紅色 = 你的分數。
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" style="box-shadow:none">
+                <div class="card-h">
+                  <b>訓練建議（只做 3 件事）</b>
+                  <span>教練處方 </span>
+                </div>
+                <div class="card-b">
+                  <div class="todo">
+                    <ol id="p_todoList">
+                      <li>請先選擇學員（教練會在教練版填寫）<span class="tag">主軸</span></li>
+                    </ol>
+                  </div>
+                  <div class="muted" style="margin-top:10px">
+                    這 3 點是「教練給你的處方」。做完，比做更多更重要。
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="box-shadow:none; margin-top:14px">
+              <div class="card-h">
+                <b>COACH NOTE</b>
+                <span>一段話講清楚</span>
+              </div>
+              <div class="card-b">
+                <div class="coach-note-box" id="p_coachNote">
+                  請先從上方選擇學員，系統會自動生成提醒內容。
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ 教練版 ============ -->
+          <section id="coachView" class="hide">
+            <div class="coach-grid">
+              <div class="card" style="box-shadow:none">
+                <div class="card-h">
+                  <b>PLAYER PROFILE</b>
+                  <span>教練用</span>
+                </div>
+                <div class="card-b">
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                    <div class="chip">姓名：<b id="c_name">—</b></div>
+                    <div class="chip">同級：<b id="c_groupKey">—</b></div>
+                    <div class="chip">性別：<b id="c_sex">—</b></div>
+                    <div class="chip">分級：<b id="c_level">—</b></div>
+                    <div class="chip">最近檢測：<b id="c_date">—</b></div>
+                    <div class="chip">身高/體重：<b id="c_hw">—</b></div>
+                  </div>
+                  <div class="muted" style="margin-top:10px">
+                    Z 分數基準：同組（性別 × 分級）自動計算平均與 SD。  
+                    這裡提供「雷達圖＋關鍵指標前 10＋全表（含 Z）」方便抓方向。
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" style="box-shadow:none">
+                <div class="card-h">
+                  <b>8 大指標雷達圖</b>
+                  <span>0–100（50=同級平均）</span>
+                </div>
+                <div class="card-b">
+                  <div class="radar-wrap">
+                    <canvas id="coachRadar"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="box-shadow:none; margin-top:14px">
+              <div class="card-h">
+                <b>本週訓練處方（3 點｜教練可編輯）</b>
+                <span>簡版給球員 / 完整版給教練</span>
+              </div>
+              <div class="card-b">
+
+                <div class="no-print">
+                  <div class="muted" style="margin-bottom:10px; line-height:1.8">
+                    建議寫法：<b>「目的 → 功量 → 品質標準」</b><br/>
+                    例：下肢爆發力｜CMJ 3×5｜落地安靜、膝蓋對齊、休息 60–90s
+                  </div>
+
+                  <div class="card" style="box-shadow:none; margin-bottom:12px">
+                    <div class="card-h">
+                      <b>球員簡版（球員版會看到）</b>
+                      <span>短、清楚、可執行</span>
+                    </div>
+                    <div class="card-b">
+                      <textarea id="coachPlanSimple" placeholder="一行一點（最多 3 點）&#10;1.&#10;2.&#10;3."></textarea>
+                    </div>
+                  </div>
+
+                  <div class="card" style="box-shadow:none">
+                    <div class="card-h">
+                      <b>教練完整版（教練版 PDF 會用這組）</b>
+                      <span>可更專業、可寫細節</span>
+                    </div>
+                    <div class="card-b">
+                      <textarea id="coachPlanFull" placeholder="一行一點（最多 3 點）&#10;1.&#10;2.&#10;3."></textarea>
+
+                      <div class="editor-actions">
+                        <div class="left">
+                          <button class="btn btn-tab" id="savePlanBtn">💾 儲存處方</button>
+                          <button class="btn btn-tab" id="resetPlanBtn">🧹 清空</button>
+                        </div>
+                        <div class="hint" id="planStatus">未儲存</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="print-only">
+                  <div class="muted" style="margin-bottom:8px">球員簡版（3 點）</div>
+                  <div class="todo"><ol id="printPlanSimple"></ol></div>
+                  <div class="muted" style="margin:14px 0 8px">教練完整版（3 點）</div>
+                  <div class="todo"><ol id="printPlanFull"></ol></div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="card" style="box-shadow:none; margin-top:14px">
+              <div class="card-h">
+                <b>關鍵指標：學生 vs 同級平均（最多 10 項）</b>
+                <span>依 |Z| 最大排序</span>
+              </div>
+              <div class="card-b">
+                <div class="chart-box">
+                  <canvas id="barChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="box-shadow:none; margin-top:14px">
+              <div class="card-h">
+                <b>教練短評（完整版）</b>
+                <span>自動整理強弱項</span>
+              </div>
+              <div class="card-b">
+                <div class="coach-note-box" id="c_coachNote">請先選擇學員。</div>
+              </div>
+            </div>
+
+            <div class="card" style="box-shadow:none; margin-top:14px">
+              <div class="card-h">
+                <b>完整檢測表（含 Z 分數）</b>
+                <span>可作為追蹤紀錄</span>
+              </div>
+              <div class="card-b">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>指標</th>
+                      <th>學生</th>
+                      <th>同級平均</th>
+                      <th>SD</th>
+                      <th>Z</th>
+                      <th>評估</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="weightCard" style="margin-top:16px">
+      <div class="card-h" style="cursor:pointer" id="weightToggle">
+        <b>📊 指標加權與計算方式（教練資訊）</b>
+        <span id="weightToggleText">點擊展開</span>
+      </div>
+      <div class="card-b hide" id="weightContent">
+        <div class="muted" style="line-height:1.9">
+          <b>下肢肌力</b>：硬拉 100%<br/>
+          <b>下肢爆發力</b>：IMTP 35%｜CMJ 25%｜Broad Jump 25%｜Lateral Jump 15%<br/>
+          <b>上肢肌力</b>：Inverted Row 25%｜Push-up 25%｜Grip 35%｜Plank 15%<br/>
+          <b>上肢爆發力</b>：跪姿水平拋 30%｜跪姿過頭拋 30%｜站姿過頭拋 20%｜站姿水平拋 20%<br/>
+          <b>速度</b>：10m 60%｜20m 40%（越小越好）<br/>
+          <b>變向能力</b>：5-10-5 45%｜Spider 35%（越小越好）｜Hop test 20%<br/>
+          <b>反應</b>：反應燈 100%<br/>
+          <b>代謝能力</b>：最大有氧 40%｜無氧代謝 40%｜速度衰退 20%（未填則維持 50 分）<br/>
+        </div>
+        <div class="muted" style="margin-top:12px">
+          0–100 轉換方式：<b>Score = clamp(50 + Z×15)</b>（Z=+1 約 65 分）
+        </div>
+        <div class="muted" style="margin-top:10px">
+          無氧代謝欄位支援：<b>檢測成績 AC 無氧代謝(%)</b> / 無氧代謝分頁 Q 無氧代謝(%) / P FRI（疲勞調節指數）
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const FILE_ID = "1N-8HQZaxHYj4vE824raG1fWyNxt5w7B9_m8oHn8f4As";
+  const SHEETS = {
+    players: "學員主資料表",
+    tests: "檢測成績",
+    anaerobic: "無氧代謝"
+  };
+
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+  function toNum(v){
+    if (v == null || v === "") return null;
+    const n = Number(String(v).replace(/[^\d.\-]/g,""));
+    return isNaN(n) ? null : n;
+  }
+
+  const ANA_FRI_TO_SCORE_MULT = 400;
+  function normalizePct(raw){
+    const v = toNum(raw);
+    if(v == null) return null;
+    if(v > 0 && v <= 1.5) return clamp(v * 100, 0, 100);
+    if(v >= 0 && v <= 100) return v;
+    return null;
+  }
+  function friToScore(raw){
+    const v = toNum(raw);
+    if(v == null) return null;
+    if(v >= 0.75 && v <= 1.35){
+      const score = 50 + (1 - v) * ANA_FRI_TO_SCORE_MULT;
+      return clamp(score, 0, 100);
+    }
+    if(v >= 0 && v <= 100) return v;
+    return null;
+  }
+
+  function csvUrlForSheet(sheetName){
+    return `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+  }
+  function loadSheet(sheetName){
+    return new Promise((resolve,reject)=>{
+      Papa.parse(csvUrlForSheet(sheetName),{
+        download:true,
+        header:true,
+        complete:r=>resolve((r.data || []).filter(x=>x && Object.keys(x).some(k=>String(x[k]||"").trim()!==""))),
+        error:reject
+      });
+    });
+  }
+  function getVal(row, keys){
+    for (const k of keys){
+      if (row && row[k] != null && String(row[k]).trim() !== "") return row[k];
+    }
+    return "";
+  }
+
+  const COL = {
+    name: ["姓名"],
+    sex:  ["性別"],
+    level:["分級","年級","年齡"],
+
+    photo:["照片","Photo","photo","image","圖片","圖片網址","照片網址"],
+    height:["身高","身高(cm)","height","Height"],
+    weight:["體重","重量","重量(kg)","體重(kg)","weight","Weight"],
+
+    date:["最新檢測日","日期","測驗日期","檢測日期"],
+
+    deadlift:["硬拉(kg)","硬拉","Deadlift","Deadlift(kg)"],
+
+    imtp:["IMTP(N)","IMTP","IMTP (RFD 200ms)","IMTP(RFD200ms)","IMTP RFD","RFD","IMTP(N) "],
+    cmj:["CMJ(cm)","CMJ","垂直跳(cm)","垂直跳","Vertical Jump","VerticalJump"],
+    broad:["立定跳(m)","立定跳","Broad jump (m)","Broad jump","BroadJump","Broad Jump"],
+    lateralL:["側向跳(左)(m)","側向跳(左)","Lateral jump (L)","LateralJumpL","側向跳(左)(cm)"],
+    lateralR:["側向跳(右)(m)","側向跳(右)","Lateral jump (R)","LateralJumpR","側向跳(右)(cm)"],
+
+    invRow:["反向划船(次數)","Inverted row(次數)","Inverted row","Inverted Rows","反向划船"],
+    pushup:["俯臥撐(次數)","Push up(次數)","Push-ups(次數)","Push up","Push-ups","俯臥撐"],
+    grip:["握力(kg)","握力","Grip strength(kg)","Grip strength","Grip"],
+    plank:["平板撐(秒)","平板撐","Plank(時間)","Plank","Plank(s)","平板撐(時間)"],
+
+    sohm:["站姿過頭拋","站姿過頭拋(距離)","Standing OH MB Throw"],
+    kohm:["晚姿過頭拋","跪姿過頭拋","Kneeling OH MB Throw"],
+    shmb:["站姿水平拋","Standing Horizontal MB Throw"],
+    khmb:["晚姿水平拋","跪姿水平拋","Kneeling Horizontal MB Throw"],
+
+    sprint10:["10米衝刺(秒)","10m sprint","10m Sprint","10m"],
+    sprint20:["20米衝刺(秒)","20m sprint","20m Sprint","20m"],
+
+    t505L:["505敏捷跑(左)(秒)","505敏捷跑(左)","505左","505 L","505 (L)"],
+    t505R:["505敏捷跑(右)(秒)","505敏捷跑(右)","505右","505 R","505 (R)"],
+    spider:["蜘蛛跑(秒)","蜘蛛跑","Spider test(秒)","Spider test","Spider"],
+    hop:["Hop test(m/s)","Hop test","Hop"],
+
+    react:["反應燈測試(次數)","反應燈測試","反應燈測試(次數) ","Reaction(次數)","Reaction"],
+
+    aerobic:["最大有氧","最大有氧(ml/kg/min)","VO2max","VO2 max","Max Aerobic","Aerobic"],
+
+    anaerobicPctTests:["無氧代謝(%)","無氧代謝%","Anaerobic(%)","Anaerobic %","Anaerobic Percent","AC 無氧代謝(%)"],
+
+    anaerName:["姓名"],
+    speedDecay:["速度衰退(%)","速度衰退%","Speed Decay(%)","Speed decay(%)","Speed decay %"],
+    fri:["FRI(疲勞調節指數)","FRI","Fatigue Regulation Index","疲勞調節指數"],
+    anaerobicPctSheet:["無氧代謝(%)","無氧代謝%","Anaerobic(%)","Anaerobic %","Anaerobic Percent"]
+  };
+
+  function isLowerBetterMetric(label){
+    const s = String(label || "");
+    return (
+      s.includes("秒") ||
+      /sprint/i.test(s) ||
+      s.includes("505") ||
+      s.includes("蜘蛛") ||
+      s.includes("Spider") ||
+      s.includes("速度衰退")
+    );
+  }
+
+  function groupKeyOf(playerRow, testRow){
+    const sex = (getVal(playerRow, COL.sex) || getVal(testRow, COL.sex) || "").trim() || "-";
+    const level = (getVal(playerRow, COL.level) || getVal(testRow, COL.level) || "").trim() || "-";
+    return `${sex}|${level}`;
+  }
+
+  const WEIGHTS = {
+    lowerStrength: { deadlift: 1.00 },
+    lowerPower: { imtp: .35, cmj: .25, broad: .25, lateral: .15 },
+    upperStrength: { invRow: .25, pushup: .25, grip: .35, plank: .15 },
+    upperPower: { sohm: .20, kohm: .30, shmb: .20, khmb: .30 },
+    speed: { sprint10: .60, sprint20: .40 },
+    changeDir: { t505: .45, spider: .35, hop: .20 },
+    reaction: { react: 1.00 },
+    metabolic: { aerobic: .40, anaerobicPct: .40, speedDecay: .20 }
+  };
+
+  const RADAR_AXES = [
+    { key:"lowerStrength", label:"下肢肌力" },
+    { key:"lowerPower",    label:"下肢爆發力" },
+    { key:"upperStrength", label:"上肢肌力" },
+    { key:"upperPower",    label:"上肢爆發力" },
+    { key:"speed",         label:"速度" },
+    { key:"changeDir",     label:"變向能力" },
+    { key:"reaction",      label:"反應" },
+    { key:"metabolic",     label:"代謝能力" }
+  ];
+
+  function zToScore(z){
+    if (z == null || isNaN(z)) return 50;
+    return clamp(50 + z * 15, 0, 100);
+  }
+
+  let playersByName = new Map();
+  let testsByName = new Map();
+  let testsArray = [];
+  let anaerByName = new Map();
+  let groupStats = new Map();
+
+  let radarPlayerChart = null;
+  let radarCoachChart  = null;
+  let barChart = null;
+
+  function getAnaRow(name){
+    return anaerByName.get(String(name||"").trim()) || null;
+  }
+
+  function pickMetric(row, keyList, mode="num"){
+    for (const k of keyList){
+      if(!row || !(k in row)) continue;
+      const raw = row[k];
+
+      if(mode === "pct"){
+        const v = normalizePct(raw);
+        if(v != null) return { col:k, val:v };
+        continue;
+      }
+      if(mode === "friScore"){
+        const v = friToScore(raw);
+        if(v != null) return { col:k, val:v };
+        continue;
+      }
+
+      const v = toNum(raw);
+      if(v != null) return { col:k, val:v };
+    }
+    return { col:null, val:null };
+  }
+
+  function buildGroupStats(){
+    const bucket = new Map();
+
+    testsArray.forEach(testRow=>{
+      const name = String(getVal(testRow, COL.name) || "").trim();
+      if(!name) return;
+
+      const playerRow = playersByName.get(name) || {};
+      const gk = groupKeyOf(playerRow, testRow);
+      if(!bucket.has(gk)) bucket.set(gk, new Map());
+      const m = bucket.get(gk);
+
+      Object.keys(testRow).forEach(k=>{
+        if(!k) return;
+        if (COL.name.includes(k) || COL.sex.includes(k) || COL.level.includes(k) || COL.date.includes(k)) return;
+        const isAnaPct = COL.anaerobicPctTests.includes(k) || /無氧代謝/.test(k);
+        const v = isAnaPct ? normalizePct(testRow[k]) : toNum(testRow[k]);
+        if(v == null) return;
+        if(!m.has(k)) m.set(k, []);
+        m.get(k).push(v);
+      });
+
+      const anaRow = getAnaRow(name);
+      if(anaRow){
+        const sd = pickMetric(anaRow, COL.speedDecay, "num");
+        if(sd.val != null){
+          if(!m.has(sd.col)) m.set(sd.col, []);
+          m.get(sd.col).push(sd.val);
+        }
+        const fri = pickMetric(anaRow, COL.fri, "friScore");
+        if(fri.val != null){
+          if(!m.has(fri.col)) m.set(fri.col, []);
+          m.get(fri.col).push(fri.val);
+        }
+        const ap = pickMetric(anaRow, COL.anaerobicPctSheet, "pct");
+        if(ap.val != null){
+          if(!m.has(ap.col)) m.set(ap.col, []);
+          m.get(ap.col).push(ap.val);
+        }
+      }
+    });
+
+    groupStats = new Map();
+    bucket.forEach((m,gk)=>{
+      const stat = {};
+      m.forEach((arr,metricName)=>{
+        if(!arr.length) return;
+        const mean = arr.reduce((a,b)=>a+b,0)/arr.length;
+        const variance = arr.reduce((a,b)=>a+Math.pow(b-mean,2),0)/arr.length;
+        const sd = Math.sqrt(variance);
+        stat[metricName] = { mean, sd };
+      });
+      groupStats.set(gk, stat);
+    });
+  }
+
+  function zOfMetric(gk, colName, val){
+    if(val == null || !colName) return null;
+    const stats = groupStats.get(gk) || {};
+    const s = stats[colName];
+    if(!s || s.sd == null || s.sd === 0) return null;
+    const lowerBetter = isLowerBetterMetric(colName);
+    return lowerBetter ? (s.mean - val) / s.sd : (val - s.mean) / s.sd;
+  }
+
+  function calcCompositeZ(testRow, playerRow, anaRow){
+    const gk = groupKeyOf(playerRow, testRow);
+
+    const deadlift = pickMetric(testRow, COL.deadlift);
+
+    const imtp  = pickMetric(testRow, COL.imtp);
+    const cmj   = pickMetric(testRow, COL.cmj);
+    const broad = pickMetric(testRow, COL.broad);
+    const latL  = pickMetric(testRow, COL.lateralL);
+    const latR  = pickMetric(testRow, COL.lateralR);
+
+    const lateralZ = (()=>{
+      const zl = zOfMetric(gk, latL.col, latL.val);
+      const zr = zOfMetric(gk, latR.col, latR.val);
+      if(zl == null && zr == null) return null;
+      if(zl == null) return zr;
+      if(zr == null) return zl;
+      return (zl+zr)/2;
+    })();
+
+    const invRow = pickMetric(testRow, COL.invRow);
+    const pushup = pickMetric(testRow, COL.pushup);
+    const grip   = pickMetric(testRow, COL.grip);
+    const plank  = pickMetric(testRow, COL.plank);
+
+    const sohm = pickMetric(testRow, COL.sohm);
+    const kohm = pickMetric(testRow, COL.kohm);
+    const shmb = pickMetric(testRow, COL.shmb);
+    const khmb = pickMetric(testRow, COL.khmb);
+
+    const s10 = pickMetric(testRow, COL.sprint10);
+    const s20 = pickMetric(testRow, COL.sprint20);
+
+    const t505L = pickMetric(testRow, COL.t505L);
+    const t505R = pickMetric(testRow, COL.t505R);
+    const spider = pickMetric(testRow, COL.spider);
+    const hop = pickMetric(testRow, COL.hop);
+
+    const react = pickMetric(testRow, COL.react);
+
+    const aerobic = pickMetric(testRow, COL.aerobic);
+    const anaerPctFromTests = pickMetric(testRow, COL.anaerobicPctTests, "pct");
+    const anaerPctFromSheet = anaRow ? pickMetric(anaRow, COL.anaerobicPctSheet, "pct") : {col:null,val:null};
+    const anaerPct = (anaerPctFromTests.val != null) ? anaerPctFromTests : anaerPctFromSheet;
+
+    const speedDecay = anaRow ? pickMetric(anaRow, COL.speedDecay, "num") : {col:null,val:null};
+    const friScore = anaRow ? pickMetric(anaRow, COL.fri, "friScore") : {col:null,val:null};
+
+    const z_deadlift = zOfMetric(gk, deadlift.col, deadlift.val);
+
+    const z_imtp  = zOfMetric(gk, imtp.col,  imtp.val);
+    const z_cmj   = zOfMetric(gk, cmj.col,   cmj.val);
+    const z_broad = zOfMetric(gk, broad.col, broad.val);
+
+    const z_invRow = zOfMetric(gk, invRow.col, invRow.val);
+    const z_pushup = zOfMetric(gk, pushup.col, pushup.val);
+    const z_grip   = zOfMetric(gk, grip.col,   grip.val);
+    const z_plank  = zOfMetric(gk, plank.col,  plank.val);
+
+    const z_sohm = zOfMetric(gk, sohm.col, sohm.val);
+    const z_kohm = zOfMetric(gk, kohm.col, kohm.val);
+    const z_shmb = zOfMetric(gk, shmb.col, shmb.val);
+    const z_khmb = zOfMetric(gk, khmb.col, khmb.val);
+
+    const z_s10 = zOfMetric(gk, s10.col, s10.val);
+    const z_s20 = zOfMetric(gk, s20.col, s20.val);
+
+    const z505 = (()=>{
+      const zl = zOfMetric(gk, t505L.col, t505L.val);
+      const zr = zOfMetric(gk, t505R.col, t505R.val);
+      if(zl == null && zr == null) return null;
+      if(zl == null) return zr;
+      if(zr == null) return zl;
+      return (zl+zr)/2;
+    })();
+
+    const z_spider = zOfMetric(gk, spider.col, spider.val);
+    const z_hop    = zOfMetric(gk, hop.col, hop.val);
+
+    const z_react = zOfMetric(gk, react.col, react.val);
+
+    const z_aerobic = zOfMetric(gk, aerobic.col, aerobic.val);
+    const z_anaPct  = zOfMetric(gk, anaerPct.col, anaerPct.val);
+    const z_speedDecay = zOfMetric(gk, speedDecay.col, speedDecay.val);
+
+    const wsum = (pairs)=>{
+      let num = 0, den = 0;
+      for(const [z,w] of pairs){
+        if(z == null || isNaN(z)) continue;
+        num += z*w;
+        den += w;
+      }
+      return den ? (num/den) : null;
+    };
+
+    const z_lowerStrength = wsum([[z_deadlift, WEIGHTS.lowerStrength.deadlift]]);
+
+    const z_lowerPower = wsum([
+      [z_imtp,  WEIGHTS.lowerPower.imtp],
+      [z_cmj,   WEIGHTS.lowerPower.cmj],
+      [z_broad, WEIGHTS.lowerPower.broad],
+      [lateralZ,WEIGHTS.lowerPower.lateral]
+    ]);
+
+    const z_upperStrength = wsum([
+      [z_invRow, WEIGHTS.upperStrength.invRow],
+      [z_pushup, WEIGHTS.upperStrength.pushup],
+      [z_grip,   WEIGHTS.upperStrength.grip],
+      [z_plank,  WEIGHTS.upperStrength.plank]
+    ]);
+
+    const z_upperPower = wsum([
+      [z_sohm, WEIGHTS.upperPower.sohm],
+      [z_kohm, WEIGHTS.upperPower.kohm],
+      [z_shmb, WEIGHTS.upperPower.shmb],
+      [z_khmb, WEIGHTS.upperPower.khmb]
+    ]);
+
+    const z_speed = wsum([
+      [z_s10, WEIGHTS.speed.sprint10],
+      [z_s20, WEIGHTS.speed.sprint20]
+    ]);
+
+    const z_changeDir = wsum([
+      [z505,     WEIGHTS.changeDir.t505],
+      [z_spider, WEIGHTS.changeDir.spider],
+      [z_hop,    WEIGHTS.changeDir.hop]
+    ]);
+
+    const z_reaction = wsum([[z_react, WEIGHTS.reaction.react]]);
+
+    const z_metabolic = wsum([
+      [z_aerobic,     WEIGHTS.metabolic.aerobic],
+      [z_anaPct,      WEIGHTS.metabolic.anaerobicPct],
+      [z_speedDecay,  WEIGHTS.metabolic.speedDecay]
+    ]);
+
+    return {
+      groupKey: gk,
+      zByAxis: {
+        lowerStrength: z_lowerStrength,
+        lowerPower: z_lowerPower,
+        upperStrength: z_upperStrength,
+        upperPower: z_upperPower,
+        speed: z_speed,
+        changeDir: z_changeDir,
+        reaction: z_reaction,
+        metabolic: z_metabolic
+      },
+      metaExtra: {
+        aerobic,
+        anaerPct,
+        speedDecay,
+        friScore
+      }
+    };
+  }
+
+  const el = (id)=>document.getElementById(id);
+
+  function renderPlayerPhoto(url){
+    const box = el("playerPhotoBox");
+    box.innerHTML = "";
+    if(url){
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = "player photo";
+      box.appendChild(img);
+    }else{
+      const div = document.createElement("div");
+      div.className = "ph-txt";
+      div.innerHTML = "（可選）放球員打球照片<br/>欄位：<b>照片</b>（URL）";
+      box.appendChild(div);
+    }
+  }
+
+  function renderRadar(canvasId, scores, avgLine=true){
+    const ctx = document.getElementById(canvasId).getContext("2d");
+    const labels = RADAR_AXES.map(a=>a.label);
+    const yourData = RADAR_AXES.map(a=>scores[a.key] ?? 50);
+    const avgData  = labels.map(_=>50);
+
+    const config = {
+      type: "radar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "你（分數）",
+            data: yourData,
+            borderColor: "rgba(248,113,113,.95)",
+            backgroundColor: "rgba(248,113,113,.20)",
+            pointBackgroundColor: "rgba(248,113,113,.95)",
+            pointRadius: 3,
+            borderWidth: 2
+          },
+          ...(avgLine ? [{
+            label: "同級平均（固定 50）",
+            data: avgData,
+            borderColor: "rgba(148,163,184,.55)",
+            backgroundColor: "rgba(148,163,184,.06)",
+            pointRadius: 0,
+            borderWidth: 1
+          }] : [])
+        ]
+      },
+      options: {
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{
+            labels:{ color:"#cbd5e1", boxWidth:18, font:{ size: 12 } }
+          }
+        },
+        scales:{
+          r:{
+            min:0, max:100,
+            ticks:{ color:"#94a3b8", backdropColor:"transparent", stepSize:10, font:{ size: 10 } },
+            grid:{ color:"rgba(148,163,184,.16)" },
+            angleLines:{ color:"rgba(148,163,184,.14)" },
+            pointLabels:{ color:"#e2e8f0", font:{ size: 12 } }
+          }
+        }
+      }
+    };
+    return new Chart(ctx, config);
+  }
+
+  function evalTag(z){
+    if(z == null || isNaN(z)) return `<span class="tagpill">—</span>`;
+    if(z >= 1) return `<span class="tagpill good">優於同級</span>`;
+    if(z <= -0.5) return `<span class="tagpill bad">建議補強</span>`;
+    return `<span class="tagpill mid">接近同級</span>`;
+  }
+
+  function renderCoachBar(keyMetrics){
+    const ctx = document.getElementById("barChart").getContext("2d");
+    if(barChart) barChart.destroy();
+
+    barChart = new Chart(ctx,{
+      type:"bar",
+      data:{
+        labels: keyMetrics.map(x=>x.label),
+        datasets:[
+          { label:"學員", data:keyMetrics.map(x=>x.latest), backgroundColor:"rgba(34,197,94,.80)" },
+          { label:"同級平均", data:keyMetrics.map(x=>x.mean), backgroundColor:"rgba(56,189,248,.80)" }
+        ]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:"#cbd5e1", font:{ size: 11 } }, grid:{ display:false } },
+          y:{ ticks:{ color:"#94a3b8", font:{ size: 11 } }, grid:{ color:"rgba(148,163,184,.14)" } }
+        }
+      }
+    });
+  }
+
+  let currentView = "player";
+  function setView(view){
+    currentView = view;
+    el("tabPlayer").classList.toggle("active", view==="player");
+    el("tabCoach").classList.toggle("active", view==="coach");
+
+    el("playerView").classList.toggle("hide", view!=="player");
+    el("coachView").classList.toggle("hide", view!=="coach");
+
+    if(view==="player"){
+      el("viewTitle").textContent = "PLAYER VERSION";
+      el("viewSubtitle").textContent = "看得懂、看得重點：照片 / 基本資料 / 雷達圖 / 本週 3 件事 / 教練提醒";
+      const sub = document.getElementById("pdfSubLine");
+      if(sub) sub.textContent = "球員版（含家長）";
+    }else{
+      el("viewTitle").textContent = "COACH VERSION";
+      el("viewSubtitle").textContent = "完整數據：雷達圖 + 關鍵指標前 10 + 全表（含 Z）+ 教練處方（可編輯）";
+      const sub = document.getElementById("pdfSubLine");
+      if(sub) sub.textContent = "教練版（完整版）";
+    }
+  }
+
+  let currentPlanKey = null;
+
+  function planStorageKey(name, date){
+    const safeName = String(name||"").trim() || "unknown";
+    const safeDate = String(date||"").trim() || "unknownDate";
+    return `MPL_PLAN_${safeName}_${safeDate}`;
+  }
+
+  function normalize3Lines(text){
+    return String(text||"")
+      .split("\n")
+      .map(s=>s.trim())
+      .filter(Boolean)
+      .slice(0,3)
+      .map(s=>s.replace(/^\d+[.)、-]?\s*/,""));
+  }
+
+  function renderPlanToPlayerAndPrint(){
+    const simpleList = normalize3Lines(el("coachPlanSimple")?.value || "");
+    const fullList   = normalize3Lines(el("coachPlanFull")?.value || "");
+
+    el("p_todoList").innerHTML = simpleList.length
+      ? simpleList.map((t,i)=>`<li>${t}<span class="tag">${i===0?"主軸":i===1?"次優先":"維持"}</span></li>`).join("")
+      : `<li>尚未填寫（教練會在教練版填寫）<span class="tag">主軸</span></li>`;
+
+    el("printPlanSimple").innerHTML = simpleList.length
+      ? simpleList.map(t=>`<li>${t}</li>`).join("")
+      : `<li>（尚未填寫）</li>`;
+
+    el("printPlanFull").innerHTML = fullList.length
+      ? fullList.map(t=>`<li>${t}</li>`).join("")
+      : `<li>（尚未填寫）</li>`;
+  }
+
+  function loadPlanToEditors(){
+    if(!currentPlanKey) return;
+    const raw = localStorage.getItem(currentPlanKey);
+    let data = null;
+    try{ data = raw ? JSON.parse(raw) : null; }catch(e){ data=null; }
+
+    el("coachPlanSimple").value = data?.simple || "";
+    el("coachPlanFull").value = data?.full || "";
+    el("planStatus").textContent = data?.updatedAt ? `已儲存：${data.updatedAt}` : "未儲存";
+    renderPlanToPlayerAndPrint();
+  }
+
+  function savePlanFromEditors(){
+    if(!currentPlanKey) return;
+    const now = new Date();
+    const stamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+
+    const data = {
+      simple: el("coachPlanSimple").value.trim(),
+      full: el("coachPlanFull").value.trim(),
+      updatedAt: stamp
+    };
+    localStorage.setItem(currentPlanKey, JSON.stringify(data));
+    el("planStatus").textContent = `已儲存：${stamp}`;
+    renderPlanToPlayerAndPrint();
+  }
+
+  function resetPlan(){
+    if(!currentPlanKey) return;
+    localStorage.removeItem(currentPlanKey);
+    el("coachPlanSimple").value = "";
+    el("coachPlanFull").value = "";
+    el("planStatus").textContent = "未儲存";
+    renderPlanToPlayerAndPrint();
+  }
+
+  async function reloadAll(){
+    el("statusMsg").textContent = "從 Google Sheets 載入中…";
+    el("studentSelect").disabled = true;
+    el("studentSelect").innerHTML = `<option value="">資料載入中...</option>`;
+
+    try{
+      const [players, tests, anaer] = await Promise.all([
+        loadSheet(SHEETS.players),
+        loadSheet(SHEETS.tests),
+        loadSheet(SHEETS.anaerobic)
+      ]);
+
+      playersByName = new Map();
+      players.forEach(r=>{
+        const n = String(getVal(r, COL.name) || "").trim();
+        if(n) playersByName.set(n, r);
+      });
+
+      testsArray = tests || [];
+      testsByName = new Map();
+      testsArray.forEach(r=>{
+        const n = String(getVal(r, COL.name) || "").trim();
+        if(n) testsByName.set(n, r);
+      });
+
+      anaerByName = new Map();
+      (anaer || []).forEach(r=>{
+        const n = String(getVal(r, COL.anaerName) || "").trim();
+        if(n) anaerByName.set(n, r);
+      });
+
+      buildGroupStats();
+
+      const names = Array.from(testsByName.keys()).sort((a,b)=>a.localeCompare(b,"zh-Hant"));
+      el("studentSelect").innerHTML = `<option value="">— 請選擇學員 —</option>`;
+      names.forEach(n=>{
+        const op = document.createElement("option");
+        op.value = n; op.textContent = n;
+        el("studentSelect").appendChild(op);
+      });
+
+      el("studentSelect").disabled = false;
+      el("statusMsg").textContent = "載入完成：請選學員。";
+
+    }catch(err){
+      console.error(err);
+      el("statusMsg").textContent = "載入失敗：請確認試算表已公開、分頁名稱正確（學員主資料表 / 檢測成績 / 無氧代謝）。";
+    }
+  }
+
+  function loadStudent(){
+    const name = el("studentSelect").value;
+    if(!name) return;
+
+    const testRow = testsByName.get(name);
+    const playerRow = playersByName.get(name) || {};
+    const anaRow = getAnaRow(name);
+
+    if(!testRow){
+      el("statusMsg").textContent = `找不到「${name}」的檢測成績。`;
+      return;
+    }
+
+    const sex = (getVal(playerRow, COL.sex) || getVal(testRow, COL.sex) || "-").trim() || "-";
+    const level = (getVal(playerRow, COL.level) || getVal(testRow, COL.level) || "-").trim() || "-";
+    const date = (getVal(playerRow, COL.date) || getVal(testRow, COL.date) || "-").trim() || "-";
+
+    const height = (getVal(playerRow, COL.height) || "-").toString().trim() || "-";
+    const weight = (getVal(playerRow, COL.weight) || "-").toString().trim() || "-";
+    const photo  = (getVal(playerRow, COL.photo) || "").toString().trim();
+
+    const comp = calcCompositeZ(testRow, playerRow, anaRow);
+    const zByAxis = comp.zByAxis;
+
+    const scores = {};
+    Object.keys(zByAxis).forEach(k=>{
+      scores[k] = zToScore(zByAxis[k]);
+    });
+
+    const items = Object.keys(zByAxis).map(k=>({k, z:zByAxis[k]})).filter(x=>x.z!=null && !isNaN(x.z));
+    items.sort((a,b)=>b.z-a.z);
+    const bestAxis = items[0]?.k || "metabolic";
+    const worst = items.slice().sort((a,b)=>a.z-b.z).map(x=>x.k);
+    const weakPick = worst.slice(0,2);
+
+    const bestLabel = (RADAR_AXES.find(a=>a.key===bestAxis)?.label || bestAxis);
+    const weakLabels = weakPick.map(k=>RADAR_AXES.find(a=>a.key===k)?.label || k);
+
+    el("p_name").textContent = name;
+    el("p_sex").textContent = sex;
+    el("p_level").textContent = level;
+    el("p_height").textContent = (height && height!=="-") ? `${height}` : "—";
+    el("p_weight").textContent = (weight && weight!=="-") ? `${weight}` : "—";
+    el("p_groupKey").textContent = `${sex}・${level}`;
+    el("p_date").textContent = date || "—";
+    renderPlayerPhoto(photo);
+
+    el("p_bestText").textContent = `${bestLabel}（Z=${(zByAxis[bestAxis] ?? 0).toFixed(2)}）`;
+    el("p_weakText").textContent = weakLabels.length
+      ? weakLabels.map((lbl,i)=> `${lbl}（Z=${(zByAxis[weakPick[i]] ?? 0).toFixed(2)}）`).join("、")
+      : "目前沒有顯著弱項（接近同級平均）";
+
+    const meta = comp.metaExtra;
+    const anaerInfo = (()=>{
+      const parts = [];
+      if(meta.aerobic?.val != null) parts.push(`最大有氧：${meta.aerobic.val}`);
+      if(meta.anaerPct?.val != null) parts.push(`無氧代謝(%)：${meta.anaerPct.val}`);
+      if(meta.speedDecay?.val != null) parts.push(`速度衰退(%)：${meta.speedDecay.val}`);
+      if(meta.friScore?.val != null) parts.push(`FRI(分數)：${meta.friScore.val.toFixed(0)}`);
+      return parts.length ? parts.join("｜") : "（代謝欄位尚未填寫：雷達圖代謝先以 50 顯示）";
+    })();
+
+    el("p_coachNote").innerHTML = `
+      綜合來看，<b>${name}</b> 在同組（${sex}・${level}）中：<br/><br/>
+      ・最強方向：<b>${bestLabel}</b>（Z=${(zByAxis[bestAxis] ?? 0).toFixed(2)}）<br/>
+      ・優先補強：<b>${weakLabels[0] || "—"}</b>${weakLabels[1] ? `、<b>${weakLabels[1]}</b>` : ""}<br/><br/>
+      <b>代謝能力來源</b>：${anaerInfo}<br/><br/>
+          `;
+
+    if(radarPlayerChart) radarPlayerChart.destroy();
+    radarPlayerChart = renderRadar("playerRadar", scores, true);
+
+    el("c_name").textContent = name;
+    el("c_groupKey").textContent = `${sex}・${level}`;
+    el("c_sex").textContent = sex;
+    el("c_level").textContent = level;
+    el("c_date").textContent = date || "—";
+    el("c_hw").textContent = `${(height && height!=="-"?height:"—")} / ${(weight && weight!=="-"?weight:"—")}`;
+
+    if(radarCoachChart) radarCoachChart.destroy();
+    radarCoachChart = renderRadar("coachRadar", scores, true);
+
+    const gk = groupKeyOf(playerRow, testRow);
+    const stats = groupStats.get(gk) || {};
+    const rows = [];
+
+    Object.keys(testRow).forEach(k=>{
+      if(!k) return;
+      if (COL.name.includes(k) || COL.sex.includes(k) || COL.level.includes(k) || COL.date.includes(k)) return;
+
+      const isAna = /無氧代謝/.test(k);
+      const latest = isAna ? normalizePct(testRow[k]) : toNum(testRow[k]);
+      if(latest == null) return;
+
+      const s = stats[k] || {};
+      const mean = (s.mean==null?null:s.mean);
+      const sd = (s.sd==null?null:s.sd);
+
+      let z = null;
+      if(mean != null && sd != null && sd !== 0){
+        const lowerBetter = isLowerBetterMetric(k);
+        z = lowerBetter ? (mean - latest)/sd : (latest - mean)/sd;
+      }
+      rows.push({ label:k, latest, mean, sd, z });
+    });
+
+    if(anaRow){
+      const pushAna = (colName, latest)=>{
+        if(latest == null) return;
+        const s = stats[colName] || {};
+        const mean = (s.mean==null?null:s.mean);
+        const sd = (s.sd==null?null:s.sd);
+        let z = null;
+        if(mean != null && sd != null && sd !== 0){
+          const lowerBetter = isLowerBetterMetric(colName);
+          z = lowerBetter ? (mean - latest)/sd : (latest - mean)/sd;
+        }
+        rows.push({ label: colName, latest, mean, sd, z });
+      };
+
+      const sd = pickMetric(anaRow, COL.speedDecay, "num");
+      pushAna(sd.col, sd.val);
+
+      const fri = pickMetric(anaRow, COL.fri, "friScore");
+      pushAna(fri.col, fri.val);
+
+      const ap = pickMetric(anaRow, COL.anaerobicPctSheet, "pct");
+      pushAna(ap.col, ap.val);
+    }
+
+    const keyMetrics = rows.filter(r=>r.z!=null).sort((a,b)=>Math.abs(b.z)-Math.abs(a.z)).slice(0,10);
+    renderCoachBar(keyMetrics);
+
+    const keySet = new Set(keyMetrics.map(r=>r.label));
+    const sorted = rows.slice().sort((a,b)=>{
+      const ak = keySet.has(a.label), bk = keySet.has(b.label);
+      if(ak !== bk) return bk-ak;
+      if(a.z==null && b.z==null) return a.label.localeCompare(b.label,"zh-Hant");
+      if(a.z==null) return 1;
+      if(b.z==null) return -1;
+      return Math.abs(b.z)-Math.abs(a.z);
+    });
+
+    el("tableBody").innerHTML = sorted.map(r=>{
+      let extra = "";
+      if(keySet.has(r.label)) extra = ` <span class="tagpill key">關鍵指標</span>`;
+      return `
+        <tr>
+          <td>${r.label}</td>
+          <td>${r.latest ?? "—"}</td>
+          <td>${r.mean != null ? r.mean.toFixed(2) : "—"}</td>
+          <td>${r.sd != null ? r.sd.toFixed(2) : "—"}</td>
+          <td>${r.z != null ? r.z.toFixed(2) : "—"}</td>
+          <td>${evalTag(r.z)}${extra}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const strengths = rows.filter(r=>r.z!=null && r.z>=1).sort((a,b)=>b.z-a.z).slice(0,3);
+    const weaknesses = rows.filter(r=>r.z!=null && r.z<=-0.5).sort((a,b)=>a.z-b.z).slice(0,3);
+    const listText = arr => arr.length ? arr.map(x=>`${x.label}（Z=${x.z.toFixed(2)}）`).join("、") : "無（多數接近同級平均）";
+
+    el("c_coachNote").innerHTML = `
+      根據本次檢測，<b>${name}</b> 與同組（${sex}・${level}）相比：<br/><br/>
+      ・主要優勢：${listText(strengths)}<br/>
+      ・建議補強：${listText(weaknesses)}<br/><br/>
+      建議：補強項目排入每週固定節點（熱身後 10–15 分鐘），並保留優勢項目每週 1 次刺激，避免優勢流失。
+    `;
+
+    currentPlanKey = planStorageKey(name, date);
+    loadPlanToEditors();
+    el("statusMsg").textContent = "";
+  }
+
+  async function exportPDF(mode){
+    const { jsPDF } = window.jspdf;
+    const name = (el("studentSelect").value || "report").trim() || "report";
+
+    renderPlanToPlayerAndPrint();
+
+    const original = currentView;
+    if(mode==="player") setView("player");
+    if(mode==="coach") setView("coach");
+
+    document.body.classList.remove("exporting-player","exporting-coach");
+    document.body.classList.add(mode==="player" ? "exporting-player" : "exporting-coach");
+    await new Promise(r=>setTimeout(r, 180));
+
+    const surface = document.getElementById("mainSurface");
+    const canvas = await html2canvas(surface, {
+      scale: 3,
+      backgroundColor: mode==="player" ? "#ffffff" : "#020617",
+      useCORS: true
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p","mm","a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    if(mode === "player"){
+      const imgW = canvas.width;
+      const imgH = canvas.height;
+      const scale = Math.min(pageWidth / imgW, pageHeight / imgH);
+      const w = imgW * scale;
+      const h = imgH * scale;
+      const x = (pageWidth - w) / 2;
+      const y = (pageHeight - h) / 2;
+      pdf.addImage(imgData, "PNG", x, y, w, h, "", "FAST");
+      pdf.save(`MatchPointLab-Player-A4-${name}.pdf`);
+    }else{
+      const imgWidth = pageWidth;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+
+      let position = 0;
+      let heightLeft = imgHeight;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, "", "FAST");
+      heightLeft -= pageHeight;
+
+      while(heightLeft > 0){
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, "", "FAST");
+        heightLeft -= pageHeight;
+      }
+      pdf.save(`MatchPointLab-Coach-${name}.pdf`);
+    }
+
+    document.body.classList.remove("exporting-player","exporting-coach");
+    setView(original);
+  }
+
+  el("reloadBtn").addEventListener("click", reloadAll);
+  el("studentSelect").addEventListener("change", loadStudent);
+
+  el("tabPlayer").addEventListener("click", ()=>setView("player"));
+  el("tabCoach").addEventListener("click", ()=>setView("coach"));
+
+  el("pdfPlayerBtn").addEventListener("click", async ()=>{
+    if(!el("studentSelect").value){ alert("請先選擇學員"); return; }
+    await exportPDF("player");
+  });
+
+  el("pdfCoachBtn").addEventListener("click", async ()=>{
+    if(!el("studentSelect").value){ alert("請先選擇學員"); return; }
+    await exportPDF("coach");
+  });
+
+  el("savePlanBtn").addEventListener("click", ()=>{
+    if(!el("studentSelect").value){ alert("請先選擇學員"); return; }
+    savePlanFromEditors();
+  });
+
+  el("resetPlanBtn").addEventListener("click", ()=>{
+    if(!el("studentSelect").value){ alert("請先選擇學員"); return; }
+    if(confirm("確定要清空這位學員這次檢測的處方嗎？")) resetPlan();
+  });
+
+  (function(){
+    const toggle = document.getElementById("weightToggle");
+    const content = document.getElementById("weightContent");
+    const text = document.getElementById("weightToggleText");
+    if(!toggle || !content) return;
+    toggle.addEventListener("click", ()=>{
+      const isOpen = !content.classList.contains("hide");
+      content.classList.toggle("hide", isOpen);
+      text.textContent = isOpen ? "點擊展開" : "點擊收合";
+    });
+  })();
+
+  setView("player");
+  reloadAll();
+</script>
+</body>
+</html>
