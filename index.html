@@ -1841,6 +1841,11 @@
                   <input id="sprint10m" type="number" step="0.01" placeholder="例：1.98" />
                 </div>
               </label>
+              <label>20m衝刺 (20m Sprint) sec <span class="dep-badge" title="光閘本來就會記 20m 分段；這是國際常模對照最可靠的衝刺項目，務必抄下來">國際對照用</span>
+                <div class="voice-row">
+                  <input id="sprint20m" type="number" step="0.01" placeholder="例：3.15" />
+                </div>
+              </label>
               <label>蜘蛛跑 (Spider Run) sec
                 <div class="voice-row">
                   <input id="spiderRun" type="number" step="0.01" placeholder="例：12.5" />
@@ -1860,6 +1865,17 @@
                 </div>
               </label>
             </div>
+
+            <div class="grid-2">
+              <label>反應式 5-10-5 (Reactive) sec <span class="optional-badge">個別檢測</span>
+                <div class="voice-row">
+                  <input id="agility515Reactive" type="number" step="0.01" placeholder="例：5.40" />
+                </div>
+              </label>
+              <div style="align-self:center">
+                <p class="hint" style="margin:0">團體檢測不做。要測的話須與上方預定式<b>同一場、預定式在前</b>，先做 1 趟熟悉再計分 3 趟取最佳。</p>
+              </div>
+            </div>
           </section>
 
           <!-- 下肢爆發 -->
@@ -1871,6 +1887,11 @@
               <label>擺臂反向跳 (Abalakov Jump) cm
                 <div class="voice-row">
                   <input id="cmjHeight" type="number" step="0.1" placeholder="例：38" />
+                </div>
+              </label>
+              <label>不擺臂反向跳 (CMJ) cm <span class="dep-badge" title="國際常模用的是不擺臂 CMJ；擺臂會高 10-15%，兩者不可互相對照">國際對照用</span>
+                <div class="voice-row">
+                  <input id="cmjNoArm" type="number" step="0.1" placeholder="例：34" />
                 </div>
               </label>
               <label>跳遠 (Broad Jump) cm
@@ -2016,16 +2037,25 @@
             </div>
 
             <div class="grid-2">
-              <label>握力 (Grip Strength) kg <span class="optional-badge">選填</span>
+              <label>握力 慣用手 (Grip · Dominant) kg <span class="optional-badge">選填</span>
                 <div class="voice-row">
                   <input id="gripStrength" type="number" step="0.5" placeholder="例：32" />
                 </div>
               </label>
+              <label>握力 非慣用手 (Grip · Non-dom) kg <span class="dep-badge" title="加測非慣用手才算得出上肢左右差；國際常模也是雙手站姿測法">左右差用</span>
+                <div class="voice-row">
+                  <input id="gripStrengthNd" type="number" step="0.5" placeholder="例：29" />
+                </div>
+              </label>
+            </div>
+
+            <div class="grid-2">
               <label>10/5 Hop (10/5 Hop RSI) m/s <span class="optional-badge">選填</span>
                 <div class="voice-row">
                   <input id="hop10_5" type="number" step="0.01" placeholder="例：2.1" />
                 </div>
               </label>
+              <div></div>
             </div>
 
             <div class="grid-2">
@@ -2515,10 +2545,13 @@
         coach:          getVal('coachName'),
         academyName:    getVal('academyName'),
         sprint10m:      getNum('sprint10m'),
+        sprint20m:      getNum('sprint20m'),
         spiderRun:      getNum('spiderRun'),
         agility515L:    getNum('agility515L'),
         agility515R:    getNum('agility515R'),
+        agility515Reactive: getNum('agility515Reactive'),
         cmjHeight:      getNum('cmjHeight'),
+        cmjNoArm:       getNum('cmjNoArm'),
         broadJump:      getNum('broadJump'),
         lateralJumpL:   getNum('lateralJumpL'),
         lateralJumpR:   getNum('lateralJumpR'),
@@ -2536,6 +2569,7 @@
         sprint30m:      getNum('sprint30m'),
         serveSpeed:     getNum('serveSpeed'),
         gripStrength:   getNum('gripStrength'),
+        gripStrengthNd: getNum('gripStrengthNd'),
         hop10_5:        getNum('hop10_5'),
         isoMidThighForce: getNum('isoMidThighForce'),
         isoUpperLimb:   getNum('isoUpperLimb'),
@@ -2573,6 +2607,8 @@
         rotationalThrowL:'rotationalThrowL', rotationalThrowR:'rotationalThrowR',
         servingThrow:'servingThrow', IFT30_15:'IFT30_15', mbWeight:'mbWeight',
         sprint30m:'sprint30m', serveSpeed:'serveSpeed', gripStrength:'gripStrength', hop10_5:'hop10_5',
+        sprint20m:'sprint20m', cmjNoArm:'cmjNoArm', gripStrengthNd:'gripStrengthNd',
+        agility515Reactive:'agility515Reactive',
         isoMidThighForce:'isoMidThighForce', isoUpperLimb:'isoUpperLimb', squat:'squat', pullUp:'pullUp',
         mbOverheadThrow:'mbOverheadThrow', pushUp:'pushUp',
         IFTmaxHR:'IFTmaxHR', IFTHR1min:'IFTHR1min', IFTHR3min:'IFTHR3min', notes:'coachNote'
@@ -2596,6 +2632,22 @@
     // 正規化依賴：這些測項要除以「腿長」或「體重」才能跨球員比較。
     // 缺了除數，後台會靜默存成 0，該測項就不列入計分與常模 —— 等於白測。
     // 只有「測了卻沒填除數」才提醒，沒測的項目不會囉嗦。
+    // 成對測項：一旦開始測就必須兩個都填，只填一半算不出要的東西
+    const PAIRED_TESTS = [
+      { a: 'gripStrength', b: 'gripStrengthNd', label: '握力',
+        why: '缺一邊就算不出上肢左右差' },
+      { a: 'cmjHeight', b: 'cmjNoArm', label: '反向跳',
+        why: '缺不擺臂→不能對國際常模；缺擺臂→進不了隊內常模' },
+      { a: 'agility515L', b: 'agility515Reactive', label: '5-10-5',
+        why: '缺任一邊就算不出反應式與預定式的差值' },
+    ];
+    function checkPairedTests(rec) {
+      return PAIRED_TESTS.filter(t => {
+        const A = toNum(rec[t.a]) > 0, B = toNum(rec[t.b]) > 0;
+        return A !== B;   // 只填一邊
+      });
+    }
+
     const NORMALIZE_DEPS = [
       { fields: ['lateralJumpL', 'lateralJumpR'],               label: '側向跳',       needs: 'legLength', needsLabel: '腿長' },
       { fields: ['singleLegLandForceL', 'singleLegLandForceR'], label: '單腿落地力量', needs: 'weight',    needsLabel: '體重' },
@@ -2620,6 +2672,17 @@
         if (!ok) return;
       }
       if (!rec.birthday || !rec.testDate) { alert('請填入西元生日與檢測日期。'); return; }
+
+      // 成對測項只填一半 → 提醒（不強制，教練可能真的只測了一邊）
+      const halfPairs = checkPairedTests(rec);
+      if (halfPairs.length > 0) {
+        const lines = halfPairs.map(t => `・${t.label} —— ${t.why}`).join('\n');
+        const ok = confirm(
+          `⚠ 下列測項只填了一邊：\n\n${lines}\n\n` +
+          `點「取消」回去補填，點「確定」仍要送出。`
+        );
+        if (!ok) return;
+      }
 
       // 缺換算欄位 → 該測項會被存成 0、白測，送出前擋一下
       const missingDeps = checkNormalizeDeps(rec);
@@ -2767,7 +2830,9 @@
       // ── 分數怎麼讀 + 基準版本 ──
       const noteEl = $('sampleNote');
       if (s.baselineVersion) {
-        const nList = scored.map(m => (s.dims[m.id] || {}).n).filter(Boolean);
+        // 重印歷史報告時，後台 scoresFromSheet() 只回 baselineVersion、不回 dims，
+        // 直接讀 s.dims[...] 會炸掉整份報告 —— 沒有 dims 就略過「各項基準 N 人」這句。
+        const nList = scored.map(m => ((s.dims || {})[m.id] || {}).n).filter(Boolean);
         const nTxt  = nList.length ? `，各項基準 ${Math.min.apply(null,nList)}–${Math.max.apply(null,nList)} 人` : '';
         noteEl.textContent = `分數為隊內百分位：50 分＝同齡隊友的中位水準，不是及格線。對照 ${s.baselineVersion} 基準${nTxt}。`;
       } else {
@@ -3122,6 +3187,7 @@
        'rotationalThrowL','rotationalThrowR','servingThrow','IFT30_15','coachNote','dExtraText',
        // 一般檢測項目 + IFT 心跳（先前漏清，會殘留到下一位）
        'sprint30m','serveSpeed','gripStrength','hop10_5','isoMidThighForce','isoUpperLimb',
+       'sprint20m','cmjNoArm','gripStrengthNd','agility515Reactive',
        'squat','pullUp','mbOverheadThrow','pushUp','IFTmaxHR','IFTHR1min','IFTHR3min','IFTrecovery1','IFTrecovery3']
         .forEach(id => setVal(id, ''));
       setVal('squatUnit', 'kg'); setVal('pullUpUnit', '次'); setVal('mbWeight', '');
@@ -3402,10 +3468,13 @@
       legLength:       { min: 40,   max: 120,  label: '腿長' },
       armLength:       { min: 30,   max: 100,  label: '臂長' },
       sprint10m:       { min: 1.5,  max: 3.5,  label: '10m 衝刺' },
+      sprint20m:       { min: 2.5,  max: 6.0,  label: '20m 衝刺' },
       spiderRun:       { min: 8.0,  max: 22.0, label: '蜘蛛跑' },
       agility515L:     { min: 3.5,  max: 8.0,  label: '5-10-5 左側' },
+      agility515Reactive: { min: 3.5, max: 9.0, label: '反應式 5-10-5' },
       agility515R:     { min: 3.5,  max: 8.0,  label: '5-10-5 右側' },
       cmjHeight:       { min: 10,   max: 85,   label: '擺臂反向跳' },
+      cmjNoArm:        { min: 10,   max: 80,   label: '不擺臂反向跳' },
       broadJump:       { min: 80,   max: 350,  label: '跳遠' },
       lateralJumpL:    { min: 60,   max: 260,  label: '側向跳左腳' },
       lateralJumpR:    { min: 60,   max: 260,  label: '側向跳右腳' },
@@ -3421,7 +3490,8 @@
       IFT30_15:        { min: 10,   max: 28,   label: '30-15 IFT' },
       sprint30m:       { min: 3.0,  max: 6.5,  label: '30m 衝刺' },
       serveSpeed:      { min: 60,   max: 250,  label: '發球速度' },
-      gripStrength:    { min: 10,   max: 80,   label: '握力' },
+      gripStrength:    { min: 10,   max: 80,   label: '握力 慣用手' },
+      gripStrengthNd:  { min: 10,   max: 80,   label: '握力 非慣用手' },
       hop10_5:         { min: 0.5,  max: 4.0,  label: '10/5 Hop RSI' },
       isoMidThighForce: { min: 200, max: 5000, label: '等長中段拉(N)' },
       isoUpperLimb:    { min: 50,   max: 800,  label: '上肢等長測試' },
