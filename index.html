@@ -520,6 +520,8 @@
     .rp-find p { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--ink2); }
     .rp-find ul { margin: 0; padding-left: 15px; font-size: 12.5px; line-height: 1.6; color: var(--ink2); }
     .rp-find li + li { margin-top: 2px; }
+    .rp-find .rp-n { font-size: 11px; color: var(--faint); font-weight: 400; margin-left: 6px; }
+    .rp-find .rp-by { margin-top: 3px; font-size: 11px; color: var(--faint); text-align: right; }
 
     /* 每項對照條：中線＝同齡中位，往右＝領先 */
     .rp-mtx { border-top: 1px solid var(--line); }
@@ -588,6 +590,16 @@
 
     /* 訓練計畫 */
     .rp-plan { border: 1px solid var(--line); border-radius: 5px; overflow: hidden; margin-top: auto; }
+    /* 教練總結（2026-09-15）：報告最下方，由教練自行填寫。沒填時保留空白框供手寫。 */
+    .rp-summary { border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 5px;
+                  padding: 12px 16px 14px; margin-top: auto; }
+    .rp-summary h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+    .rp-summary h3 em { font-style: normal; font-family: var(--f-m); font-size: 9px; letter-spacing: .12em;
+                        text-transform: uppercase; color: var(--faint); margin-left: 6px; }
+    .rp-sum-text { font-size: 13px; line-height: 1.75; color: var(--ink2); min-height: 22px; }
+    .rp-sum-by { margin-top: 4px; font-size: 11px; color: var(--faint); text-align: right; }
+    .rp-summary.empty .rp-sum-text { min-height: 96px;
+      background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--line) 31px 32px); }
     .rp-ph { background: var(--brand); color: #fff; padding: 11px 17px; display: flex;
              justify-content: space-between; align-items: baseline; gap: 14px; }
     .rp-ph h3 { margin: 0; font-family: var(--f-d); font-size: 14px; font-weight: 600; }
@@ -1316,10 +1328,13 @@
 
       /* 固定設計寬度 1000px，再用 zoom 縮放鋪滿 A4 直式寬度（210mm≈794px）*/
       .report-card {
-        width: 1000px;
-        /* 新版視覺後內容 1903px。0.555 會算出 1063px，比可用高度 1062px 多 1px —— 
-           太貼邊，字型或資料一變就溢頁。用 0.55（1046px）留餘裕。 */
-        zoom: 0.55;
+        /* 2026-09-15 Adam：「文字離紙張邊緣太遠，很難看」→ 放大。
+           舊值 1000px × 0.55 只佔 A4 可印寬 794px 的 550px，左右各空約 120px。
+           新值 1130px × 0.70 ≈ 791px 填滿紙寬（外框留白 34px × 0.70 ≈ 6–7mm）。
+           高度靠下方「列印收緊」撐住：陳慶安（含左右差區塊，最高的一種）設計高約 1532px × 0.70 ≈ 1072px，
+           A4 可用約 1122px，留約 50px 給教練觀察／總結多寫幾行。 */
+        width: 1130px;
+        zoom: 0.70;
         margin: 0 auto;            /* 置中，左右留白平均 */
         box-shadow: none;
         border: 0;
@@ -1329,6 +1344,17 @@
       }
 
       .report-card::before { display: none; }
+
+      /* ── 列印收緊（2026-09-15，配合放大到 0.70）── 只改列印，螢幕版面不變 */
+      .rp-inner { padding: 26px 34px 18px; gap: 11px; }
+      .rp-sechead { margin-bottom: 6px; }
+      .rp-row2 { grid-template-columns: 300px 1fr; gap: 22px; }
+      .rp-find ul, .rp-find p { line-height: 1.5; }
+      .rp-m { padding: 4px 0; }
+      .rp-asym { grid-template-columns: repeat(3, 1fr); gap: 10px; }   /* 左右差 3 張卡橫排，省約 240px */
+      .rp-summary.empty .rp-sum-text { min-height: 64px; }
+      .rp-foot { margin-top: 4px; padding-top: 6px; }
+      #asymmetryCard, .rp-summary { break-inside: avoid; }
 
       /* 內距與間距收緊，讓內容鋪滿整頁高度 */
       .report-inner {
@@ -1341,12 +1367,12 @@
       .coach-page.on { display: block !important; }
       .coach-page:not(.on) { display: none !important; }
       /* 內容 1489px × 0.70 ≈ 1042px，A4 可用約 1062px。用 0.72 會變 1072px 溢成第 3 頁。 */
-      .report-card.coach-page { zoom: 0.70; }
+      .report-card.coach-page { width: 1000px; zoom: 0.70; }   /* 教練頁維持原設計寬度，不跟家長頁一起加寬 */
       .cp-inner { padding: 24px 30px; gap: 13px; }
       .cp-raw { grid-template-columns: repeat(5, 1fr); }
 
       /* 雷達圖在列印時縮小高度，省出垂直空間 */
-      .report-card.fill { zoom: 0.72; }   /* 無不對稱性區塊時放大填滿整頁（0.77→0.72：對照條加高後會溢出）*/
+      .report-card.fill { zoom: 0.70; }   /* 2026-09-15：家長頁已放大到填滿紙寬，無左右差區塊時不再另外放大（再大會超出紙寬）*/
       .radar-box { min-height: 0; aspect-ratio: 1 / 0.6; }
       .analysis-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
       /* D 區隱藏時，C 區補滿整列，避免右下角留一個空洞 */
@@ -1799,12 +1825,19 @@
             </div>
 
             <div class="grid-2">
+              <label>坐高 Sitting Height cm <span class="dep-badge" title="PHV（生長高峰）推估要用坐高；沒填就算不出成熟度">PHV 推估需要</span>
+                <input id="sittingHeight" type="number" step="0.1" placeholder="例：84" />
+              </label>
               <label>腿長 Leg Length cm <span class="dep-badge" title="側向跳要除以腿長才能跨球員比較；沒填的話側向跳會白測">側向跳需要</span>
                 <input id="legLength" type="number" step="0.1" placeholder="例：85" />
               </label>
+            </div>
+
+            <div class="grid-2">
               <label>臂長 Arm Length cm
                 <input id="armLength" type="number" step="0.1" placeholder="例：72" />
               </label>
+              <span></span>
             </div>
 
             <div class="grid-2">
@@ -2180,8 +2213,11 @@
           <!-- 教練備註 -->
           <section class="form-section">
             <div class="form-section-title">教練補充觀察</div>
-            <label>訓練建議
-              <textarea id="coachNote" placeholder="輸入針對這位球員的客製化訓練建議..."></textarea>
+            <label>教練觀察（報告右側「教練觀察」）
+              <textarea id="coachNote" placeholder="教練看完這次數據後的觀察…"></textarea>
+            </label>
+            <label>總結（報告最下方「教練總結」）
+              <textarea id="coachSummary" placeholder="教練對這次檢測的總結…（沒填的話報告會印成空白框，可手寫）"></textarea>
             </label>
           </section>
 
@@ -2189,7 +2225,7 @@
           <section class="form-section">
             <div class="button-grid">
               <button class="btn btn-light" id="saveDraftBtn" type="button" style="border:1.5px solid #f5a623;color:#92590c">💾 儲存草稿（稍後繼續）</button>
-              <button class="btn btn-light" id="saveNextBtn" type="button" style="border:1.5px solid #0f766e;color:#0f766e">➕ 儲存並換下一位</button>
+              <button class="btn btn-light" id="saveNextBtn" type="button" style="border:1.5px solid #0f766e;color:#0f766e">➕ 暫存並換下一位</button>
               <button class="btn btn-light" id="previewBtn" type="button" style="border-style:dashed">👁 預覽報告（不儲存）</button>
               <button class="btn btn-teal" id="submitBtn" type="button">送出並產生報告</button>
               <button class="btn btn-light" id="printBtn" type="button">列印 / PDF</button>
@@ -2223,7 +2259,6 @@
                 <span class="rp-doc">Performance Report</span>
                 <div>檢測日期 <strong id="reportDate">—</strong></div>
                 <div>教練 <strong id="reportCoach">—</strong> · <span id="reportAcademy">奕晉網球學院</span></div>
-                <div class="rp-pg" id="rpPageNo">第 1 頁 · 給家長</div>
               </div>
             </header>
 
@@ -2281,9 +2316,9 @@
               <div class="rp-sechead">
                 <div><p class="rp-eyebrow">Asymmetry</p><h3 id="rpAsymTitle">左右腳差異</h3></div>
                 <div class="rp-lgd">
-                  <span><i class="rp-dot3 g"></i>&lt;10% 良好</span>
-                  <span><i class="rp-dot3 y"></i>10–15% 觀察</span>
-                  <span><i class="rp-dot3 r"></i>&gt;15% 優先處理</span>
+                  <span><i class="rp-dot3 g"></i>&lt;10%</span>
+                  <span><i class="rp-dot3 y"></i>10–15%</span>
+                  <span><i class="rp-dot3 r"></i>&gt;15%</span>
                 </div>
               </div>
               <div class="rp-asym" id="rpAsym"></div>
@@ -2294,10 +2329,15 @@
               <div class="rp-ph"><h3>未來 6 週訓練方向</h3><span id="rpPlanRange"></span></div>
               <ol id="focusList"></ol>
               <div class="rp-pf">
-                <span id="rpRetest"></span>
                 <span>負責教練：<b id="rpPlanCoach">—</b></span>
               </div>
             </div>
+
+            <section class="rp-summary" id="rpSummary">
+              <h3>教練總結 <em>Summary</em></h3>
+              <div class="rp-sum-text" id="rpSummaryText"></div>
+              <div class="rp-sum-by" id="rpSummaryBy"></div>
+            </section>
 
             <div class="rp-foot">
               <span id="reportSignAcademy">奕晉網球學院 · 體能與康復部門</span>
@@ -2410,6 +2450,97 @@
     // ===== 設定：部署 Apps Script 後，把 URL 貼在這裡 =====
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzui0D7wBTHs02oqO87bbabZdvdvEW0FuHtmxMWfQAot30pm5C62AkjBvQSxltp8ldE/exec';
 
+    // ===== 連線：自動重試＋失敗紀錄（2026-09-14）=====
+    // 實測：Apps Script「執行作業」顯示每次都 2–8 秒跑完，瀏覽器卻偶爾等 30–130 秒後收到 404。
+    // 卡在 Google 轉址到 script.googleusercontent.com 取結果那段，不是我們的程式慢，改後台救不了。
+    // 對策：「只讀」的動作逾時就放棄重來；會寫資料的動作不自動重送（第一次很可能已寫入，重送會重複）。
+    const NET_READ  = { attempts: 3, timeoutMs: 25000, gapMs: [1500, 3000] };
+    const NET_WRITE = { attempts: 1, timeoutMs: 90000, gapMs: [] };
+    const NET_FAIL_MSG = '伺服器暫時沒有回應（已自動重試 3 次）。請稍候 1 分鐘再試；若一直失敗請告訴 Adam。';
+    const SUBMIT_UNSURE_MSG = '送出後沒有收到伺服器回應，無法確認是否已經存入。\n\n' +
+      '請先到上方「📂 查詢歷史報告」按「載入 / 重新整理」，看清單裡有沒有這位球員這次的紀錄：\n' +
+      '・有 → 已經存好了，直接按「叫出報告」，不要再按送出（會重複計入常模）\n' +
+      '・沒有 → 再按一次送出';
+    const DRAFT_UNSURE_MSG = '沒有收到伺服器回應，無法確認草稿是否已經存入。\n請先看上方草稿清單有沒有這位球員，再決定要不要重存。';
+    const DELETE_UNSURE_MSG = '沒有收到伺服器回應，無法確認是否已經刪除。清單會重新整理，請確認一下。';
+
+    class NetError extends Error {
+      constructor(kind, status) { super(kind); this.kind = kind; this.status = status || 0; }
+    }
+
+    async function fetchJsonOnce_(url, init, timeoutMs) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      try {
+        const resp = await fetch(url, { ...(init || {}), signal: ctrl.signal });
+        const txt = await resp.text();
+        if (!resp.ok) throw new NetError('http', resp.status);
+        try { return JSON.parse(txt); } catch (e) { throw new NetError('badjson', resp.status); }
+      } catch (err) {
+        if (err instanceof NetError) throw err;
+        throw new NetError(ctrl.signal.aborted ? 'timeout' : 'network');
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    /**
+     * 呼叫後台。params＝GET 參數；要走 POST 就傳 { post: body }。
+     * 只重試「連線層」的失敗（逾時／404／斷線）；後台正常回來的 { error } 不重試。
+     * onRetry(第幾次, 總次數) 給按鈕顯示「重試中」。全部失敗丟 NetError。
+     */
+    async function callApi(op, params, policy, onRetry) {
+      const p = policy || NET_READ;
+      const isPost = !!(params && params.post);
+      const url  = isPost ? SCRIPT_URL : `${SCRIPT_URL}?${new URLSearchParams(params)}`;
+      const init = isPost
+        ? { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(params.post) }
+        : undefined;
+      const t0 = Date.now();
+      const kinds = [];
+      let lastErr = null;
+      for (let i = 1; i <= p.attempts; i++) {
+        if (i > 1) {
+          if (onRetry) onRetry(i, p.attempts);
+          await new Promise(r => setTimeout(r, p.gapMs[i - 2] || 3000));
+        }
+        try {
+          const json = await fetchJsonOnce_(url, init, p.timeoutMs);
+          if (i > 1) queueNetLog_({ op, attempts: i, outcome: 'retry-ok', ms: Date.now() - t0, detail: kinds.join(',') });
+          return json;
+        } catch (err) {
+          lastErr = err;
+          kinds.push(err.kind + (err.status ? ':' + err.status : ''));
+        }
+      }
+      queueNetLog_({ op, attempts: p.attempts, outcome: 'failed', ms: Date.now() - t0, detail: kinds.join(',') });
+      throw lastErr;
+    }
+
+    // 連線失敗紀錄 → 後台 ClientLog 分頁。只記動作名／次數／結果／耗時／錯誤類型／時區，不含球員資料與密碼。
+    // 登入前沒有 token 寫不進去 → 先放 localStorage，拿到憑證後補送。
+    const NETLOG_KEY = 'yj_netlog_q';
+    function queueNetLog_(ev) {
+      let q = [];
+      try { q = JSON.parse(localStorage.getItem(NETLOG_KEY) || '[]'); } catch (e) {}
+      q.push({ ...ev, at: new Date().toISOString() });
+      try { localStorage.setItem(NETLOG_KEY, JSON.stringify(q.slice(-20))); } catch (e) {}
+      flushNetLog_();
+    }
+    function flushNetLog_() {
+      if (!sessionToken) return;
+      let q = [];
+      try { q = JSON.parse(localStorage.getItem(NETLOG_KEY) || '[]'); } catch (e) {}
+      if (!q.length) return;
+      try { localStorage.removeItem(NETLOG_KEY); } catch (e) {}
+      let tz = '';
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+      q.forEach(ev => {
+        const params = new URLSearchParams({ action: 'logClientEvent', token: sessionToken, tz, ...ev });
+        fetch(`${SCRIPT_URL}?${params}`).catch(() => {});   // 寫紀錄本身失敗就算了：不重試、不再記
+      });
+    }
+
     const metricConfig = [
       {
         id: "speedAgility", label: "速度與變向", short: "速度", active: true,
@@ -2505,6 +2636,10 @@
     let currentScores   = null;
     let currentDimStates = null;   // 六維各自的計分狀態（scored / nonorm / untested）
     let currentDraftId  = null;  // 目前編輯中的草稿 ID
+    /* 這份表單已正式送出的檢測編號。非 null 代表再按一次送出就會產生重複紀錄。
+       2026-09-09 陳慶安即因此被寫成 T0051／T0052 兩筆，且兩筆都標「納入常模」，
+       同一人在 U14以上_女 池裡被算兩次，第二筆的百分位還被自己拉歪。 */
+    let submittedTestId = null;
 
     const $ = id => document.getElementById(id);
 
@@ -2539,6 +2674,7 @@
         height:         getNum('height'),
         weight:         getNum('weight'),
         legLength:      getNum('legLength'),
+        sittingHeight:  getNum('sittingHeight'),
         armLength:      getNum('armLength'),
         dominantHand:   getVal('dominantHand'),
         testDate:       getVal('testDate'),
@@ -2585,6 +2721,7 @@
         IFTrecovery1:   parseFloat($('IFTrecovery1')?.value) || null,
         IFTrecovery3:   parseFloat($('IFTrecovery3')?.value) || null,
         notes:          getVal('coachNote'),
+        summary:        getVal('coachSummary'),
         dExtraSelected: Array.from(document.querySelectorAll('#dExtraChecklist input:checked')).map(c=>c.value),
         dExtraText:     getVal('dExtraText'),
         keyMetrics:     [0,1,2,3,4,5].map(i => $('keyMetric'+i) ? $('keyMetric'+i).value : null).filter(Boolean),
@@ -2597,7 +2734,7 @@
     // ── 把草稿資料填回表單 ──
     function fillFormData(rec) {
       const setMap = {
-        playerName:'playerName', birthday:'birthday', height:'height', weight:'weight',
+        playerName:'playerName', birthday:'birthday', height:'height', weight:'weight', sittingHeight:'sittingHeight',
         legLength:'legLength', armLength:'armLength', coach:'coachName', academyName:'academyName',
         sprint10m:'sprint10m', spiderRun:'spiderRun', agility515L:'agility515L', agility515R:'agility515R',
         cmjHeight:'cmjHeight', broadJump:'broadJump', lateralJumpL:'lateralJumpL', lateralJumpR:'lateralJumpR',
@@ -2611,7 +2748,7 @@
         agility515Reactive:'agility515Reactive',
         isoMidThighForce:'isoMidThighForce', isoUpperLimb:'isoUpperLimb', squat:'squat', pullUp:'pullUp',
         mbOverheadThrow:'mbOverheadThrow', pushUp:'pushUp',
-        IFTmaxHR:'IFTmaxHR', IFTHR1min:'IFTHR1min', IFTHR3min:'IFTHR3min', notes:'coachNote'
+        IFTmaxHR:'IFTmaxHR', IFTHR1min:'IFTHR1min', IFTHR3min:'IFTHR3min', notes:'coachNote', summary:'coachSummary'
       };
       Object.entries(setMap).forEach(([k, id]) => {
         if (rec[k] !== undefined && rec[k] !== null && rec[k] !== '') setVal(id, rec[k]);
@@ -2660,6 +2797,15 @@
     }
 
     async function submitRecord() {
+      // 已送出過就先擋一次 —— 重複送出會在 02 與常模池各多一筆，該球員的百分位會被自己拉歪
+      if (submittedTestId) {
+        const again = confirm(
+          `⚠ 這筆已經送出過了，檢測編號 ${submittedTestId}。\n\n` +
+          `再送一次會在後台產生第二筆一模一樣的紀錄，該球員會被重複計入常模、百分位失真。\n\n` +
+          `要輸入下一位請按下方的「重設」鈕。確定仍要再送一次嗎？`
+        );
+        if (!again) return;
+      }
       const rec = collectFormData();
       if (currentDraftId) rec.draftId = currentDraftId;  // 送出後自動刪草稿
       if (!rec.playerName) { alert('請輸入球員姓名再送出。'); return; }
@@ -2700,16 +2846,12 @@
       $('submitBtn').disabled = true;
       try {
         // 用 POST（text/plain 屬簡單請求，免 CORS 預檢）把照片一起送上去，避開 GET 網址長度限制
-        const resp   = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'saveRecord', token: sessionToken,
-            data: JSON.stringify(rec), photo: photoDataUrl || '',
-            mobilityPhotos: mobilityPhotoData || []
-          })
-        });
-        const result = await resp.json();
+        // 送出會寫資料 → NET_WRITE 不自動重送（第一次很可能已寫入，重送會變重複紀錄）
+        const result = await callApi('saveRecord', { post: {
+          action: 'saveRecord', token: sessionToken,
+          data: JSON.stringify(rec), photo: photoDataUrl || '',
+          mobilityPhotos: mobilityPhotoData || []
+        } }, NET_WRITE);
         if (handleAuthError(result)) return;
         if (result.error) { alert('錯誤：' + result.error); return; }
         currentScores = result.scores;
@@ -2721,15 +2863,16 @@
           ? '\n\n⚠ 同組樣本不足 10 筆，分數僅供參考，資料累積後會更精準。' : '';
         const photoMsg = result.mobilityFolder
           ? `\n\n📷 已上傳 ${mobilityPhotoData.length} 張活動度照片到雲端資料夾。` : '';
-        alert(`已儲存！檢測編號：${result.testId}${photoMsg}${warnMsg}`);
+        markSubmitted(result.testId);
+        alert(`已儲存！檢測編號：${result.testId}${photoMsg}${warnMsg}\n\n這筆已寫進後台，送出鈕已鎖定。要輸入下一位請按下方的「重設」鈕。`);
         mobilityPhotoData = [];
         if ($('mobilityPhotoInput')) $('mobilityPhotoInput').value = '';
         if ($('mobilityPhotoName')) $('mobilityPhotoName').textContent = '未選擇檔案';
       } catch (err) {
-        alert('網路錯誤，請稍後再試。');
+        alert(SUBMIT_UNSURE_MSG);
       } finally {
         $('loadingMsg').style.display = 'none';
-        $('submitBtn').disabled = false;
+        if (!submittedTestId) $('submitBtn').disabled = false;  // 已送出就維持鎖定
       }
     }
 
@@ -2793,38 +2936,41 @@
 
       const covEl = $('rpCoverage');
       covEl.textContent = coverage
-        ? (coverage < metricConfig.length ? `僅測 ${coverage}/${metricConfig.length} 項能力` : '六項能力完整')
+        ? (coverage < metricConfig.length ? `計分 ${coverage}/${metricConfig.length} 項能力` : '六項能力完整')
         : '尚無可計分能力';
       covEl.classList.toggle('full', coverage === metricConfig.length);
 
+      // 2026-09-15 Adam：報告只寫量得到的事實，判斷由教練寫 → 評級標籤（良好／觀察／待加強）不再顯示
       const tier = $('rpTier');
       tier.classList.remove('good','risk');
-      if (!hasTotal)            { tier.textContent = `待常模 · 同齡樣本 ${sampleN} 筆`; }
-      else if (s.total >= 75)   { tier.textContent = '良好 · 同齡前段'; tier.classList.add('good'); }
-      else if (s.total >= 50)   { tier.textContent = '觀察 · 達同齡中位水準'; }
-      else                      { tier.textContent = '待加強 · 低於同齡中位'; tier.classList.add('risk'); }
+      tier.textContent = '';
+      tier.style.display = 'none';
 
       // ── 一句話結論：用真實數據組出來，不寫死 ──
       const mList = (result && result.metrics) || [];
       const rankable = mList.filter(m => m.pct !== null && m.pct !== undefined);
       const topM  = rankable.length ? rankable.reduce((a,b) => a.pct > b.pct ? a : b) : null;
       const lowM  = rankable.length ? rankable.reduce((a,b) => a.pct < b.pct ? a : b) : null;
-      const bestDim = scored.length >= 2 ? (s.bestAbility || '') : '';
-      const weakDim = scored.length >= 2 ? (s.weakestAbility || '') : '';
+      // 2026-09-15 Adam：只寫事實 → 列出最高／最低分的維度與數值，不寫「相對強項／最該補」這類判斷
       let headline = '';
-      if (hasTotal && bestDim && weakDim && bestDim !== weakDim) {
-        headline = `<strong>${escapeHtml(bestDim)}是目前的相對強項，${escapeHtml(weakDim)}是接下來最該補的一塊。</strong>`;
+      const withV = scored.map(m => ({ label: m.label, v: s[m.id] })).filter(x => x.v != null);
+      if (hasTotal && withV.length >= 2) {
+        const hi = Math.max.apply(null, withV.map(x => x.v));
+        const lo = Math.min.apply(null, withV.map(x => x.v));
+        const names = v => withV.filter(x => x.v === v).map(x => `${escapeHtml(x.label)} ${v}`).join('、');
+        headline = hi === lo
+          ? `<strong>本次計分 ${coverage} 項能力，分數皆為 ${hi}。</strong>`
+          : `<strong>本次計分 ${coverage} 項能力：最高 ${names(hi)}；最低 ${names(lo)}。</strong>`;
       } else if (hasTotal) {
-        headline = `<strong>本次共有 ${coverage} 項能力達到計分門檻。</strong>`;
+        headline = `<strong>本次計分 ${coverage} 項能力。</strong>`;
       } else {
-        headline = `<strong>同齡樣本尚未累積足夠，本次僅呈現原始數據。</strong>`;
+        headline = `<strong>本次沒有可計分的能力項目，僅呈現原始數據。</strong>`;
       }
-      if (topM) headline += ` ${escapeHtml(topM.label)} ${topM.value}${escapeHtml(topM.unit||'')}`
-                          + `（${topM.rankNote ? escapeHtml(topM.rankNote) : '第 ' + topM.pct + ' 百分位'}）是本次最亮眼的一項`;
-      if (lowM && topM && lowM.id !== topM.id)
-        headline += `；${escapeHtml(lowM.label)} ${lowM.value}${escapeHtml(lowM.unit||'')}`
-                  + `（${lowM.rankNote ? escapeHtml(lowM.rankNote) : '第 ' + lowM.pct + ' 百分位'}）則落在後段`;
-      if (topM) headline += '。';
+      if (topM && lowM && topM.id !== lowM.id) {
+        const rk = m => m.rankNote ? escapeHtml(m.rankNote) : '第 ' + m.pct + ' 百分位';
+        headline += ` 單項百分位最高：${escapeHtml(topM.label)} ${topM.value}${escapeHtml(topM.unit||'')}（${rk(topM)}）；`
+                  + `最低：${escapeHtml(lowM.label)} ${lowM.value}${escapeHtml(lowM.unit||'')}（${rk(lowM)}）。`;
+      }
       $('rpHeadline').innerHTML = headline;
 
       // ── 分數怎麼讀 + 基準版本 ──
@@ -2836,18 +2982,43 @@
         const nTxt  = nList.length ? `，各項基準 ${Math.min.apply(null,nList)}–${Math.max.apply(null,nList)} 人` : '';
         noteEl.textContent = `分數為隊內百分位：50 分＝同齡隊友的中位水準，不是及格線。對照 ${s.baselineVersion} 基準${nTxt}。`;
       } else {
-        noteEl.textContent = !normReady
-          ? `同組樣本 ${sampleN} 筆，尚無法計算百分位 —— 本次僅呈現原始數據，不做同齡比較。`
-          : `分數為隊內百分位：50 分＝同齡隊友的中位水準，不是及格線。同組樣本 ${sampleN} 筆。`;
+        // 即時池：寫出各項實際的比較筆數。舊寫法「同組樣本 N 筆」是整組人數，會讓人以為每一項都有 N 人背書。
+        // 含不含本人依後台實際算法：現行 31 版含本人；10 人門檻版（v32）會回 poolExcludesSelf:true。
+        const nList = scored.map(m => ((s.dims || {})[m.id] || {}).n).filter(Boolean);
+        const self  = s.poolExcludesSelf ? '不含本人' : '含本人';
+        const nTxt  = nList.length ? `各項比較資料 ${Math.min.apply(null,nList)}–${Math.max.apply(null,nList)} 筆（${self}）。` : '';
+        noteEl.textContent = !scored.length
+          ? '本次沒有可計分的能力項目 —— 僅呈現原始數據，不做同齡比較。'
+          : `分數為同組百分位：50 分＝同組中位，不是及格線。${nTxt}`;
       }
 
-      // ── 強項 / 待加強 / 場上會怎麼樣 ──
-      const strengths = [], weaknesses = [], courts = [], focuses = [];
-      scored.forEach(m => {
-        const v = s[m.id];
-        if (v == null) return;                      // v23 起算不出來的維度回 null，不臆測
-        if (v >= 55) strengths.push(m.strength);
-        else { weaknesses.push(m.weakness); courts.push(m.court); focuses.push(m.focus); }
+      // ── 各能力分數與實測值：只列量得到的事實 ──
+      // 2026-09-15 Adam：「報告裡寫出來的每一個字都是教練對球員體能的專業判斷，不能馬虎」。
+      // 原本依分數 ≥55／<55 套固定句子（強項／待加強／場上會怎麼樣／訓練方向）：句子沒有引用數據、
+      // 還推論到沒測過的場上表現 → 系統只列分數＋比較筆數＋實測值；判斷由教練寫。
+      const DIM_ITEMS = {
+        speedAgility:   ['sprint10m', 'avg515', 'spiderRun'],
+        lowerPower:     ['cmjHeight', 'broadJump', 'lateralAvg'],
+        singleLegDecel: ['landAvg', 'nkgAvg', 'djAvg'],
+        rotational:     ['rThrowAvg'],
+        throwing:       ['servingThrow'],
+        cardio:         ['IFT30_15']
+      };
+      const poolSelf = s.poolExcludesSelf ? '不含本人' : '含本人';
+      const itemText = id => {
+        const it = dExtraItems.find(x => x.id === id);
+        if (!it) return '';
+        const v = it.get(rec);
+        if (v === null || v === undefined || v === '' || !(toNum(v) > 0)) return '';
+        return `${escapeHtml(it.label.replace(/\s*\(.*\)\s*$/, ''))} ${escapeHtml(String(v))}${escapeHtml((it.unit || '').trim() ? ' ' + it.unit.trim() : '')}`;
+      };
+      const factLines = metricConfig.filter(m => m.active && currentDimStates[m.id] !== 'untested').map(m => {
+        const d = (s.dims || {})[m.id] || {};
+        const vals = (DIM_ITEMS[m.id] || []).map(itemText).filter(Boolean).join(' · ');
+        const head = (currentDimStates[m.id] === 'scored' && s[m.id] != null)
+          ? `<b>${escapeHtml(m.label)} ${s[m.id]}</b>` + (d.n ? `<span class="rp-n">同組比較 ${d.n} 筆（${poolSelf}）</span>` : '')
+          : `<b>${escapeHtml(m.label)} —</b><span class="rp-n">同組資料不足，不計分</span>`;
+        return `<li>${head}${vals ? '<br>' + vals : ''}</li>`;
       });
 
       // D｜其他測試的補充：教練勾選的項目（帶數值）+ 自由文字
@@ -2873,17 +3044,12 @@
       });
 
       const finds = [];
-      if (strengths.length)
-        finds.push(['p','強項','Strength', `<p>${strengths.slice(0,2).map(escapeHtml).join('')}</p>`]);
-      if (weaknesses.length)
-        finds.push(['w','待加強','Focus',
-          '<ul>' + weaknesses.slice(0,3).map(x => `<li>${escapeHtml(x)}</li>`).join('') + '</ul>']);
-      else if (!scored.length)
-        finds.push(['w','目前狀態','Status',
-          `<p>同齡樣本目前 ${sampleN} 筆，本次不做同齡比較。已完成 ${testedCnt} 個面向的檢測，`
-          + `數據皆已存檔，累積至 ${NORM_MIN_SAMPLE} 筆以上即自動產生分析。</p>`]);
-      if (courts.length)
-        finds.push(['c','場上會怎麼樣','On-Court', `<p>${courts.slice(0,2).map(escapeHtml).join('')}</p>`]);
+      if (factLines.length)
+        finds.push(['c','各能力分數與實測值','Measured', '<ul>' + factLines.join('') + '</ul>']);
+      // 教練寫的字（表單「教練補充觀察」）：原樣呈現、標明撰寫人，不和系統數據混在一起
+      if (rec.notes && String(rec.notes).trim())
+        finds.push(['p','教練觀察','Coach',
+          `<p>${escapeHtml(String(rec.notes).trim())}</p><p class="rp-by">— ${escapeHtml(rec.coach || '教練')}</p>`]);
       if (otherTests.length || mobLines.length)
         finds.push(['c','其他測試','Extra',
           '<ul>' + otherTests.map(x => `<li>${escapeHtml(x)}</li>`).join('')
@@ -2941,18 +3107,19 @@
         ? `「vs 上次」對照 ${prev.testDate}（${prev.testId}）。`
         : '「vs 上次」本次無資料 —— 這是首次以此基準計分，第二次檢測後此欄會顯示進退幅度。';
 
-      // ── 訓練計畫 ──
-      const plan = focuses.slice(0, 3);
-      if (!plan.length) plan.push('本階段以基礎穩定與移動品質為主；左右差異若已標示紅燈，請優先處理。');
-      const coachNote = rec.notes || '';
-      $('focusList').innerHTML = plan.map((t, i) =>
-        `<li><div><b>${escapeHtml(t)}</b>` + (i === 0 && coachNote
-          ? `<p>${escapeHtml(coachNote)}</p>` : '') + `</div></li>`).join('');
-      const d0 = rec.testDate ? new Date(rec.testDate) : new Date();
-      const d1 = new Date(d0.getTime() + 42 * 864e5);
-      const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      $('rpPlanRange').textContent = `${fmt(d0)} → ${fmt(d1)}`;
-      $('rpRetest').innerHTML = `下次複測：<b>${fmt(d1)}</b>`;
+      // ── 訓練方向：屬於教練判斷，系統不再套固定句子（2026-09-15）──
+      // 教練填寫的位置還沒做 → 在那之前整區不顯示，避免印出空白或系統代寫的內容。
+      $('focusList').innerHTML = '';
+      $('rpPlanRange').textContent = '';
+      const planEl = document.querySelector('#reportCard .rp-plan');
+      if (planEl) planEl.style.display = 'none';
+
+      // ── 教練總結（2026-09-15 Adam：報告最下方放總結，由教練自行填寫）──
+      // 有填 → 原樣呈現＋撰寫教練；沒填 → 印成空白橫線框，教練可列印後手寫。系統不代寫。
+      const sumText = String(rec.summary || '').trim();
+      $('rpSummaryText').innerHTML = sumText ? escapeHtml(sumText).replace(/\n/g, '<br>') : '';
+      $('rpSummaryBy').textContent = sumText ? `— ${rec.coach || '教練'}` : '';
+      $('rpSummary').classList.toggle('empty', !sumText);
 
       drawRadarChart(s);
       displayAsymmetry(rec);
@@ -3100,7 +3267,7 @@
       const svg = $('radarSvg');
       if (!svg) return;
       const CX = 150, CY = 143, R = 104;
-      const AX = [
+      const AX_ALL = [
         { id:'speedAgility',   name:'速度與變向' },
         { id:'lowerPower',     name:'下肢爆發'   },
         { id:'rotational',     name:'轉體爆發'   },
@@ -3108,14 +3275,20 @@
         { id:'singleLegDecel', name:'單腿減速'   },
         { id:'cardio',         name:'心肺適能'   }
       ];
-      const ang = i => (Math.PI * 2 * i / 6) - Math.PI / 2;      // 從正上方開始
-      const pt  = (i, r) => [CX + Math.cos(ang(i)) * r, CY + Math.sin(ang(i)) * r];
-      const poly = r => AX.map((_, i) => pt(i, r).map(n => n.toFixed(1)).join(',')).join(' ');
 
       const dims = scores.dims || {};
       const state = id => (dims[id] && dims[id].state) || (currentDimStates || {})[id] || 'untested';
       const val   = id => (dims[id] && dims[id].score != null) ? dims[id].score
                         : (scores[id] != null ? scores[id] : null);
+
+      // 2026-09-03 部門決議：團體檢測不做「單腿減速」→ 那一軸整個不畫，圖形為五邊形。
+      // 完全沒測到的維度移除軸線；有測但基準不足的維度保留軸（空心點標示），
+      // 這樣家長一眼就能分辨「這次沒測這項」與「測了但同齡樣本不夠」。
+      const AX = AX_ALL.filter(a => state(a.id) !== 'untested');
+      const N  = AX.length || AX_ALL.length;
+      const ang = i => (Math.PI * 2 * i / N) - Math.PI / 2;      // 從正上方開始，依實際軸數等分
+      const pt  = (i, r) => [CX + Math.cos(ang(i)) * r, CY + Math.sin(ang(i)) * r];
+      const poly = r => AX.map((_, i) => pt(i, r).map(n => n.toFixed(1)).join(',')).join(' ');
 
       let g = '';
       // 網格三圈 + 輻條
@@ -3179,12 +3352,30 @@
       });
     }
 
+    /* 送出成功後把送出鈕鎖成「已送出」，避免同一筆被送第二次。 */
+    function markSubmitted(testId) {
+      submittedTestId = testId;
+      const b = $('submitBtn');
+      if (!b) return;
+      b.disabled = true;
+      b.textContent = `✅ 已送出（${testId}）`;
+      b.title = '這筆已經寫進後台。要輸入下一位請按下方的「重設」鈕。';
+    }
+    function clearSubmitted() {
+      submittedTestId = null;
+      const b = $('submitBtn');
+      if (!b) return;
+      b.disabled = false;
+      b.textContent = '送出並產生報告';
+      b.title = '';
+    }
+
     function resetForm() {
       ['playerName','birthday','height','weight','legLength','armLength','coachName',
        'sprint10m','spiderRun','agility515L','agility515R','cmjHeight','broadJump',
        'lateralJumpL','lateralJumpR','singleLegLandL','singleLegLandR',
        'singleLegLandForceL','singleLegLandForceR','singleLegDJL','singleLegDJR',
-       'rotationalThrowL','rotationalThrowR','servingThrow','IFT30_15','coachNote','dExtraText',
+       'rotationalThrowL','rotationalThrowR','servingThrow','IFT30_15','sittingHeight','coachNote','coachSummary','dExtraText',
        // 一般檢測項目 + IFT 心跳（先前漏清，會殘留到下一位）
        'sprint30m','serveSpeed','gripStrength','hop10_5','isoMidThighForce','isoUpperLimb',
        'sprint20m','cmjNoArm','gripStrengthNd','agility515Reactive',
@@ -3201,6 +3392,7 @@
       clearMobility();
       defaultKeyMetrics.forEach((d,i)=>{ const s=$('keyMetric'+i); if(s) s.value=d; });
       currentDraftId = null;
+      clearSubmitted();   // 換下一位 → 解鎖送出鈕
       if ($('currentDraftBadge')) $('currentDraftBadge').style.display = 'none';
     }
 
@@ -3226,11 +3418,10 @@
       // 兩個按鈕一起鎖，避免重複送出
       $('saveDraftBtn').disabled = true; $('saveNextBtn').disabled = true;
       try {
-        const params = new URLSearchParams({
+        // 新草稿沒有 draftId，重送會多建一份 → 不自動重送
+        const result = await callApi('saveDraft', {
           action: 'saveDraft', token: sessionToken, data: JSON.stringify(rec)
-        });
-        const resp = await fetch(`${SCRIPT_URL}?${params}`);
-        const result = await resp.json();
+        }, NET_WRITE);
         if (handleAuthError(result)) return;
         if (result.error) { alert('錯誤：' + result.error); return; }
         const savedName = rec.playerName;
@@ -3248,7 +3439,7 @@
           alert(`已儲存草稿：${savedName}\n下次可從上方草稿清單繼續輸入。`);
         }
       } catch (err) {
-        alert('網路錯誤，請稍後再試。');
+        alert(DRAFT_UNSURE_MSG);
       } finally {
         btn.textContent = origText;
         $('saveDraftBtn').disabled = false; $('saveNextBtn').disabled = false;
@@ -3259,9 +3450,7 @@
       const listEl = $('draftList');
       if (!listEl) return;
       try {
-        const params = new URLSearchParams({ action: 'listDrafts', token: sessionToken });
-        const resp = await fetch(`${SCRIPT_URL}?${params}`);
-        const result = await resp.json();
+        const result = await callApi('listDrafts', { action: 'listDrafts', token: sessionToken });
         const drafts = result.drafts || [];
         if (!drafts.length) {
           listEl.innerHTML = '<div class="draft-empty">目前沒有未完成的草稿</div>';
@@ -3290,33 +3479,32 @@
 
     async function loadDraft(draftId) {
       try {
-        const params = new URLSearchParams({ action: 'loadDraft', token: sessionToken, draftId });
-        const resp = await fetch(`${SCRIPT_URL}?${params}`);
-        const result = await resp.json();
+        const result = await callApi('loadDraft', { action: 'loadDraft', token: sessionToken, draftId });
         if (handleAuthError(result)) return;
         if (result.error) { alert('錯誤：' + result.error); return; }
         fillFormData(result.rec);
+        clearSubmitted();   // 換人了，解除上一位的「已送出」鎖定
         currentDraftId = draftId;
         $('currentDraftName').textContent = result.rec.playerName || '';
         $('currentDraftBadge').style.display = 'block';
         $('assessmentForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (err) {
-        alert('網路錯誤，請稍後再試。');
+        alert(NET_FAIL_MSG);
       }
     }
 
     async function deleteDraft(draftId, name) {
       if (!confirm(`確定要刪除「${name}」的草稿嗎？此動作無法復原。`)) return;
       try {
-        const params = new URLSearchParams({ action: 'deleteDraft', token: sessionToken, draftId });
-        await fetch(`${SCRIPT_URL}?${params}`);
+        await callApi('deleteDraft', { action: 'deleteDraft', token: sessionToken, draftId }, NET_WRITE);
         if (currentDraftId === draftId) {
           currentDraftId = null;
           $('currentDraftBadge').style.display = 'none';
         }
         loadDraftList();
       } catch (err) {
-        alert('網路錯誤，請稍後再試。');
+        alert(DELETE_UNSURE_MSG);
+        loadDraftList();
       }
     }
 
@@ -3327,15 +3515,14 @@
       if (!listEl) return;
       listEl.innerHTML = '<div class="draft-empty">載入中…</div>';
       try {
-        const params = new URLSearchParams({ action: 'listRecords', token: sessionToken });
-        const resp = await fetch(`${SCRIPT_URL}?${params}`);
-        const result = await resp.json();
+        const result = await callApi('listRecords', { action: 'listRecords', token: sessionToken }, NET_READ,
+          (i, n) => { listEl.innerHTML = `<div class="draft-empty">伺服器回應較慢，重試中（${i}/${n}）…</div>`; });
         if (handleAuthError(result)) return;
         if (result.error) { listEl.innerHTML = '<div class="draft-empty">錯誤：' + escapeHtml(result.error) + '</div>'; return; }
         allRecords = result.records || [];
         renderRecordList();
       } catch (err) {
-        listEl.innerHTML = '<div class="draft-empty">網路錯誤，請稍後再試。</div>';
+        listEl.innerHTML = '<div class="draft-empty">' + escapeHtml(NET_FAIL_MSG) + '</div>';
       }
     }
 
@@ -3358,7 +3545,7 @@
           </div>
           <div class="draft-item-progress">編號 ${escapeHtml(r.testId)}　${escapeHtml(r.ageGroup || '')}${r.age ? '　' + r.age + ' 歲' : ''}</div>
           <div class="draft-item-actions">
-            <button class="draft-btn draft-btn-load" onclick="openRecord('${r.testId}')">📄 叫出報告</button>
+            <button class="draft-btn draft-btn-load" onclick="openRecord('${r.testId}', this)">📄 叫出報告</button>
             <button class="draft-btn draft-btn-del" onclick="deleteRecordUI('${r.testId}','${escapeHtml(r.playerName||'')}')">🗑 刪除</button>
           </div>
         </div>`).join('');
@@ -3368,32 +3555,37 @@
     async function deleteRecordUI(testId, name) {
       if (!confirm(`確定要永久刪除「${name}」的檢測紀錄（編號 ${testId}）嗎？\n\n此動作無法復原，會一併移除該筆的雷達圖分數，且不再納入常模。`)) return;
       try {
-        const params = new URLSearchParams({ action: 'deleteRecord', token: sessionToken, testId });
-        const resp = await fetch(`${SCRIPT_URL}?${params}`);
-        const result = await resp.json();
+        const result = await callApi('deleteRecord', { action: 'deleteRecord', token: sessionToken, testId }, NET_WRITE);
         if (handleAuthError(result)) return;
         if (result.error) { alert('刪除失敗：' + result.error); return; }
         allRecords = allRecords.filter(r => r.testId !== testId);
         renderRecordList();
         alert(`已刪除「${name}」的檢測紀錄（編號 ${testId}）。`);
       } catch (err) {
-        alert('網路錯誤，請稍後再試。');
+        alert(DELETE_UNSURE_MSG);
+        loadRecordList();
       }
     }
 
-    async function openRecord(testId) {
+    async function openRecord(testId, btn) {
+      // 叫報告要等幾秒 → 按鈕顯示進度，不然教練以為沒反應會連按
+      const origText = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = '載入中…'; }
       try {
-        const params = new URLSearchParams({ action: 'loadRecord', token: sessionToken, testId });
-        const resp = await fetch(`${SCRIPT_URL}?${params}`);
-        const result = await resp.json();
+        const result = await callApi('loadRecord', { action: 'loadRecord', token: sessionToken, testId }, NET_READ,
+          (i, n) => { if (btn) btn.textContent = `重試中（${i}/${n}）…`; });
         if (handleAuthError(result)) return;
         if (result.error) { alert('錯誤：' + result.error); return; }
         photoDataUrl = result.photo || '';       // 有存照片就帶回，沒有則用預設照片
         currentScores = result.scores;
-        displayReport(result.rec, { scores: result.scores, age: result.age });
+        // 整包傳入：metrics（關鍵數據對照條）、history（vs 上次）、dimParts（教練頁）都在 result 裡。
+        // 2026-09-14 以前只傳 scores/age → 重印報告的「關鍵數據」一律顯示「尚無資料」。
+        displayReport(result.rec, result);
         alert(`已叫出「${result.rec.playerName || ''}」的報告（編號 ${testId}）。\n請按報告上方「列印 / PDF」輸出。`);
       } catch (err) {
-        alert('網路錯誤，請稍後再試。');
+        alert(NET_FAIL_MSG);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = origText; }
       }
     }
 
@@ -3487,6 +3679,7 @@
       rotationalThrowL:{ min: 1.0,  max: 18.0, label: '轉體投擲左側' },
       rotationalThrowR:{ min: 1.0,  max: 18.0, label: '轉體投擲右側' },
       servingThrow:    { min: 1.0,  max: 18.0, label: '發球投擲' },
+      sittingHeight:   { min: 50.0, max: 110.0, label: '坐高' },
       IFT30_15:        { min: 10,   max: 28,   label: '30-15 IFT' },
       sprint30m:       { min: 3.0,  max: 6.5,  label: '30m 衝刺' },
       serveSpeed:      { min: 60,   max: 250,  label: '發球速度' },
@@ -3675,7 +3868,7 @@
           <div class="rp-lane rr"><div class="f${weakL ? '' : ' weak'}" style="width:${wR}%"></div></div>
           <span class="s rt">右 ${r2(R)}${escapeHtml(u)}</span>
         </div>
-        <p class="rp-why"><b>${side}腳較弱</b> —— ${escapeHtml(opt.why)}</p>
+        <p class="rp-why"><b>${side}側</b>${escapeHtml(opt.why)}</p>
       </div>`;
     }
 
@@ -3694,13 +3887,13 @@
       const rows = [
         asymRow('落地後站穩所需時間', 'Landing Stabilisation Time', landTime, {
           L: rec.singleLegLandL, R: rec.singleLegLandR, unit: 's', lowerIsBetter: true,
-          why: '站穩所需時間較長的一側，單腳落地控制較弱。' }),
+          why: '站穩所需時間較長' }),
         asymRow('落地衝擊承受力', 'Peak Landing Force / 體重', landNkg, {
           L: nkgL, R: nkgR, unit: '', lowerIsBetter: true,
-          why: '吸收落地衝擊的能力兩側不一致，長期會由強側代償。' }),
+          why: '落地衝擊力／體重較高' }),
         asymRow('落地再起跳的彈性', 'Drop Jump RSI', djRSI, {
           L: rec.singleLegDJL, R: rec.singleLegDJR, unit: '', lowerIsBetter: false,
-          why: '「落地後立刻再蹬」的能力兩側落差，影響該側被拉開後的煞停與回位。' })
+          why: 'RSI 較低' })
       ].filter(Boolean);
       $('rpAsym').innerHTML = rows.join('');
 
@@ -3714,11 +3907,9 @@
       push(landNkg, nkgL, nkgR, true);
       push(djRSI, rec.singleLegDJL, rec.singleLegDJR, false);
       const same = weakSides.length >= 2 && weakSides.every(x => x === weakSides[0]);
-      $('rpAsymNote').innerHTML = same
-        ? `${weakSides.length} 項左右差都指向<strong>${weakSides[0]}腳</strong>。建議列為本季第一優先，並於第 6 週單獨複測此三項。`
-        : '左右差未集中在同一側，先確認量測一致性再判讀。';
-      $('rpAsymTitle').textContent = rows.length && [landTime, landNkg, djRSI].some(v => v !== null && v > 15)
-        ? '左右腳差異 — 需優先處理' : '左右腳差異';
+      // 2026-09-15：只寫事實 —— 不再寫「建議列為第一優先」「先確認量測一致性再判讀」這類判斷
+      $('rpAsymNote').innerHTML = '顏色依左右差異百分比分級：綠 &lt;10%、黃 10–15%、紅 &gt;15%。';
+      $('rpAsymTitle').textContent = '左右腳差異';
 
       // 只有任一項不對稱性 > 15%（需優先處理）時才顯示，平常隱藏讓報告清爽
       const over15 = [landTime, landNkg, djRSI].some(v => v !== null && v > 15);
@@ -3902,6 +4093,7 @@
       document.body.classList.remove('locked');
       $('loginOverlay').style.display = 'none';
       $('whoAmI').textContent = sessionUser ? `👤 ${sessionUser}` : '';
+      flushNetLog_();   // 登入前累積的連線失敗紀錄，拿到憑證後補送
     }
 
     async function doLogin() {
@@ -3913,9 +4105,8 @@
       btn.disabled = true; btn.textContent = '登入中…';
       $('passwordError').textContent = '';
       try {
-        const params = new URLSearchParams({ action: 'login', user, pass });
-        const resp = await fetch(`${SCRIPT_URL}?${params}`);
-        const result = await resp.json();
+        const result = await callApi('login', { action: 'login', user, pass }, NET_READ,
+          (i, n) => { btn.textContent = `重試中（${i}/${n}）…`; });
         if (result.error) { $('passwordError').textContent = result.error; return; }
         sessionToken = result.token;
         sessionUser  = result.name || result.user;
@@ -3924,7 +4115,7 @@
         showApp();
         init();                    // 憑證到手才載入球員名單等資料
       } catch (e) {
-        $('passwordError').textContent = '網路錯誤，請稍後再試';
+        $('passwordError').textContent = NET_FAIL_MSG;
       } finally {
         btn.disabled = false; btn.textContent = '登入';
       }
