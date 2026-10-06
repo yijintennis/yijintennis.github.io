@@ -452,6 +452,7 @@
              font-family: var(--f-m); font-size: 10.5px; color: var(--muted); }
     .rp-dl div { display: flex; gap: 4px; }
     .rp-dl dt { color: var(--faint); } .rp-dl dd { margin: 0; color: var(--ink2); }
+    .rp-dl .rp-phv dd { font-weight: 600; }
     .rp-meta { text-align: right; font-family: var(--f-m); font-size: 10.5px;
                color: var(--muted); line-height: 1.75; }
     .rp-meta strong { color: var(--ink); }
@@ -2887,6 +2888,28 @@
       return 'U14 以上 ' + (gender === '男' ? '男' : gender === '女' ? '女' : '');
     }
 
+    /* PHV（生長高峰）推估：Moore-1（Moore et al. 2015），與後台 02 col70／10 生長追蹤 同一套係數 —— 兩邊要一起改。
+       男用 年齡×坐高、女用 年齡×身高；誤差約 ±0.5 年。回傳 null ＝ 資料不足。 */
+    function phvOffset(rec, fallbackAge) {
+      let age = NaN;
+      if (rec.birthday && rec.testDate) {
+        const ms = new Date(rec.testDate) - new Date(rec.birthday);
+        age = ms / (365.25 * 24 * 3600 * 1000);
+      }
+      if (!isFinite(age)) age = Number(fallbackAge);
+      if (!isFinite(age) || age <= 0) return null;
+      const h = Number(rec.height), sh = Number(rec.sittingHeight);
+      if (rec.gender === '男' && sh > 0) return -8.128741 + 0.0070346 * (age * sh);
+      if (rec.gender === '女' && h > 0)  return -7.709133 + 0.0042232 * (age * h);
+      return null;
+    }
+    function phvLabel(rec, fallbackAge) {
+      const o = phvOffset(rec, fallbackAge);
+      if (o == null) return rec.gender === '男' && !Number(rec.sittingHeight) ? '— 未量坐高' : '—';
+      // 只顯示階段不顯示年數：誤差 ±0.5 年，印出「0.4 年」會讓家長誤以為很精準
+      return o < -1 ? '高峰前' : (o > 1 ? '高峰後' : '高峰期');
+    }
+
     function displayReport(rec, result) {
       const s   = result.scores;
       const age = result.age;
@@ -2903,8 +2926,9 @@
         ['身高', rec.height ? `${rec.height} cm` : '—'],
         ['體重', rec.weight ? `${rec.weight} kg` : '—'],
         ['慣用手', rec.dominantHand || '—'],
-        ['比較組', normGroupLabel(age, rec.gender)]
-      ].map(x => `<div><dt>${x[0]}</dt><dd>${escapeHtml(String(x[1]))}</dd></div>`).join('');
+        ['比較組', normGroupLabel(age, rec.gender)],
+        ['生長階段', phvLabel(rec, age), 'PHV（生長高峰，長高最快的時期）推估。依 Moore 2015 公式，誤差約 ±0.5 年；供教練說明參考，非醫療判讀。']
+      ].map(x => `<div${x[2] ? ` class="rp-phv" title="${escapeHtml(x[2])}"` : ''}><dt>${x[0]}</dt><dd>${escapeHtml(String(x[1]))}</dd></div>`).join('');
       $('reportDate').textContent    = rec.testDate || '—';
       $('reportCoach').textContent   = rec.coach || '—';
       $('reportAcademy').textContent = acadName;
