@@ -4025,11 +4025,10 @@
       $('rpAsymNote').innerHTML = '顏色依左右差異百分比分級：綠 &lt;10%、黃 10–15%、紅 &gt;15%。';
       $('rpAsymTitle').textContent = '左右腳差異';
 
-      // 只有任一項不對稱性 > 15%（需優先處理）時才顯示，平常隱藏讓報告清爽
-      const over15 = [landTime, landNkg, djRSI].some(v => v !== null && v > 15);
-      card.style.display = (over15 && rows.length) ? '' : 'none';
+      // 2026-10-15 Adam：「左右腳差異的區塊要有，不要拿掉」→ 只要有測左右腳就顯示，不再限定差異 >15% 才出現
+      card.style.display = rows.length ? '' : 'none';
       // 沒有不對稱性區塊時，報告放大填滿整頁（避免底部空白）
-      const rc = $('reportCard'); if (rc) rc.classList.toggle('fill', !over15);
+      const rc = $('reportCard'); if (rc) rc.classList.toggle('fill', !rows.length);
     }
 
 
