@@ -1702,6 +1702,82 @@
       display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
     }
     .voice-row input { flex: 1; margin: 0; }
+    /* ══════════════════════════════════════════════════════════════
+       2026-10-15 Adam：「字的顏色給我黑色的，整體視覺要清晰，排版要合理」
+       只動報告（家長頁＋教練頁），表單不受影響。
+       ① 文字一律黑色；顏色只留在圖形（長條、圓點、左側色條），不拿來上色文字
+       ② 等寬字（偏細、技術感）改回一般字體，數字用等寬數字對齊
+       ③ 拿掉重複的英文小標（CORE ABILITY…），最小字級拉到 11px 以上
+       ④ 列印時若超過一張 A4 會自動縮小（見 fitReportToPage）
+       ══════════════════════════════════════════════════════════════ */
+    .report-card, .coach-page {
+      --ink: #000; --ink2: #000; --muted: #222; --faint: #444;
+      --f-m: var(--f-d);
+      font-variant-numeric: tabular-nums;
+    }
+    #reportCard .rp-eyebrow,
+    #reportCard .rp-find h4 em,
+    #reportCard .rp-summary h3 em { display: none; }
+
+    #reportCard .rp-who h1 { font-size: 28px; font-weight: 700; }
+    #reportCard .rp-dl { font-size: 12.5px; }
+    #reportCard .rp-dl dt { color: #444; }
+    #reportCard .rp-meta { font-size: 12px; color: #000; }
+    #reportCard .rp-doc { font-size: 15px; font-weight: 700; letter-spacing: .08em; color: #000; }
+    #reportCard .rp-sec > h3,
+    #reportCard .rp-sechead h3 { font-size: 17px; font-weight: 700; }
+    #reportCard .rp-note { font-size: 12px; color: #222; }
+
+    #reportCard .rp-score span, #reportCard .rp-gmark { color: #222; font-size: 12px; }
+    #reportCard .rp-cov, #reportCard .rp-cov.full { color: #000; font-size: 11.5px; }
+    #reportCard .rp-vc p { font-size: 14.5px; }
+    #reportCard .rp-caveat { font-size: 12px; color: #222; }
+
+    #reportCard .rp-radar .lbl { font-size: 12px; fill: #000; font-weight: 600; }
+    #reportCard .rp-radar .lbl.off { fill: #555; font-weight: 400; }
+    #reportCard .rp-radar .sm { font-size: 10px; fill: #555; }
+    #reportCard .rp-radar .num { font-size: 11.5px; fill: #000; font-weight: 700; }
+    #reportCard .rp-key { font-size: 12px; color: #000; }
+
+    #reportCard .rp-find h4 { font-size: 14px; font-weight: 700; }
+    #reportCard .rp-find p, #reportCard .rp-find ul { font-size: 13.5px; color: #000; }
+    #reportCard .rp-find .rp-n, #reportCard .rp-find .rp-by { font-size: 12px; color: #444; }
+
+    #reportCard .rp-mhead { font-size: 11.5px; letter-spacing: 0; color: #222; }
+    #reportCard .rp-m .nm { font-size: 14px; font-weight: 600; }
+    #reportCard .rp-m .val { font-size: 20px; color: #000; }
+    #reportCard .rp-m .val u { font-size: 11.5px; color: #222; }
+    #reportCard .rp-scale .tag,
+    #reportCard .rp-scale.g .tag, #reportCard .rp-scale.y .tag, #reportCard .rp-scale.r .tag
+      { font-size: 11.5px; color: #000; font-weight: 600; letter-spacing: 0; }
+    #reportCard .rp-scale .none { font-size: 11.5px; color: #444; }
+    /* 百分位文字放大後會碰到長條 → 長條整組往下移 3px，文字與長條分開 */
+    #reportCard .rp-scale { height: 35px; }
+    #reportCard .rp-scale .tag { top: 0; }
+    #reportCard .rp-scale .rail, #reportCard .rp-scale .fill, #reportCard .rp-scale .none { top: 22px; }
+    #reportCard .rp-scale .mid { top: 17px; }
+    #reportCard .rp-scale .dot { top: 19.5px; }
+    #reportCard .rp-trend, #reportCard .rp-trend.up, #reportCard .rp-trend.down
+      { font-size: 12px; color: #000; font-weight: 600; }
+
+    #reportCard .rp-lgd { font-size: 11.5px; color: #000; }
+    #reportCard .rp-ai h4 { font-size: 13.5px; font-weight: 700; }
+    #reportCard .rp-ai h4 small { font-size: 11.5px; color: #333; }
+    #reportCard .rp-gap, #reportCard .rp-ai.mild .rp-gap, #reportCard .rp-ai.good .rp-gap { color: #000; font-size: 21px; }
+    #reportCard .rp-gap u { font-size: 11.5px; }
+    #reportCard .rp-bip .s { font-size: 11.5px; color: #000; }
+    #reportCard .rp-why { font-size: 12.5px; color: #000; }
+
+    #reportCard .rp-summary h3 { font-size: 14.5px; font-weight: 700; }
+    #reportCard .rp-sum-text { font-size: 14.5px; color: #000; }
+    #reportCard .rp-sum-by { font-size: 12px; color: #444; }
+    #reportCard .rp-foot { font-size: 11px; color: #444; }
+
+    @media print {
+      /* 拿掉英文小標後省下的高度，用在放大的字級上 */
+      #reportCard .rp-sechead { margin-bottom: 4px; }
+      #reportCard .rp-m { padding: 3px 0; }
+    }
   </style>
 </head>
 
@@ -2257,7 +2333,7 @@
                 </div>
               </div>
               <div class="rp-meta">
-                <span class="rp-doc">Performance Report</span>
+                <span class="rp-doc">體能檢測報告</span>
                 <div>檢測日期 <strong id="reportDate">—</strong></div>
                 <div>教練 <strong id="reportCoach">—</strong> · <span id="reportAcademy">奕晉網球學院</span></div>
               </div>
@@ -2288,7 +2364,7 @@
               </div>
               <div class="rp-row2">
                 <div>
-                  <svg class="rp-radar" id="radarSvg" viewBox="0 0 300 280" width="100%" height="auto" role="img"></svg>
+                  <svg class="rp-radar" id="radarSvg" viewBox="0 0 300 292" width="100%" height="auto" role="img"></svg>
                   <div class="rp-key">
                     <span><i class="rp-sw"></i><span id="rpKeyName">球員</span></span>
                     <span><i class="rp-sw d"></i>同齡中位</span>
@@ -3055,9 +3131,10 @@
       });
       if (rec.dExtraText)
         rec.dExtraText.split(/\r?\n/).map(x => x.trim()).filter(Boolean).forEach(l => otherTests.push(l));
-      const mobSym = v => v==='pass' ? '<span style="color:#2C8A58;font-weight:700">✓</span>'
-                        : v==='fail' ? '<span style="color:#A33C2C;font-weight:700">✗</span>'
-                        : '<span style="color:#93A79F">—</span>';
+      // 2026-10-15 Adam：報告文字一律黑色 → ✓／✗ 也用黑色，靠符號本身區分
+      const mobSym = v => v==='pass' ? '<span style="color:#000;font-weight:700">✓</span>'
+                        : v==='fail' ? '<span style="color:#000;font-weight:700">✗</span>'
+                        : '<span style="color:#444">—</span>';
       const mobLines = [];
       (rec.mobilityShow || []).forEach(id => {
         const it = mobilityItems.find(x => x.id === id);
@@ -3354,7 +3431,8 @@
       // 有分數的軸標上數字
       scoredPts.forEach(o => {
         const [nx, ny] = pt(o.i, R * Math.max(0, Math.min(100, o.v)) / 100);
-        const outward = 12;
+        // 分數 ≥80 時點已貼近外圈，數字往外放會壓到軸標（例：心肺 100 疊在「心肺適能」上）→ 改放內側
+        const outward = o.v >= 80 ? -14 : 12;
         const [ox, oy] = [nx + Math.cos(ang(o.i)) * outward, ny + Math.sin(ang(o.i)) * outward];
         g += `<text class="num" x="${ox.toFixed(1)}" y="${(oy + 3).toFixed(1)}">${o.v}</text>`;
       });
@@ -3385,6 +3463,31 @@
       b.textContent = `✅ 已送出（${testId}）`;
       b.title = '這筆已經寫進後台。要輸入下一位請按下方的「重設」鈕。';
     }
+    /* 2026-10-15：列印時家長頁若超過一張 A4 就自動縮小。
+       設計高度原本只剩約 50px 餘裕，Safari 或開了「頁首頁尾」的瀏覽器會再吃掉頁邊距 → 最後幾行被擠到第 2 頁。
+       A4 高約 1123px，PRINT_PAGE_H 先扣掉瀏覽器可能加的邊距；沒超過就不動，維持原本大小。 */
+    const PRINT_PAGE_H = 1030;
+    function fitReportToPage(printing) {
+      const c = $('reportCard');
+      if (!c) return;
+      c.style.removeProperty('zoom');
+      if (!printing) return;
+      // 列印時視窗大小＝紙張扣掉頁邊距後的可印範圍；Safari 頁邊距比 Chrome 大，用實際可印範圍算才準
+      const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      const maxH = (vh > 500 && vh < 1200) ? Math.min(PRINT_PAGE_H, vh - 8) : PRINT_PAGE_H;
+      const maxW = (vw > 400 && vw < 900) ? vw - 4 : 794;
+      const z = parseFloat(getComputedStyle(c).zoom) || 1;
+      const r = c.getBoundingClientRect();
+      const k = Math.min(1, maxH / r.height, maxW / r.width);
+      if (k < 1) c.style.setProperty('zoom', (z * k).toFixed(3));
+    }
+    window.matchMedia('print').addEventListener('change', e => fitReportToPage(e.matches));
+    // 保險：有的瀏覽器先觸發 beforeprint 才套列印樣式 → 確認已在列印樣式下才量，避免用螢幕版尺寸算錯
+    window.addEventListener('beforeprint', () => setTimeout(() => {
+      if (window.matchMedia('print').matches) fitReportToPage(true);
+    }, 0));
+    window.addEventListener('afterprint', () => fitReportToPage(false));
+
     function clearSubmitted() {
       submittedTestId = null;
       const b = $('submitBtn');
