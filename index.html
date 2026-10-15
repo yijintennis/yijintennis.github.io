@@ -1781,6 +1781,11 @@
          改固定 0.64：設計高約 1510–1560px × 0.64 ≈ 970–1000px，Safari 加頁邊距後仍放得進一張 A4；
          寬 1130 × 0.64 ≈ 723px（A4 寬 794px），左右各留約 9mm。 */
       #reportCard, #reportCard.fill { zoom: 0.64; }
+      /* 內容較短（例：沒有左右差區塊）時下方會空一大塊 → 版面撐到約一頁高，教練總結框往下延伸補滿（可手寫）。
+         1540 × 0.64 ≈ 986px，與一般報告高度相當，不會因此多出第 2 頁；內容本來就比較長時不影響。 */
+      #reportCard .rp-inner { min-height: 1540px; box-sizing: border-box; }
+      #reportCard .rp-summary { flex: 1 1 auto; display: flex; flex-direction: column; }
+      #reportCard .rp-sum-text { flex: 1 1 auto; }
       /* 拿掉英文小標後省下的高度，用在放大的字級上 */
       #reportCard .rp-sechead { margin-bottom: 4px; }
       #reportCard .rp-m { padding: 3px 0; }
