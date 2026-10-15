@@ -1708,7 +1708,7 @@
        ① 文字一律黑色；顏色只留在圖形（長條、圓點、左側色條），不拿來上色文字
        ② 等寬字（偏細、技術感）改回一般字體，數字用等寬數字對齊
        ③ 拿掉重複的英文小標（CORE ABILITY…），最小字級拉到 11px 以上
-       ④ 列印時若超過一張 A4 會自動縮小（見 fitReportToPage）
+       ④ 列印固定縮放 0.64，Safari（頁邊距較大）也印得進一張 A4；並強制印出背景色（長條、色塊）
        ══════════════════════════════════════════════════════════════ */
     .report-card, .coach-page {
       --ink: #000; --ink2: #000; --muted: #222; --faint: #444;
@@ -1773,7 +1773,14 @@
     #reportCard .rp-sum-by { font-size: 12px; color: #444; }
     #reportCard .rp-foot { font-size: 11px; color: #444; }
 
+    /* Safari 預設「不列印背景」→ 關鍵數據長條、分數刻度、色塊全部消失。報告區強制照原色印 */
+    .report-card, .coach-page { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
     @media print {
+      /* 2026-10-15：曾用 JS 依瀏覽器回報的可印範圍動態縮放，Safari 回報值不準 → 縮到剩一半、版面全亂，已拿掉。
+         改固定 0.64：設計高約 1510–1560px × 0.64 ≈ 970–1000px，Safari 加頁邊距後仍放得進一張 A4；
+         寬 1130 × 0.64 ≈ 723px（A4 寬 794px），左右各留約 9mm。 */
+      #reportCard, #reportCard.fill { zoom: 0.64; }
       /* 拿掉英文小標後省下的高度，用在放大的字級上 */
       #reportCard .rp-sechead { margin-bottom: 4px; }
       #reportCard .rp-m { padding: 3px 0; }
@@ -3463,31 +3470,6 @@
       b.textContent = `✅ 已送出（${testId}）`;
       b.title = '這筆已經寫進後台。要輸入下一位請按下方的「重設」鈕。';
     }
-    /* 2026-10-15：列印時家長頁若超過一張 A4 就自動縮小。
-       設計高度原本只剩約 50px 餘裕，Safari 或開了「頁首頁尾」的瀏覽器會再吃掉頁邊距 → 最後幾行被擠到第 2 頁。
-       A4 高約 1123px，PRINT_PAGE_H 先扣掉瀏覽器可能加的邊距；沒超過就不動，維持原本大小。 */
-    const PRINT_PAGE_H = 1030;
-    function fitReportToPage(printing) {
-      const c = $('reportCard');
-      if (!c) return;
-      c.style.removeProperty('zoom');
-      if (!printing) return;
-      // 列印時視窗大小＝紙張扣掉頁邊距後的可印範圍；Safari 頁邊距比 Chrome 大，用實際可印範圍算才準
-      const vw = document.documentElement.clientWidth, vh = window.innerHeight;
-      const maxH = (vh > 500 && vh < 1200) ? Math.min(PRINT_PAGE_H, vh - 8) : PRINT_PAGE_H;
-      const maxW = (vw > 400 && vw < 900) ? vw - 4 : 794;
-      const z = parseFloat(getComputedStyle(c).zoom) || 1;
-      const r = c.getBoundingClientRect();
-      const k = Math.min(1, maxH / r.height, maxW / r.width);
-      if (k < 1) c.style.setProperty('zoom', (z * k).toFixed(3));
-    }
-    window.matchMedia('print').addEventListener('change', e => fitReportToPage(e.matches));
-    // 保險：有的瀏覽器先觸發 beforeprint 才套列印樣式 → 確認已在列印樣式下才量，避免用螢幕版尺寸算錯
-    window.addEventListener('beforeprint', () => setTimeout(() => {
-      if (window.matchMedia('print').matches) fitReportToPage(true);
-    }, 0));
-    window.addEventListener('afterprint', () => fitReportToPage(false));
-
     function clearSubmitted() {
       submittedTestId = null;
       const b = $('submitBtn');
