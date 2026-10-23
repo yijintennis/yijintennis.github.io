@@ -1333,7 +1333,7 @@
            舊值 1000px × 0.55 只佔 A4 可印寬 794px 的 550px，左右各空約 120px。
            新值 1130px × 0.70 ≈ 791px 填滿紙寬（外框留白 34px × 0.70 ≈ 6–7mm）。
            高度靠下方「列印收緊」撐住：陳慶安（含左右差區塊，最高的一種）設計高約 1532px × 0.70 ≈ 1072px，
-           A4 可用約 1122px，留約 50px 給教練觀察／總結多寫幾行。 */
+           A4 可用約 1122px，留約 50px 給教練總結多寫幾行。 */
         width: 1130px;
         zoom: 0.70;
         margin: 0 auto;            /* 置中，左右留白平均 */
@@ -2301,10 +2301,7 @@
 
           <!-- 教練備註 -->
           <section class="form-section">
-            <div class="form-section-title">教練補充觀察</div>
-            <label>教練觀察（報告右側「教練觀察」）
-              <textarea id="coachNote" placeholder="教練看完這次數據後的觀察…"></textarea>
-            </label>
+            <div class="form-section-title">教練總結</div>
             <label>總結（報告最下方「教練總結」）
               <textarea id="coachSummary" placeholder="教練對這次檢測的總結…（沒填的話報告會印成空白框，可手寫）"></textarea>
             </label>
@@ -2809,7 +2806,7 @@
         IFTHR3min:      getNum('IFTHR3min'),
         IFTrecovery1:   parseFloat($('IFTrecovery1')?.value) || null,
         IFTrecovery3:   parseFloat($('IFTrecovery3')?.value) || null,
-        notes:          getVal('coachNote'),
+        notes:          '',   // 「教練觀察」欄已併入總結（2026-10-23），保留欄位名讓後台欄位不位移
         summary:        getVal('coachSummary'),
         dExtraSelected: Array.from(document.querySelectorAll('#dExtraChecklist input:checked')).map(c=>c.value),
         dExtraText:     getVal('dExtraText'),
@@ -2837,7 +2834,7 @@
         agility515Reactive:'agility515Reactive',
         isoMidThighForce:'isoMidThighForce', isoUpperLimb:'isoUpperLimb', squat:'squat', pullUp:'pullUp',
         mbOverheadThrow:'mbOverheadThrow', pushUp:'pushUp',
-        IFTmaxHR:'IFTmaxHR', IFTHR1min:'IFTHR1min', IFTHR3min:'IFTHR3min', notes:'coachNote', summary:'coachSummary'
+        IFTmaxHR:'IFTmaxHR', IFTHR1min:'IFTHR1min', IFTHR3min:'IFTHR3min'
       };
       Object.entries(setMap).forEach(([k, id]) => {
         if (rec[k] !== undefined && rec[k] !== null && rec[k] !== '') setVal(id, rec[k]);
@@ -2850,9 +2847,17 @@
       if (Array.isArray(rec.dExtraSelected)) {
         document.querySelectorAll('#dExtraChecklist input').forEach(c => { c.checked = rec.dExtraSelected.includes(c.value); });
       }
+      setVal('coachSummary', mergedSummary(rec));
       if (rec.dExtraText !== undefined) setVal('dExtraText', rec.dExtraText);
       if (Array.isArray(rec.keyMetrics)) rec.keyMetrics.forEach((id,i)=>{ const s=$('keyMetric'+i); if(s&&id) s.value=id; });
       clearMobility(); restoreMobility(rec);  // 活動度測試 V/X + 呈現報告勾選
+    }
+
+    // 「教練觀察」已併入「教練總結」（2026-10-23 Adam：兩欄重疊）。
+    // 舊紀錄／草稿可能只寫了觀察 → 併進總結，不讓已寫的字消失
+    function mergedSummary(rec) {
+      const n = String(rec.notes || '').trim(), s = String(rec.summary || '').trim();
+      return n && s && n !== s ? n + '\n\n' + s : (s || n);
     }
 
     // 正規化依賴：這些測項要除以「腿長」或「體重」才能跨球員比較。
@@ -3159,10 +3164,6 @@
       const finds = [];
       if (factLines.length)
         finds.push(['c','各能力分數與實測值','Measured', '<ul>' + factLines.join('') + '</ul>']);
-      // 教練寫的字（表單「教練補充觀察」）：原樣呈現、標明撰寫人，不和系統數據混在一起
-      if (rec.notes && String(rec.notes).trim())
-        finds.push(['p','教練觀察','Coach',
-          `<p>${escapeHtml(String(rec.notes).trim())}</p><p class="rp-by">— ${escapeHtml(rec.coach || '教練')}</p>`]);
       if (otherTests.length || mobLines.length)
         finds.push(['c','其他測試','Extra',
           '<ul>' + otherTests.map(x => `<li>${escapeHtml(x)}</li>`).join('')
@@ -3229,7 +3230,7 @@
 
       // ── 教練總結（2026-09-15 Adam：報告最下方放總結，由教練自行填寫）──
       // 有填 → 原樣呈現＋撰寫教練；沒填 → 印成空白橫線框，教練可列印後手寫。系統不代寫。
-      const sumText = String(rec.summary || '').trim();
+      const sumText = mergedSummary(rec);
       $('rpSummaryText').innerHTML = sumText ? escapeHtml(sumText).replace(/\n/g, '<br>') : '';
       $('rpSummaryBy').textContent = sumText ? `— ${rec.coach || '教練'}` : '';
       $('rpSummary').classList.toggle('empty', !sumText);
@@ -3489,7 +3490,7 @@
        'sprint10m','spiderRun','agility515L','agility515R','cmjHeight','broadJump',
        'lateralJumpL','lateralJumpR','singleLegLandL','singleLegLandR',
        'singleLegLandForceL','singleLegLandForceR','singleLegDJL','singleLegDJR',
-       'rotationalThrowL','rotationalThrowR','servingThrow','IFT30_15','sittingHeight','coachNote','coachSummary','dExtraText',
+       'rotationalThrowL','rotationalThrowR','servingThrow','IFT30_15','sittingHeight','coachSummary','dExtraText',
        // 一般檢測項目 + IFT 心跳（先前漏清，會殘留到下一位）
        'sprint30m','serveSpeed','gripStrength','hop10_5','isoMidThighForce','isoUpperLimb',
        'sprint20m','cmjNoArm','gripStrengthNd','agility515Reactive',
