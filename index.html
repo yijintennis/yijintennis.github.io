@@ -3495,6 +3495,20 @@
        'sprint20m','cmjNoArm','gripStrengthNd','agility515Reactive',
        'squat','pullUp','mbOverheadThrow','pushUp','IFTmaxHR','IFTHR1min','IFTHR3min','IFTrecovery1','IFTrecovery3']
         .forEach(id => setVal(id, ''));
+      // 保險：上面清單之外、日後新增的欄位也一併清掉，不靠手寫清單記得每個欄位
+      document.querySelectorAll('#assessmentForm input, #assessmentForm textarea, #assessmentForm select').forEach(el => {
+        if (el.id === 'recordSearch' || el.id === 'coachPageToggle') return;   // 查詢框、報告顯示選項不屬於球員資料
+        if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+        else if (el.tagName === 'SELECT') {
+          const def = Array.from(el.options).find(o => o.defaultSelected) || el.options[0];
+          if (def) el.value = def.value;
+        } else el.value = '';
+      });
+      // 畫面上跟著數據顯示的東西也要清：心跳恢復率框、照片檔名、超出範圍警告
+      if ($('hrRecoveryDisplay')) $('hrRecoveryDisplay').style.display = 'none';
+      if ($('photoFileName')) $('photoFileName').textContent = '未選擇檔案';
+      document.querySelectorAll('#assessmentForm .range-warning').forEach(w => w.remove());
+      document.querySelectorAll('#assessmentForm .out-of-range').forEach(i => i.classList.remove('out-of-range'));
       setVal('squatUnit', 'kg'); setVal('pullUpUnit', '次'); setVal('mbWeight', '');
       setVal('gender', '男'); setVal('dominantHand', '右手');
       setVal('testDate', todayISO()); setVal('academyName', getAcademyName());
@@ -3596,8 +3610,10 @@
         const result = await callApi('loadDraft', { action: 'loadDraft', token: sessionToken, draftId });
         if (handleAuthError(result)) return;
         if (result.error) { alert('錯誤：' + result.error); return; }
+        // 先整張清空再填：fillFormData 只填草稿裡有值的欄位，
+        // 不先清的話，這位沒測的項目會留著上一位的數據（含照片），再存一次就混進這位的紀錄
+        resetForm();        // 也會解除上一位的「已送出」鎖定
         fillFormData(result.rec);
-        clearSubmitted();   // 換人了，解除上一位的「已送出」鎖定
         currentDraftId = draftId;
         $('currentDraftName').textContent = result.rec.playerName || '';
         $('currentDraftBadge').style.display = 'block';
