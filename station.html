@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#163E30">
+<title>團體分站輸入｜奕晉體能檢測</title>
+<!--
+  團體分站輸入（v2，2026-11-22）
+  一站一項（最多 3 項），名單一人一列往下填；每格自動存到「現場暫存」，斷網先存在手機。
+  全部測完到「完成」分頁，把每個人當天的成績合成一筆正式紀錄（後台 StationAPI.gs）。
+  憑證：網頁端沿用 localStorage yj_token；App 開啟時用 #tk=… 帶入。
+-->
+<style>
+:root{--g:#163E30;--g2:#1f5a3f;--lime:#D8EF5F;--bg:#F3F6F1;--card:#fff;--ink:#13261e;--mut:#5b6e64;--line:#e2e9e2;--warn:#b45309;--bad:#c62828;--ok:#188052}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit}
+.top{position:sticky;top:0;z-index:20;background:var(--g);color:#fff;padding:10px 16px calc(10px);padding-top:max(10px,env(safe-area-inset-top));display:flex;align-items:center;gap:10px}
+.top a{color:#fff;text-decoration:none;font-size:22px;line-height:1;padding:4px 8px 4px 0}
+.top h1{font-size:17px;margin:0;flex:1;font-weight:700}
+.sync{font-size:12px;border-radius:999px;padding:4px 10px;background:rgba(255,255,255,.15);white-space:nowrap}
+.sync.ok{background:rgba(216,239,95,.25);color:var(--lime)}.sync.busy{background:rgba(255,255,255,.2)}.sync.off{background:#f4a67a;color:#4a1a00}
+.tabs{position:sticky;top:52px;z-index:19;display:flex;background:#fff;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;border:0;background:none;padding:12px 8px;font-weight:700;color:var(--mut);border-bottom:3px solid transparent}
+.tabs button[aria-selected=true]{color:var(--g);border-bottom-color:var(--g)}
+.tabs .cnt{display:inline-block;min-width:20px;padding:0 6px;border-radius:999px;background:#e9f2e7;color:var(--g);font-size:12px;margin-left:4px}
+main{max-width:860px;margin:0 auto;padding:12px 16px 120px}
+.card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 1px 3px rgba(22,62,48,.08);margin-bottom:12px}
+.lbl{font-size:13px;font-weight:700;color:var(--mut);margin:0 0 6px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input[type=date],select{border:1px solid #cfdacf;border-radius:10px;padding:9px 10px;background:#fff;min-height:44px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid #cfdacf;background:#fff;border-radius:999px;padding:8px 14px;min-height:40px;color:var(--ink);cursor:pointer}
+.chip[aria-pressed=true]{background:var(--g);border-color:var(--g);color:#fff}
+.chip small{opacity:.7;margin-left:4px}
+.hint{font-size:13px;color:var(--mut);margin:6px 0 0}
+.setup-sum{display:flex;align-items:center;gap:10px}
+.setup-sum b{flex:1}
+.link{border:0;background:none;color:var(--g);font-weight:700;text-decoration:underline;cursor:pointer;padding:6px}
+.search{width:100%;border:1px solid #cfdacf;border-radius:10px;padding:10px 12px;min-height:44px;margin-bottom:10px}
+.list{background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(22,62,48,.08);overflow:hidden}
+.p{display:grid;grid-template-columns:minmax(92px,1fr) auto;gap:8px 12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.p:last-child{border-bottom:0}
+.p .nm{font-weight:700;font-size:16px;line-height:1.25}.p .nm small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+.p.done{background:#f6faf5}.p.done .nm small{color:var(--ok)}
+.cells{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.cell{display:flex;flex-direction:column;align-items:stretch;gap:2px}
+.cell span{font-size:11px;color:var(--mut);text-align:center}
+.cell input{width:86px;height:44px;border:1.5px solid #cfdacf;border-radius:10px;text-align:center;font-size:18px;font-weight:700;background:#fff;color:var(--ink)}
+.cell input:focus{outline:none;border-color:var(--g);box-shadow:0 0 0 3px rgba(22,62,48,.15)}
+.cell input.filled{background:#f0f7ee}
+.cell input.pend{border-color:#e0b85a}
+.cell input.warn{border-color:var(--warn);background:#fff7e6}
+.cell input.other{background:#eef4fb}
+.cell input:disabled{background:#f1f4f1;color:#6a7b72}
+.cell em{font-style:normal;font-size:11px;color:var(--warn);text-align:center;max-width:86px}
+.tog{width:64px;height:44px;border-radius:10px;border:1.5px solid #cfdacf;background:#fff;font-size:18px;font-weight:800;color:#9aa9a0}
+.tog.pass{background:#e6f4e1;border-color:#9bd08a;color:var(--ok)}.tog.fail{background:#fde8e0;border-color:#f4a67a;color:var(--bad)}
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px}
+.foot[hidden]{display:none}
+.foot .prog{flex:1;font-size:14px;color:var(--mut)}.foot .prog b{color:var(--ink);font-size:16px}
+.bar{height:6px;background:#e9efe8;border-radius:3px;margin-top:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok);width:0}
+.btn{border:0;border-radius:12px;padding:12px 18px;min-height:48px;font-weight:800;cursor:pointer;background:var(--g);color:#fff}
+.btn.lime{background:var(--lime);color:var(--g)}.btn.ghost{background:#fff;color:var(--g);border:1.5px solid var(--g)}.btn:disabled{opacity:.45;cursor:default}
+.fin{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.fin:last-child{border-bottom:0}.fin b{font-size:16px}.fin small{display:block;color:var(--mut);font-size:12px}
+.fin .st{font-size:13px;font-weight:700;white-space:nowrap}.st.ok{color:var(--ok)}.st.err{color:var(--bad)}.st.busy{color:var(--mut)}
+.fin .ask{grid-column:1/3;background:#fff7e6;border:1px solid #f1d39a;border-radius:10px;padding:10px;font-size:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fin .ask span{flex:1;min-width:180px}
+.fin a{color:var(--g);font-weight:800}
+.empty{padding:28px 16px;text-align:center;color:var(--mut)}
+.skel{height:60px;margin:0;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#f1f4f0 25%,#e7ede6 37%,#f1f4f0 63%);background-size:400% 100%;animation:sk 1.4s ease infinite}
+@keyframes sk{0%{background-position:100% 50%}100%{background-position:0 50%}}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#13261e;color:#fff;border-radius:10px;padding:10px 16px;font-size:14px;z-index:30;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1}
+.gate{max-width:480px;margin:60px auto;text-align:center}
+@media (min-width:700px){.cell input{width:96px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <a href="index.html" id="back" aria-label="返回">‹</a>
+  <h1>團體分站輸入</h1>
+  <span class="sync ok" id="sync">已同步</span>
+</header>
+<nav class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="enter">輸入</button>
+  <button role="tab" aria-selected="false" data-tab="finish">完成 <span class="cnt" id="finCnt">0</span></button>
+</nav>
+<main id="app"><div class="list"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div></main>
+<div class="foot" id="foot" hidden>
+  <div class="prog"><span id="progTxt"></span><div class="bar"><i id="progBar"></i></div></div>
+  <button class="btn ghost" id="goFinish" type="button">去完成 ›</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const DEFAULT_API = 'https://script.google.com/macros/s/AKfycbzui0D7wBTHs02oqO87bbabZdvdvEW0FuHtmxMWfQAot30pm5C62AkjBvQSxltp8ldE/exec';
+const API = (function () {
+  const q = new URLSearchParams(location.search).get('api');
+  if (q && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(q)) { try { sessionStorage.setItem('yj_api', q); } catch (e) {} return q; }
+  // 在本機（localhost）測試時預設接測試副本，正式網站不受影響
+  const DEF = DEFAULT_API;
+  try { return sessionStorage.getItem('yj_api') || DEF; } catch (e) { return DEF; }
+})();
+const TK = (function () {
+  const h = new URLSearchParams(location.hash.slice(1)).get('tk');
+  if (h) { try { sessionStorage.setItem('yj_tk', h); } catch (e) {} history.replaceState(null, '', location.pathname + location.search); return h; }
+  try { return sessionStorage.getItem('yj_tk') || localStorage.getItem('yj_token') || ''; } catch (e) { return ''; }
+})();
+const FROM_APP = /[?&]app=1/.test(location.search);
+if (FROM_APP) document.getElementById('back').addEventListener('click', e => { e.preventDefault(); history.length > 1 ? history.back() : null; });
+
+// ───────── 測項（欄位 key 與後台 rec 相同） ─────────
+// r=[最小,最大]：超出只提醒、不擋（跟網頁端 validRanges 一致）
+const STATIONS = [
+  { id: 'body', name: '身高體重', f: [['height', '身高', 'cm', [100, 220]], ['weight', '體重', 'kg', [20, 120]], ['sittingHeight', '坐高', 'cm', [50, 110]], ['legLength', '腿長', 'cm', [40, 120]]] },
+  { id: 's10', name: '10m 衝刺', f: [['sprint10m', '10m', '秒', [1.5, 3.5]]] },
+  { id: 's20', name: '20m 衝刺', f: [['sprint20m', '20m', '秒', [2.5, 6]]] },
+  { id: 'a515', name: '5-10-5 變向', f: [['agility515L', '左', '秒', [3.5, 8]], ['agility515R', '右', '秒', [3.5, 8]]] },
+  { id: 'a515r', name: '反應式 5-10-5', f: [['agility515Reactive', '反應式', '秒', [3.5, 9]]] },
+  { id: 'spider', name: '蜘蛛跑', f: [['spiderRun', '蜘蛛跑', '秒', [8, 22]]] },
+  { id: 'cmj', name: '擺臂反向跳', f: [['cmjHeight', '擺臂', 'cm', [10, 85]]] },
+  { id: 'cmjna', name: '不擺臂反向跳', f: [['cmjNoArm', '不擺臂', 'cm', [10, 80]]] },
+  { id: 'broad', name: '立定跳遠', f: [['broadJump', '跳遠', 'cm', [80, 350]]] },
+  { id: 'lat', name: '側向跳', f: [['lateralJumpL', '左', 'cm', [60, 260]], ['lateralJumpR', '右', 'cm', [60, 260]]] },
+  { id: 'land', name: '單腿落地穩定', f: [['singleLegLandL', '左', '秒', [.1, 3]], ['singleLegLandR', '右', '秒', [.1, 3]]] },
+  { id: 'force', name: '落地峰值力', note: '輸入測力台的 N，後台會自動除以體重', f: [['singleLegLandForceL', '左', 'N', [200, 6000]], ['singleLegLandForceR', '右', 'N', [200, 6000]]] },
+  { id: 'dj', name: '單腿 DJ RSI', f: [['singleLegDJL', '左', 'RSI', [.2, 3.5]], ['singleLegDJR', '右', 'RSI', [.2, 3.5]]] },
+  { id: 'rot', name: '藥球轉體拋擲', mb: true, f: [['rotationalThrowL', '左', 'm', [1, 18]], ['rotationalThrowR', '右', 'm', [1, 18]]] },
+  { id: 'serve', name: '藥球發球拋擲', mb: true, f: [['servingThrow', '拋擲', 'm', [1, 18]]] },
+  { id: 'ift', name: '30-15 IFT', f: [['IFT30_15', 'IFT', 'km/h', [10, 28]]] },
+  { id: 'grip', name: '握力', f: [['gripStrength', '慣用手', 'kg', [10, 80]], ['gripStrengthNd', '非慣用', 'kg', [10, 80]]] },
+  { id: 'hop', name: '10/5 Hop', f: [['hop10_5', 'RSI', '', [.5, 4]]] },
+  { id: 'speed', name: '發球速度', f: [['serveSpeed', '球速', 'km/h', [60, 250]]] },
+  { id: 'mob', name: '活動度', mob: true, f: [['mobility.trunkFlexExt.v', '軀幹'], ['mobility.hipRot.L', '髖旋左'], ['mobility.hipRot.R', '髖旋右'], ['mobility.shoulderRot.L', '肩旋左'], ['mobility.shoulderRot.R', '肩旋右'], ['mobility.hipShoulderSep.L', '髖肩左'], ['mobility.hipShoulderSep.R', '髖肩右'], ['mobility.ankleDF.L', '踝左'], ['mobility.ankleDF.R', '踝右']] }
+];
+const FIELD = {}; STATIONS.forEach(s => s.f.forEach(f => { FIELD[f[0]] = { st: s, label: f[1], unit: f[2], range: f[3] }; }));
+FIELD.mbWeight = { label: '藥球重量', unit: 'kg' };
+
+// ───────── 狀態 ─────────
+const LS = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } };
+const todayTPE = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+const pref = LS('yj_station_pref') || {};
+const S = {
+  date: pref.date === todayTPE() ? pref.date : todayTPE(),
+  stations: Array.isArray(pref.stations) && pref.stations.length ? pref.stations : [],
+  group: pref.group || 'all', mb: pref.mb || '', q: '',
+  players: [], server: {}, status: {}, existing: {}, loaded: false, tab: 'enter', setupOpen: true, fin: {}
+};
+if (S.stations.length) S.setupOpen = false;
+const key = (pid, f) => pid + '|' + f;
+const qKey = () => 'yj_station_q_' + S.date;
+let queue = LS(qKey()) || {};          // 還沒上傳的格子 { 'pid|field': value }
+
+function savePref() { LS('yj_station_pref', { date: S.date, stations: S.stations, group: S.group, mb: S.mb }); }
+function toast(msg, ms) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), ms || 2200); }
+function setSync(cls, txt) { const s = document.getElementById('sync'); s.className = 'sync ' + cls; s.textContent = txt; }
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+async function api(params, post) {
+  const opt = post
+    ? { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ token: TK }, params)) }
+    : undefined;
+  const url = post ? API : API + '?' + new URLSearchParams(Object.assign({ token: TK }, params));
+  const r = await fetch(url, opt);
+  const d = await r.json();
+  if (d && d.needLogin) { gate('登入已過期，請重新登入。'); throw new Error('needLogin'); }
+  if (d && d.error) throw new Error(d.error);
+  return d;
+}
+function gate(msg) {
+  document.getElementById('foot').hidden = true;
+  document.getElementById('app').innerHTML = `<form class="card gate" id="loginForm" autocomplete="on">
+    <p>${esc(msg)}</p>
+    <p><input class="search" name="username" id="lu" placeholder="教練帳號" autocomplete="username" autocapitalize="none" spellcheck="false" required></p>
+    <p><input class="search" name="password" id="lp" type="password" placeholder="密碼" autocomplete="current-password" required></p>
+    <p><button class="btn" style="width:100%" id="lb">登入</button></p><p class="hint" id="le"></p></form>`;
+  document.getElementById('loginForm').onsubmit = async ev => {
+    ev.preventDefault();
+    const b = document.getElementById('lb'), e = document.getElementById('le');
+    b.disabled = true; b.textContent = '登入中…'; e.textContent = '';
+    try {
+      const r = await (await fetch(API + '?' + new URLSearchParams({ action: 'login', user: document.getElementById('lu').value.trim(), pass: document.getElementById('lp').value }))).json();
+      if (!r.token) throw new Error(r.error || '登入失敗');
+      try { localStorage.setItem('yj_token', r.token); localStorage.setItem('yj_user', r.name || ''); sessionStorage.removeItem('yj_tk'); } catch (x) {}
+      location.reload();
+    } catch (x) { e.textContent = x.message; b.disabled = false; b.textContent = '登入'; }
+  };
+}
+
+// ───────── 年齡組（與後台 saveRecord 相同：未滿 12＝U12、未滿 14＝U14、其餘 U14以上） ─────────
+function ageAt(b, d) { if (!b) return null; const x = new Date(b), y = new Date(d); return (y - x) / (365.25 * 864e5); }
+function groupOf(p) { const a = ageAt(p.birthday, S.date); return a == null ? '?' : a < 12 ? 'U12' : a < 14 ? 'U14' : 'U14以上'; }
+
+// ───────── 載入 ─────────
+async function loadAll() {
+  if (!TK) return gate('請用教練帳號登入（跟網頁版同一組）。');
+  try {
+    const [pl, st] = await Promise.all([api({ action: 'getPlayers' }), api({ action: 'getStation', date: S.date })]);
+    S.players = (pl.players || []).map(p => Object.assign({}, p, { id: String(p.id), name: String(p.name).trim() }));
+    applyServer(st);
+    S.loaded = true;
+    render();
+    flush();
+  } catch (e) { if (e.message !== 'needLogin') { document.getElementById('app').innerHTML = `<div class="card gate"><p>${/未知 action/.test(e.message) ? '後台還沒更新「團體分站」功能，請通知管理員部署新版後台。' : '讀不到資料：' + esc(e.message)}</p><button class="btn" onclick="loadAll()">再試一次</button></div>`; } }
+}
+function applyServer(st) {
+  S.server = {}; S.status = {};
+  (st.entries || []).forEach(e => {
+    S.server[key(e.playerId, e.field)] = { v: e.value, coach: e.coach, at: e.at, done: e.status === '已完成', testId: e.testId };
+    if (e.status === '已完成') S.status[e.playerId] = e.testId;
+  });
+  S.existing = st.existing || {};
+}
+async function refresh(silent) {
+  if (!S.loaded || document.activeElement && document.activeElement.tagName === 'INPUT' && Date.now() - lastType < 4000) return;
+  try { applyServer(await api({ action: 'getStation', date: S.date })); if (!silent) toast('已更新其他站的成績'); paintValues(); updateCounts(); if (S.tab === 'finish') renderFinish(); }
+  catch (e) { /* 背景更新失敗不打擾 */ }
+}
+
+// ───────── 上傳（自動、可離線） ─────────
+let flushing = false, flushTimer = 0, lastType = 0;
+function queueSet(pid, f, v) {
+  queue[key(pid, f)] = v; LS(qKey(), queue);
+  clearTimeout(flushTimer); flushTimer = setTimeout(flush, 1200);
+  setSync('busy', '儲存中…');
+}
+async function flush() {
+  if (flushing) return;
+  const keys = Object.keys(queue);
+  if (!keys.length) { setSync('ok', '已同步'); return; }
+  if (!navigator.onLine) { setSync('off', `離線：${keys.length} 格待上傳`); return; }
+  flushing = true;
+  const snap = {}; keys.slice(0, 400).forEach(k => { snap[k] = queue[k]; });
+  try {
+    const entries = Object.keys(snap).map(k => { const i = k.indexOf('|'); return { playerId: k.slice(0, i), field: k.slice(i + 1), value: snap[k] }; });
+    const r = await api({ action: 'saveStation', date: S.date, entries }, true);
+    Object.keys(snap).forEach(k => {
+      if (queue[k] === snap[k]) delete queue[k];
+      const i = k.indexOf('|');
+      if (snap[k] === '') delete S.server[k]; else S.server[k] = { v: snap[k], coach: '我', at: r.at, done: false };
+    });
+    LS(qKey(), queue);
+    if (r.locked && r.locked.length) toast(`${r.locked.length} 格已經完成存檔，沒有改動（要改請到個人模式）`, 3500);
+    paintValues(); updateCounts();
+  } catch (e) {
+    if (e.message === 'needLogin') { flushing = false; return; }
+    setSync('off', `未上傳 ${Object.keys(queue).length} 格，稍後自動重試`);
+    flushing = false; setTimeout(flush, 15000); return;
+  }
+  flushing = false;
+  if (Object.keys(queue).length) flush(); else setSync('ok', '已同步');
+}
+window.addEventListener('online', flush);
+setInterval(() => refresh(true), 30000);
+
+// ───────── 畫面 ─────────
+function curVal(pid, f) { const k = key(pid, f); if (k in queue) return queue[k]; return S.server[k] ? S.server[k].v : ''; }
+function visiblePlayers() {
+  const q = S.q.trim().toLowerCase();
+  return S.players.filter(p => (S.group === 'all' || groupOf(p) === S.group) && (!q || p.name.toLowerCase().includes(q) || String(p.id).includes(q)));
+}
+function selFields() { const out = []; S.stations.forEach(id => { const s = STATIONS.find(x => x.id === id); if (s) s.f.forEach(f => out.push(f[0])); }); return out; }
+
+function render() {
+  const app = document.getElementById('app');
+  if (S.tab === 'finish') return renderFinish();
+  const groups = ['all', 'U12', 'U14', 'U14以上'];
+  const gCount = g => g === 'all' ? S.players.length : S.players.filter(p => groupOf(p) === g).length;
+  const hasMb = S.stations.some(id => (STATIONS.find(s => s.id === id) || {}).mb);
+  const setup = S.setupOpen || !S.stations.length ? `
+    <section class="card">
+      <p class="lbl">檢測日期</p>
+      <div class="row"><input type="date" id="date" value="${S.date}"></div>
+      <p class="lbl" style="margin-top:14px">這一站測哪些項目？（最多 3 項）</p>
+      <div class="chips" id="stChips">${STATIONS.map(s => `<button type="button" class="chip" data-st="${s.id}" aria-pressed="${S.stations.includes(s.id)}">${s.name}</button>`).join('')}</div>
+      ${hasMb ? `<p class="lbl" style="margin-top:14px">藥球重量（PR 只跟同重量的人比）</p>
+      <select id="mb"><option value="">— 請選擇 —</option>${[1, 2, 3].map(w => `<option value="${w}" ${String(S.mb) === String(w) ? 'selected' : ''}>${w} kg</option>`).join('')}</select>` : ''}
+      ${S.stations.map(id => STATIONS.find(s => s.id === id)).filter(s => s && s.note).map(s => `<p class="hint">${s.name}：${s.note}</p>`).join('')}
+      <p class="lbl" style="margin-top:14px">組別</p>
+      <div class="chips" id="grpChips">${groups.map(g => `<button type="button" class="chip" data-g="${g}" aria-pressed="${S.group === g}">${g === 'all' ? '全部' : g}<small>${gCount(g)}</small></button>`).join('')}</div>
+      ${S.stations.length ? `<p style="margin:16px 0 0"><button type="button" class="btn" id="startBtn" style="width:100%">開始輸入</button></p>` : `<p class="hint">選好項目就可以開始，每一格會自動儲存。</p>`}
+    </section>` : `
+    <section class="card setup-sum">
+      <b>${S.date}｜${S.stations.map(id => (STATIONS.find(s => s.id === id) || {}).name).join('、')}${hasMb && S.mb ? `（${S.mb} kg 藥球）` : ''}｜${S.group === 'all' ? '全部' : S.group}</b>
+      <button type="button" class="link" id="editSetup">更改</button>
+    </section>`;
+  const list = S.setupOpen && !S.stations.length ? '' : `
+    <input class="search" id="q" type="search" placeholder="搜尋姓名或編號" value="${esc(S.q)}">
+    <div class="list" id="list">${visiblePlayers().map(rowHTML).join('') || '<div class="empty">這個組別沒有球員</div>'}</div>
+    <p class="hint" style="text-align:center">新球員請先加到試算表「01 球員總表」再按 <button class="link" id="reload">重新整理</button></p>`;
+  app.innerHTML = setup + list;
+  bindEnter();
+  paintValues(); updateCounts();
+  document.getElementById('foot').hidden = !S.stations.length || S.setupOpen;
+}
+
+function rowHTML(p) {
+  const done = S.status[p.id];
+  const g = groupOf(p);
+  const cells = selFields().map(f => {
+    const d = FIELD[f];
+    if (f.startsWith('mobility.')) return `<div class="cell"><span>${d.label}</span><button type="button" class="tog" data-p="${p.id}" data-f="${f}" ${done ? 'disabled' : ''}>–</button></div>`;
+    return `<div class="cell"><span>${d.label}${d.unit ? ' ' + d.unit : ''}</span><input inputmode="decimal" enterkeyhint="next" autocomplete="off" data-p="${p.id}" data-f="${f}" ${done ? 'disabled' : ''}><em></em></div>`;
+  }).join('');
+  return `<div class="p${done ? ' done' : ''}" data-row="${p.id}"><div class="nm">${esc(p.name)}<small>${done ? '✓ 已完成 ' + esc(done) : `#${esc(p.id)} · ${g}${p.gender ? ' · ' + esc(p.gender) : ''}`}</small></div><div class="cells">${cells}</div></div>`;
+}
+
+function paintValues() {
+  document.querySelectorAll('#list [data-f]').forEach(el => {
+    const pid = el.dataset.p, f = el.dataset.f, k = key(pid, f);
+    const v = curVal(pid, f);
+    if (el.tagName === 'BUTTON') {
+      el.className = 'tog' + (v === 'pass' ? ' pass' : v === 'fail' ? ' fail' : '');
+      el.textContent = v === 'pass' ? '✓' : v === 'fail' ? '✗' : '–';
+      return;
+    }
+    if (document.activeElement !== el) el.value = v;
+    el.classList.toggle('filled', v !== '');
+    el.classList.toggle('pend', k in queue);
+    const sv = S.server[k];
+    el.classList.toggle('other', !!(sv && sv.coach && sv.coach !== '我' && !(k in queue)));
+    el.title = sv && sv.coach ? `${sv.coach} ${sv.at || ''}` : '';
+    checkRange(el);
+  });
+}
+function checkRange(el) {
+  const d = FIELD[el.dataset.f], em = el.parentNode.querySelector('em');
+  const x = parseFloat(el.value);
+  let msg = '';
+  if (el.value !== '' && !isFinite(x)) msg = '不是數字';
+  else if (d.range && el.value !== '' && (x < d.range[0] || x > d.range[1])) msg = `通常 ${d.range[0]}–${d.range[1]}`;
+  el.classList.toggle('warn', !!msg);
+  if (em) em.textContent = msg;
+}
+function updateCounts() {
+  const vis = visiblePlayers(), fields = selFields().filter(f => !f.startsWith('mobility.'));
+  const useF = fields.length ? fields : selFields();
+  let filled = 0;
+  vis.forEach(p => { if (useF.every(f => curVal(p.id, f) !== '') || S.status[p.id]) filled++; });
+  const total = vis.length;
+  const pt = document.getElementById('progTxt');
+  if (pt) { pt.innerHTML = `這一站 <b>${filled}/${total}</b> 人填完`; document.getElementById('progBar').style.width = total ? (filled / total * 100) + '%' : 0; }
+  document.getElementById('finCnt').textContent = pendingPlayers().length;
+}
+function pendingPlayers() {
+  const ids = new Set();
+  Object.keys(S.server).forEach(k => { if (!S.server[k].done) ids.add(k.slice(0, k.indexOf('|'))); });
+  Object.keys(queue).forEach(k => { if (queue[k] !== '') ids.add(k.slice(0, k.indexOf('|'))); });
+  return S.players.filter(p => ids.has(p.id));
+}
+
+function bindEnter() {
+  const d = document.getElementById('date');
+  if (d) d.onchange = () => {
+    if (Object.keys(queue).length) { toast('還有沒上傳的格子，先等「已同步」再換日期'); d.value = S.date; return; }
+    S.date = d.value || todayTPE(); queue = LS(qKey()) || {}; savePref(); S.loaded = false;
+    document.getElementById('app').innerHTML = '<div class="list"><div class="skel"></div><div class="skel"></div></div>'; loadAll();
+  };
+  document.querySelectorAll('#stChips [data-st]').forEach(b => b.onclick = () => {
+    const id = b.dataset.st, i = S.stations.indexOf(id);
+    if (i >= 0) S.stations.splice(i, 1);
+    else { if (S.stations.length >= 3) { toast('一站最多 3 項'); return; } S.stations.push(id); }
+    savePref(); render();
+  });
+  document.querySelectorAll('#grpChips [data-g]').forEach(b => b.onclick = () => { S.group = b.dataset.g; savePref(); render(); });
+  const mb = document.getElementById('mb'); if (mb) mb.onchange = () => { S.mb = mb.value; savePref(); };
+  const sb = document.getElementById('startBtn'); if (sb) sb.onclick = () => {
+    if (S.stations.some(id => (STATIONS.find(s => s.id === id) || {}).mb) && !S.mb) { toast('請先選藥球重量'); return; }
+    S.setupOpen = false; render(); const f = document.querySelector('#list input:not(:disabled)'); if (f) f.focus();
+  };
+  const es = document.getElementById('editSetup'); if (es) es.onclick = () => { S.setupOpen = true; render(); window.scrollTo(0, 0); };
+  const q = document.getElementById('q'); if (q) q.oninput = () => { S.q = q.value; document.getElementById('list').innerHTML = visiblePlayers().map(rowHTML).join('') || '<div class="empty">找不到</div>'; bindCells(); paintValues(); updateCounts(); };
+  const rl = document.getElementById('reload'); if (rl) rl.onclick = () => { S.loaded = false; loadAll(); };
+  bindCells();
+}
+function bindCells() {
+  document.querySelectorAll('#list input[data-f]').forEach(el => {
+    el.oninput = () => { lastType = Date.now(); checkRange(el); };
+    el.onchange = () => commit(el);
+    el.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); commit(el); nextInput(el); } };
+  });
+  document.querySelectorAll('#list .tog').forEach(el => el.onclick = () => {
+    const cur = curVal(el.dataset.p, el.dataset.f);
+    const nv = cur === '' ? 'pass' : cur === 'pass' ? 'fail' : '';
+    queueSet(el.dataset.p, el.dataset.f, nv); paintValues(); updateCounts();
+  });
+}
+function commit(el) {
+  const v = el.value.trim().replace(/[，,]/g, '.');
+  if (v !== el.value) el.value = v;
+  if (v !== '' && !isFinite(parseFloat(v))) { checkRange(el); return; }
+  if (v === curVal(el.dataset.p, el.dataset.f)) return;
+  queueSet(el.dataset.p, el.dataset.f, v);
+  // 投擲項目：同時記下這一站的藥球重量
+  if (v !== '' && FIELD[el.dataset.f].st.mb && S.mb && curVal(el.dataset.p, 'mbWeight') !== String(S.mb)) queueSet(el.dataset.p, 'mbWeight', String(S.mb));
+  paintValues(); updateCounts();
+}
+function nextInput(el) {
+  const all = [...document.querySelectorAll('#list input:not(:disabled)')];
+  const n = all[all.indexOf(el) + 1];
+  if (n) { n.focus(); n.select(); n.scrollIntoView({ block: 'center', behavior: 'smooth' }); } else { el.blur(); toast('這一頁填完了'); }
+}
+
+// ───────── 完成分頁 ─────────
+function renderFinish() {
+  const app = document.getElementById('app');
+  document.getElementById('foot').hidden = true;
+  const pend = pendingPlayers();
+  const doneIds = Object.keys(S.status);
+  const fieldsOf = pid => {
+    const fs = new Set();
+    Object.keys(S.server).forEach(k => { if (k.startsWith(pid + '|') && !S.server[k].done) fs.add(k.slice(pid.length + 1)); });
+    Object.keys(queue).forEach(k => { if (k.startsWith(pid + '|') && queue[k] !== '') fs.add(k.slice(pid.length + 1)); });
+    return [...fs];
+  };
+  const coachesOf = pid => [...new Set(Object.keys(S.server).filter(k => k.startsWith(pid + '|') && !S.server[k].done).map(k => S.server[k].coach).filter(Boolean))];
+  const labelOf = f => { const d = FIELD[f]; if (!d) return f; const st = d.st; return st && st.f.length > 1 && !st.mob ? `${st.name}${d.label}` : st ? st.name : d.label; };
+  const rows = pend.map(p => {
+    const fs = fieldsOf(p.id), fin = S.fin[p.id] || {};
+    const ex = S.existing[p.name];
+    const names = [...new Set(fs.map(labelOf))];
+    let st = '';
+    if (fin.state === 'busy') st = '<span class="st busy">處理中…</span>';
+    else if (fin.state === 'err') st = `<span class="st err">${esc(fin.msg)}</span>`;
+    else if (ex && ex.length) st = `<span class="st" style="color:var(--warn)">今天已有 ${esc(ex[ex.length - 1])}</span>`;
+    const ask = fin.state === 'ask' ? `<div class="ask"><span>${esc(p.name)} 今天已經有一筆紀錄（${esc(fin.existing.join('、'))}）。要把這次分站的成績合併進去嗎？舊的那筆會換成合併後的新紀錄。</span><button class="btn lime" data-merge="${p.id}">合併</button><button class="btn ghost" data-skip="${p.id}">先不要</button></div>` : '';
+    return `<div class="fin"><div><b>${esc(p.name)}</b><small>${names.length} 項：${esc(names.slice(0, 6).join('、'))}${names.length > 6 ? '…' : ''}${coachesOf(p.id).length ? '｜' + esc(coachesOf(p.id).join('、')) : ''}</small></div>${st}${ask}</div>`;
+  }).join('');
+  const doneRows = doneIds.map(pid => { const p = S.players.find(x => x.id === pid) || { name: pid }; return `<div class="fin"><div><b>${esc(p.name)}</b><small>已存成正式紀錄 ${esc(S.status[pid])}</small></div><a href="report.html?id=${encodeURIComponent(S.status[pid])}${FROM_APP ? '&app=1' : ''}">看報告 ›</a></div>`; }).join('');
+  const qn = Object.keys(queue).length;
+  app.innerHTML = `
+    <section class="card"><b>${S.date}</b>｜待完成 ${pend.length} 人
+      <p class="hint">按下「全部完成」會把每個人今天各站的成績合成一筆正式紀錄，並算好分數與報告。所有站都測完再按。${qn ? `<br><b style="color:var(--warn)">還有 ${qn} 格沒上傳，等右上角顯示「已同步」再按。</b>` : ''}</p>
+      <p style="margin:12px 0 0;display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="finAll" ${!pend.length || qn ? 'disabled' : ''}>全部完成（${pend.length} 人）</button><button class="btn ghost" id="finRefresh">重新整理</button></p></section>
+    ${pend.length ? `<div class="list">${rows}</div>` : '<div class="card empty">沒有待完成的球員</div>'}
+    ${doneIds.length ? `<p class="lbl" style="margin:18px 4px 8px">今天已完成</p><div class="list">${doneRows}</div>` : ''}`;
+  const fa = document.getElementById('finAll'); if (fa) fa.onclick = finishAll;
+  document.getElementById('finRefresh').onclick = () => refresh(false);
+  document.querySelectorAll('[data-merge]').forEach(b => b.onclick = () => finishOne(b.dataset.merge, true));
+  document.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => { S.fin[b.dataset.skip] = { state: 'err', msg: '已略過' }; renderFinish(); });
+  updateCounts();
+}
+async function finishOne(pid, merge) {
+  S.fin[pid] = { state: 'busy' }; renderFinish();
+  try {
+    const r = await api({ action: 'finalizeStationPlayer', date: S.date, playerId: pid, merge: merge ? '1' : '' }, true);
+    if (r.needMerge) { S.fin[pid] = { state: 'ask', existing: r.existing }; renderFinish(); return 'ask'; }
+    delete S.fin[pid];
+    Object.keys(S.server).forEach(k => { if (k.startsWith(pid + '|')) { S.server[k].done = true; S.server[k].testId = r.testId; } });
+    S.status[pid] = r.testId;
+    if (r.replaced) { const nm = (S.players.find(x => x.id === pid) || {}).name; if (nm) S.existing[nm] = [r.testId]; }
+    renderFinish(); return 'ok';
+  } catch (e) { if (e.message !== 'needLogin') { S.fin[pid] = { state: 'err', msg: e.message }; renderFinish(); } return 'err'; }
+}
+async function finishAll() {
+  const list = pendingPlayers().filter(p => !(S.fin[p.id] && (S.fin[p.id].state === 'ask' || S.fin[p.id].msg === '已略過')));
+  let ok = 0, ask = 0, err = 0;
+  for (const p of list) { const r = await finishOne(p.id, false); if (r === 'ok') ok++; else if (r === 'ask') ask++; else err++; }
+  toast(`完成 ${ok} 人${ask ? `，${ask} 人要確認合併` : ''}${err ? `，${err} 人失敗` : ''}`, 4000);
+}
+
+// ───────── 分頁切換 ─────────
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  S.tab = b.dataset.tab;
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
+  if (S.tab === 'finish') { refresh(true); renderFinish(); } else render();
+  window.scrollTo(0, 0);
+});
+document.getElementById('goFinish').onclick = () => document.querySelector('.tabs [data-tab=finish]').click();
+window.loadAll = loadAll;
+loadAll();
+</script>
+</body>
+</html>

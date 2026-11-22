@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Physical Performance Report</title>
+<!--
+  奕晉體能檢測｜個人報告（v2，2026-11-22）
+  版型＝Adam 的 個人報告_家長版/indiv_en.py（Luke_20261013.pdf），改成讀後台資料自動產生。
+  網址：report.html?id=T0077&lang=en|zh-Hant|zh-Hans
+  憑證：網頁端沿用 localStorage yj_token；App 開啟時用 #tk=… 帶入（不會送到伺服器）。
+  國際常模：團測讀圖_2026-10/_intl_gen/norms_v2.json（DTB 2014／Dobos 2021／Hernández-Davó 2020），
+  年齡對應同 Adam：未滿 14＝U14、未滿 16＝U16、其餘＝U18；未滿 12 歲與 20 歲以上不比國際常模。
+-->
+<style>
+@page{size:297mm 210mm;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#13261e;--green:#163E30;--lime:#D8EF5F;--bg:#F5F7F2;--muted:#4a5f55}
+html,body{background:#dfe5dd}
+body{font-family:"Helvetica Neue",Helvetica,Arial,"PingFang TC","Noto Sans TC",sans-serif;color:var(--ink);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body.zh-Hans{font-family:"PingFang SC","Hiragino Sans GB","Noto Sans SC",sans-serif}
+body.zh-Hant{font-family:"PingFang TC","Noto Sans TC",sans-serif}
+svg{width:100%;height:100%;display:block}
+
+/* 工具列（只在螢幕上） */
+.bar{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 16px;background:#163E30;color:#fff;font:600 14px/1.2 -apple-system,"PingFang TC",sans-serif}
+.bar .sp{flex:1}
+.bar button,.bar a{appearance:none;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer;text-decoration:none;min-height:38px}
+.bar .lang button[aria-pressed=true]{background:var(--lime);color:var(--green);border-color:var(--lime)}
+.bar .lang{display:flex;gap:4px}
+.bar .pri{background:var(--lime);color:var(--green);border-color:var(--lime)}
+.busy{position:fixed;inset:0;z-index:99;background:rgba(19,38,30,.55);display:flex;align-items:center;justify-content:center;color:#fff;font:600 16px -apple-system,"PingFang TC",sans-serif}
+.state{max-width:560px;margin:60px auto;padding:24px;background:#fff;border-radius:14px;text-align:center;font:500 16px/1.6 -apple-system,"PingFang TC",sans-serif;color:#33463d}
+.state .spin{width:34px;height:34px;margin:0 auto 14px;border-radius:50%;border:4px solid #d6e3d6;border-top-color:#163E30;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.state small{display:block;color:#6a7b72;font-size:13px;margin-top:6px}
+
+/* ── 報告本體（A4 橫式；樣式來自 Adam indiv.css＋indiv_en.css） ── */
+.sheet{display:flex;justify-content:center;padding:18px 0 40px}
+.pg{width:297mm;height:210mm;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 6px 30px rgba(0,0,0,.18)}
+.ban{height:21mm;background:linear-gradient(100deg,#0f3326,#163E30 55%,#1f5a3f);position:relative;overflow:hidden;display:flex;align-items:center;gap:9mm;padding:0 7mm;color:#fff;flex:none}
+.court{position:absolute;right:0;top:0;bottom:0;width:95mm;background:linear-gradient(160deg,#2c7a4f,#1d5c3c);clip-path:polygon(22% 0,100% 0,100% 100%,0 100%)}
+.court:before{content:"";position:absolute;left:30%;right:-10mm;top:66%;height:1mm;background:rgba(255,255,255,.85);transform:rotate(-8deg)}
+.court:after{content:"";position:absolute;left:62%;top:-5mm;bottom:-5mm;width:.8mm;background:rgba(255,255,255,.6);transform:rotate(25deg)}
+.ball{position:absolute;right:12mm;top:1.5mm;width:18mm;height:18mm;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f3fb7a,#cfe32a 55%,#9fb514);box-shadow:0 1mm 3mm rgba(0,0,0,.35);overflow:hidden}
+.ball:before,.ball:after{content:"";position:absolute;width:18mm;height:18mm;border:.9mm solid rgba(255,255,255,.9);border-radius:50%}
+.ball:before{left:-12.5mm}.ball:after{right:-12.5mm}
+.brand{z-index:1;display:flex;flex-direction:column;line-height:1.25;padding-right:7mm;border-right:.4mm solid rgba(255,255,255,.5)}
+.brand b{font-size:17px;font-weight:900;letter-spacing:1.5px}.brand span{font-size:10.5px;color:var(--lime);font-weight:700;letter-spacing:.3px}
+.tt{z-index:1}.tt h1{font-size:27px;font-weight:900;font-style:italic;line-height:1.1}.tt h1 em{color:var(--lime);margin-left:2mm}
+.sub{font-size:12.5px;font-weight:600;color:#dfeee2;letter-spacing:.3px;margin-top:.5mm}
+.main{flex:1;display:flex;gap:2.6mm;padding:2.6mm 5mm;min-height:0}
+aside{width:70mm;flex:none;display:flex;flex-direction:column;gap:2.6mm}
+.box,.card{background:#fff;border-radius:3.5mm;padding:2.5mm 3.2mm;box-shadow:0 .4mm 1.6mm rgba(22,62,48,.12)}
+h3{display:flex;align-items:center;gap:1.6mm;font-size:14.5px;font-weight:900;color:var(--green);margin-bottom:1.6mm}
+h3 svg,h3 .h{width:5.6mm;height:5.6mm;flex:none;color:var(--green)}h3 small{font-size:10.5px;font-weight:600;color:var(--muted);margin-left:1.5mm}
+.box p{font-size:10px;line-height:1.5;margin-bottom:1.6mm}.tn{font-size:9px!important;color:var(--muted)}
+.tier{display:flex;align-items:center;gap:2mm;margin-bottom:1.2mm}.tier b{font-size:11.5px;width:19mm}.tier small{font-size:9px;color:var(--muted)}
+.blk{width:11mm;height:4.6mm;border-radius:1.4mm;flex:none}
+.t4{background:#188052;color:#fff}.t3{background:#a9dc8f;color:#11331f}.t2{background:#f6d860;color:#3b2f00}.t1{background:#f4a67a;color:#4a1a00}
+.mk{display:flex;align-items:center;gap:1.6mm;font-size:9.5px;font-weight:700;margin:1.2mm 0}.mk i{width:3.6mm;height:3.6mm;border-radius:50%;background:#fff;border:.8mm solid var(--green);flex:none}
+.ob{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.o{display:grid;grid-template-columns:5mm 1fr auto;column-gap:1.6mm;align-items:center;padding:.9mm 0;border-bottom:.2mm solid #e5ebe5}
+.o:last-child{border-bottom:0}.oi{width:4.6mm;height:4.6mm}.on{font-size:9.5px;font-weight:700;line-height:1.25}.ov{font-size:11px;font-weight:900;text-align:right;white-space:nowrap}
+.o small{grid-column:2/4;font-size:8.5px;color:#6a7b72;margin-top:-.2mm}
+u{text-decoration:none;font-size:8.5px;font-weight:600;color:#55675e;margin-left:.5mm}
+.right{flex:1;display:flex;flex-direction:column;gap:2.6mm;min-width:0}
+.top{display:flex;gap:2.6mm}
+.hero{width:66mm;flex:none;background:linear-gradient(150deg,#163E30,#1f5a3f);border-radius:3.5mm;color:#fff;padding:2.5mm 3.5mm;display:flex;flex-direction:column;gap:1.4mm;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-12mm;bottom:-14mm;width:34mm;height:34mm;border-radius:50%;border:2mm solid rgba(216,239,95,.18)}
+.av{position:absolute;right:4mm;top:3mm;width:15mm;height:15mm;border-radius:50%;background:var(--lime);color:var(--green);font-size:26px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.hn{padding-right:17mm}.hn b{display:block;font-size:22px;font-weight:900;font-style:italic;line-height:1.15;word-break:break-word}.pill{display:inline-block;background:#fff;color:var(--green);border-radius:1.6mm;padding:.2mm 2.5mm;font-size:11px;font-weight:900;margin-top:.8mm}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:1mm 3mm;font-size:8.5px;color:#cfe0d4}.facts b{display:block;font-size:12.5px;color:#fff}
+.glance{flex:1;background:#fff;border-radius:3.5mm;padding:2.5mm 3.2mm;box-shadow:0 .4mm 1.6mm rgba(22,62,48,.12);display:flex;flex-direction:column;gap:1.1mm}
+.glance h2{font-size:13.5px;font-weight:900;color:var(--green)}
+.g{display:flex;align-items:center;gap:2.2mm;border-radius:2.4mm;padding:.9mm 2.5mm;font-size:10.5px;line-height:1.3}
+.g svg{width:6.5mm;height:6.5mm;flex:none}.g b{display:block;font-size:11px}.g em{font-style:normal;font-weight:900}
+.good{background:#E9F2E7;color:var(--green)}.work{background:#fff6d6;color:#4a3a00}.care{background:#fdeae0;color:#6b2a0a}
+.card table{width:100%;border-collapse:collapse}
+th{font-size:9.5px;font-weight:700;color:var(--muted);text-align:left;padding:0 1.5mm 1mm;border-bottom:.4mm solid var(--green)}
+td{padding:.55mm 1.5mm;border-bottom:.2mm solid #e5ebe5;vertical-align:middle}tbody tr:last-child td{border-bottom:0}
+td.it{display:flex;align-items:center;gap:2mm;width:58mm}.it .ic{width:5.5mm;height:5.5mm;flex:none}.it b{display:block;font-size:11.5px;line-height:1.2}.it small{font-size:8.5px;line-height:1.25;display:block;color:var(--muted)}
+td.val{font-size:16px;font-weight:900;white-space:nowrap;width:22mm}
+td.zone{width:52mm}.zb{position:relative;display:flex;height:3.6mm;border-radius:1.8mm}.zb span{flex:1}.zb span:first-child{border-radius:1.8mm 0 0 1.8mm}.zb span:nth-child(4){border-radius:0 1.8mm 1.8mm 0}
+.zb i{position:absolute;top:50%;width:5mm;height:5mm;margin:-2.5mm 0 0 -2.5mm;border-radius:50%;background:#fff;border:1.1mm solid var(--green)}
+.zl{display:flex;font-size:7px;color:#6a7b72;margin-top:.5mm}.zl span{flex:1;text-align:center}
+td.rd{white-space:nowrap}td.rd .tg{display:inline-block;border-radius:1.4mm;padding:.2mm 2.2mm;font-size:10px;font-weight:900;margin:0 1.5mm .3mm 0}td.rd small{font-size:9.5px;font-weight:600}
+td.rd em{display:block;font-style:normal;font-size:8px;color:#6a7b72;margin-top:.3mm;white-space:normal}
+.empty-key{font-size:10.5px;color:var(--muted);padding:2mm 1.5mm;line-height:1.5}
+.bgrid{display:grid;grid-template-columns:repeat(3,1fr);column-gap:4mm}.bgrid .o{grid-template-columns:5mm 1fr auto}
+.card.base{flex:1;min-height:0}.ob.dense .o{padding:.45mm 0}.ob.dense .on{font-size:8.8px}.ob.dense .ov{font-size:10px}.ob.dense .o small{font-size:7.8px}
+body.mob .bgrid{grid-template-columns:1fr}
+.bot{flex:1;display:flex;gap:2.6mm;min-height:0}
+.lr{flex:1.05;overflow:hidden}.coach{flex:1;display:flex;flex-direction:column;gap:1mm}
+.l{border-bottom:.2mm solid #e5ebe5;padding:.7mm 0}.l:last-child{border-bottom:0}
+.lt{display:flex;align-items:center;justify-content:space-between;gap:2mm;font-size:10.5px}
+.st{font-size:9px;font-weight:900;border-radius:1.4mm;padding:.2mm 2mm;white-space:nowrap}.st.r{background:#f4a67a;color:#4a1a00}.st.y{background:#f6d860;color:#3b2f00}.st.g{background:#a9dc8f;color:#11331f}
+.bars{display:flex;align-items:center;gap:1.5mm;font-size:9.5px;margin-top:.4mm}.bars span{width:3mm;font-weight:700}.bars div{flex:1;height:2.6mm;background:#eef1ee;border-radius:1.3mm;overflow:hidden}
+.bars i{display:block;height:100%;background:#2c6db5;border-radius:1.3mm}.bars i.w{background:#e9783a}.bars b{width:15mm;text-align:right;font-size:11px}
+.l small{display:block;font-size:9.5px;color:#33463d;margin-top:.6mm}
+.q{background:var(--green);color:#fff;border-radius:2.4mm;padding:1.2mm 3mm;font-size:10.5px;font-weight:800;line-height:1.45;margin-top:1mm}.q span{display:block;text-align:right;font-size:9.5px;color:var(--lime);font-weight:700}
+.q.none{background:#eef3ec;color:#6a7b72;font-weight:600}
+.nx{margin-top:auto;background:#E9F2E7;border-radius:2.4mm;padding:1.2mm 2.5mm}.nx b{display:block;font-size:11px;color:var(--green)}.nx span{display:inline-block;background:#fff;border:.3mm solid #9cc29c;border-radius:1.4mm;font-size:9.5px;font-weight:800;padding:.2mm 2mm;margin:.4mm 1mm 0 0;color:var(--green)}
+footer{height:14mm;flex:none;background:linear-gradient(100deg,#0f3326,#163E30);color:#fff;display:flex;align-items:center;gap:4mm;padding:0 6mm}
+.tl{display:flex;align-items:center;gap:1.6mm;font-size:13px;font-weight:900;background:var(--lime);color:var(--green);border-radius:2mm;padding:1.2mm 3mm;white-space:nowrap}.tl svg{width:5mm;height:5mm}
+.ds{font-size:11px;display:flex;align-items:center;gap:2.5mm;white-space:nowrap}.ds b{font-size:13px}.ds i{width:.3mm;height:5mm;background:rgba(255,255,255,.5)}
+.nx2{background:#c62828;border-radius:1.4mm;padding:.2mm 2mm}
+.src{flex:1;font-size:7.5px;color:#cfe0d4;line-height:1.35}
+.mt{display:flex;align-items:center;gap:1.5mm;font-size:10.5px;font-weight:700;font-style:italic;color:var(--lime);white-space:nowrap}.mt svg{width:5mm;height:5mm}
+.zh-Hans .tt h1,.zh-Hant .tt h1{font-style:normal;letter-spacing:1px}.zh-Hans .hn b,.zh-Hant .hn b{font-style:normal}
+.zh-Hans .tier b,.zh-Hant .tier b{width:22mm}
+
+/* 手機／平板：改成直式卡片 */
+/* 手機寬度（JS 依視窗寬度加 .mob；產生 PDF 時暫時拿掉，維持 A4 版面） */
+html.mob{background:var(--bg)}
+body.mob .sheet{padding:0}
+body.mob .pg{width:auto;height:auto;box-shadow:none;overflow:visible}
+body.mob .ban{height:auto;padding:14px 16px;gap:10px;flex-wrap:wrap}
+body.mob .court, body.mob .ball{display:none}
+body.mob .brand{border:0;padding:0}
+body.mob .tt h1{font-size:22px}
+body.mob .tt h1 em{display:block;margin:0}
+body.mob .main{flex-direction:column;padding:12px 16px;gap:12px}
+body.mob aside{width:auto;order:2}
+body.mob .right{order:1;gap:12px}
+body.mob .top, body.mob .bot{flex-direction:column;gap:12px}
+body.mob .hero{width:auto;min-height:120px}
+body.mob .box, body.mob .card, body.mob .glance{border-radius:12px;padding:12px 14px}
+body.mob table, body.mob thead, body.mob tbody, body.mob tr, body.mob td{display:block;width:auto!important}
+body.mob thead{display:none}
+body.mob tr{padding:8px 0;border-bottom:1px solid #e5ebe5;display:grid;grid-template-columns:1fr auto;gap:4px 10px}
+body.mob tbody tr:last-child{border-bottom:0}
+body.mob td{border:0!important;padding:0!important}
+body.mob td.zone{grid-column:1/3}
+body.mob td.rd{grid-column:1/3;white-space:normal}
+body.mob td.val{text-align:right;align-self:center}
+body.mob .ob{overflow:visible}
+body.mob .lr{overflow:visible}
+body.mob footer{height:auto;flex-wrap:wrap;padding:12px 16px;gap:8px}
+body.mob .ds{flex-wrap:wrap;white-space:normal}
+body.mob .src{flex-basis:100%;order:3}
+body.mob{background:var(--bg)}
+@media print{
+  html,body{background:#fff}
+  .pg{width:297mm!important;height:210mm!important}
+  .bar,.state{display:none!important}
+  .sheet{padding:0}
+  .pg{box-shadow:none}
+}
+</style>
+</head>
+<body>
+<div class="bar" id="bar">
+  <a href="#" id="backBtn">‹ <span data-t="back"></span></a>
+  <span class="sp"></span>
+  <span class="lang" role="group" aria-label="Language">
+    <button type="button" data-lang="en">EN</button>
+    <button type="button" data-lang="zh-Hant">繁</button>
+    <button type="button" data-lang="zh-Hans">简</button>
+  </span>
+  <button type="button" class="pri" id="pdfBtn" data-t="pdf"></button>
+  <button type="button" id="printBtn" data-t="printOnly"></button>
+</div>
+<div id="out"><div class="state"><div class="spin"></div><span data-t="loading"></span><small data-t="loadingHint"></small></div></div>
+
+<script>
+'use strict';
+// ───────── 設定 ─────────
+const DEFAULT_API = 'https://script.google.com/macros/s/AKfycbzui0D7wBTHs02oqO87bbabZdvdvEW0FuHtmxMWfQAot30pm5C62AkjBvQSxltp8ldE/exec';
+const API = (function () {
+  // 測試環境可用 ?api= 指到副本試算表的 /exec（只接受 Apps Script 網址）
+  const q = new URLSearchParams(location.search).get('api');
+  if (q && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(q)) { try { sessionStorage.setItem('yj_api', q); } catch (e) {} return q; }
+  // 在本機（localhost）測試時預設接測試副本，正式網站不受影響
+  const DEF = DEFAULT_API;
+  try { return sessionStorage.getItem('yj_api') || DEF; } catch (e) { return DEF; }
+})();
+
+// 國際常模（norms_v2.json；[平均, 標準差]）
+const NORMS = {
+  DTB: { // Fernandez-Fernandez, Ulbricht & Ferrauti (2014) Br J Sports Med
+    Male:   { U14: { cmj: [31.0, 4.2], s10: [1.96, .11], s20: [3.47, .16] }, U16: { cmj: [36.5, 4.4], s10: [1.85, .11], s20: [3.25, .17] }, U18: { cmj: [39.9, 4.1], s10: [1.77, .11], s20: [3.09, .12] } },
+    Female: { U14: { cmj: [29.8, 3.8], s10: [1.98, .08], s20: [3.50, .14] }, U16: { cmj: [31.1, 3.6], s10: [1.96, .15], s20: [3.41, .14] }, U18: { cmj: [31.1, 3.9], s10: [1.96, .09], s20: [3.38, .19] } }
+  },
+  DO: { // Dobos et al. (2021) IJERPH
+    Male:   { U14: { broad: [182, 16] }, U18: { broad: [223, 23] } },
+    Female: { U14: { broad: [169, 19] }, U18: { broad: [185, 16] } }
+  },
+  HD20: { Male: { U18: { ift: [20.8, 1.87] } } } // Hernández-Davó et al. (2020)，只對照 16 歲以上男生
+};
+
+// ───────── 文字（英／繁／簡） ─────────
+const T = {
+  en: {
+    back: 'Back', print: 'Save PDF / Print', pdf: 'Download PDF', printOnly: 'Print', pdfBusy: 'Creating PDF…', pdfErr: 'Could not create the PDF. Please try again.', loading: 'Loading report…', loadingHint: 'Reading the testing database, about 5–10 seconds.',
+    needLogin: 'Please sign in with your coach account.', notFound: 'Report not found.', netErr: 'Could not reach the server. Check the connection and try again.', retry: 'Try again',
+    academy: 'YIJIN TENNIS ACADEMY', dept: 'Strength, Conditioning &amp; Rehabilitation',
+    title: (s, y) => `${s} ${y} <em>Physical Performance Report</em>`, seasons: ['Winter', 'Spring', 'Summer', 'Autumn'],
+    sub: 'Current Profile · Strengths · Development Priorities',
+    howTitle: 'How to Read This Report',
+    howText: 'Results are benchmarked against <b>published normative data for junior tennis players of the same age group and sex</b>.',
+    howNoIntl: 'International reference data are not available for this age group, so results are recorded as an individual baseline.',
+    tiers: [['Excellent', '≥ 75th percentile'], ['Above avg.', '50th–74th percentile'], ['Average', '25th–49th percentile'], ['Focus area', '&lt; 25th percentile']],
+    marker: '= athlete’s position (right = better)', bandNote: 'Colour bands indicate estimated percentile ranges; they are not pass/fail criteria or a world ranking.',
+    addTitle: 'Additional Test Results', addNote: 'No validated international reference data available; recorded as an individual baseline for re-assessment.', addNone: 'No additional tests recorded.',
+    age: 'Age', height: 'Height', mass: 'Body mass', hand: 'Dominant hand', yrs: 'yrs', male: 'Male', female: 'Female',
+    hands: { '右手': 'Right', '左手': 'Left', '雙手': 'Both' },
+    glance: 'At a Glance', strengths: 'Strengths', priority: 'Development priority', injury: 'Injury-risk considerations',
+    strengthsText: (l, ex) => `${l}: <em>${ex ? 'excellent' : 'above average'}</em>.`, strengthsNone: 'No key test above the age-group average yet — this report sets the baseline.',
+    priorityText: (d, l) => `${d} — ${l}.`, priorityNone: 'All key tests are at or above the age-group average — maintain and keep building.',
+    injuryNone: 'No large asymmetry or mobility restriction found.', injSuffix: '.',
+    keyTitle: 'Key Performance Tests', keySub: 'vs. international age-matched junior tennis players',
+    thTest: 'Test', thRes: 'Result', thPos: 'Position vs. age-matched players', thInt: 'Interpretation',
+    zl: ['Focus', 'Average', 'Above avg.', 'Excellent'],
+    tierWords: [['Excellent', 'Top quartile of the age group'], ['Above average', 'Above the age-group mean'], ['Average', 'Below, but near, the age-group mean'], ['Focus area', 'Bottom quartile — development priority']],
+    cmjCaution: 'Methodological differences from reference data — interpret with caution',
+    keyNone: 'No key test has international reference data for this athlete (age group or test not covered). All results are listed under Additional Test Results.',
+    baseTitle: 'Test Results', baseSub: 'individual baseline — compare with your next assessment',
+    noIntlStrength: 'International reference data do not cover this age group yet, so this session is the athlete’s personal baseline.',
+    noIntlPriority: l => l ? `Coach’s focus for the next block: ${l}.` : 'Re-test the same items next time and compare against this baseline.',
+    limbTitle: 'Limb Symmetry &amp; Injury Prevention', limbNone: 'No left/right tests recorded in this session.',
+    sym: ['Symmetrical', 'Mild asymmetry', 'Large asymmetry'],
+    asymLine: (p, side, ratio, lower) => lower ? `Asymmetry ${p}% — ${side} ${ratio}× longer than the other side (lower = better).` : `Asymmetry ${p}% — ${side} side ${p}% lower (higher = better).`,
+    left: 'left', right: 'right', L: 'L', R: 'R',
+    mobBoth: 'Restricted bilaterally', mobL: 'Restricted (left)', mobR: 'Restricted (right)', mobOk: 'Normal range', mobOne: 'Restricted',
+    notTested: s => `${s} side not tested`, Left: 'Left', Right: 'Right',
+    coachTitle: 'Coach’s Notes', coachNone: 'No coach note for this session.', coachBy: n => `— Coach ${n}`,
+    reTitle: 'Re-assessment priorities',
+    schedule: 'Testing Schedule', thisTest: 'This test:', nextTest: 'Next test:', tbd: 'To be scheduled',
+    refs: 'References: Fernandez-Fernandez et al. (2014) <i>Br J Sports Med</i>; Dobos et al. (2021) <i>IJERPH</i>; Hernández-Davó et al. (2020)',
+    motto: 'Measure · Monitor · Progress',
+    domains: { speed: 'Acceleration and sprint speed', power: 'Lower-body power', aero: 'Intermittent aerobic capacity' },
+    join: a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1],
+    injLand: s => `${s}-leg landing stabilisation asymmetry`, injForce: s => `landing force asymmetry (${s})`, injDJ: s => `single-leg drop-jump asymmetry (${s})`, injLat: s => `lateral bound asymmetry (${s})`,
+    injMob: (n, how) => `restricted ${n} (${how})`, bilat: 'bilateral',
+    dateFmt: d => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/,/g, '')
+  },
+  'zh-Hant': {
+    back: '返回', print: '存成 PDF／列印', pdf: '下載 PDF', printOnly: '列印', pdfBusy: 'PDF 產生中…', pdfErr: 'PDF 產生失敗，請再試一次。', loading: '報告載入中…', loadingHint: '正在讀取檢測資料庫，大約 5～10 秒。',
+    needLogin: '請用教練帳號登入。', notFound: '找不到這份報告。', netErr: '連不上伺服器，請確認網路後再試一次。', retry: '再試一次',
+    academy: '奕晉網球學院', dept: '體能與康復部門',
+    title: (s, y) => `${y} ${s}<em>體能測評成果</em>`, seasons: ['冬季', '春季', '夏季', '秋季'],
+    sub: '了解體能現況 · 看見優勢 · 設定下一個進步目標',
+    howTitle: '這份報告怎麼看？',
+    howText: '把孩子的成績，和<b>國際研究裡同年齡、同性別的青少年網球選手</b>比一比，看看大約在哪個位置。',
+    howNoIntl: '這個年齡組目前沒有可靠的國際對照，成績先記錄下來，下次和自己比。',
+    tiers: [['領先', '國際同齡的前 25%'], ['中上', '比一半以上的人好'], ['中間', '接近平均'], ['加油區', '最有進步空間']],
+    marker: '＝孩子的位置，越往右越好', bandNote: '顏色只代表大約的位置，不是合格或不合格，也不是世界排名。',
+    addTitle: '其他測試成績', addNote: '這些項目沒有可靠的國際對照，先記錄下來，下次和自己比。', addNone: '這次沒有其他測試項目。',
+    age: '年齡', height: '身高', mass: '體重', hand: '慣用手', yrs: '歲', male: '男', female: '女',
+    hands: { '右手': '右手', '左手': '左手', '雙手': '雙手' },
+    glance: '一眼看懂', strengths: '表現好的', priority: '下一步加油', injury: '需要注意',
+    strengthsText: (l, ex) => `${l}都在<em>${ex ? '國際同齡前 25%' : '國際同齡平均以上'}</em>。`, strengthsNone: '目前還沒有項目超過國際同齡平均，這次的成績就是起點。',
+    priorityText: (d, l) => `${d}（${l}）是目前最有進步空間的能力。`, priorityNone: '主要項目都在國際同齡平均以上，保持下去、繼續累積。',
+    injuryNone: '這次沒有發現明顯的左右差或關節活動受限。', injSuffix: '，和受傷預防有關。',
+    keyTitle: '主要測試成績', keySub: '和國際同齡網球選手比',
+    thTest: '測試項目', thRes: '本次成績', thPos: '在國際同齡選手中的位置', thInt: '白話解讀',
+    zl: ['加油區', '中間', '中上', '領先'],
+    tierWords: [['領先', '在國際同齡選手的前 25%'], ['中上', '比一半以上的同齡選手好'], ['中間', '接近國際同齡平均'], ['加油區', '最有進步空間的項目']],
+    cmjCaution: '測法和國際研究不同，僅供參考',
+    keyNone: '這個年齡組或這些項目目前沒有國際對照資料，所有成績都列在左邊「其他測試成績」。',
+    baseTitle: '本次測試成績', baseSub: '個人基準：下次檢測和自己比',
+    noIntlStrength: '國際研究目前沒有這個年齡的對照資料，這次的成績就是孩子自己的起點。',
+    noIntlPriority: l => l ? `教練建議下一階段的重點：${l}。` : '下次測同樣的項目，和這次的成績比一比。',
+    limbTitle: '左右平衡 · 受傷預防', limbNone: '這次沒有測左右兩側的項目。',
+    sym: ['左右平衡', '有點差距', '差距大'],
+    asymLine: (p, side, ratio, lower) => lower ? `左右差 ${p}%：${side}需要的時間是另一側的 ${ratio} 倍（越短越穩）。` : `左右差 ${p}%：${side}比另一側少 ${p}%（越高越好）。`,
+    left: '左側', right: '右側', L: '左', R: '右',
+    mobBoth: '兩側都偏緊', mobL: '左側偏緊', mobR: '右側偏緊', mobOk: '活動度正常', mobOne: '偏緊',
+    notTested: s => `${s}側這次沒測`, Left: '左', Right: '右',
+    coachTitle: '教練的話', coachNone: '這次沒有教練留言。', coachBy: n => `— ${n} 教練`,
+    reTitle: '下次複測重點',
+    schedule: '檢測時間', thisTest: '本次檢測：', nextTest: '下次檢測：', tbd: '待安排',
+    refs: '參考文獻：Fernandez-Fernandez et al. (2014) <i>Br J Sports Med</i>；Dobos et al. (2021) <i>IJERPH</i>；Hernández-Davó et al. (2020)',
+    motto: '測量 · 追蹤 · 進步',
+    domains: { speed: '起步加速與衝刺', power: '跳躍爆發力', aero: '有氧耐力' },
+    join: a => a.join('、'),
+    injLand: s => `${s}單腳落地後站穩比較慢`, injForce: s => `落地衝擊${s}偏大`, injDJ: s => `單腳落地再跳${s}較弱`, injLat: s => `側向跳${s}較弱`,
+    injMob: (n, how) => `${n}${how}`, bilat: '兩側都偏緊',
+    dateFmt: d => `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日（週${'日一二三四五六'[d.getDay()]}）`
+  }
+};
+// 簡體：由繁體逐字轉（只轉報告用到的字），避免維護兩份
+const S2PAIRS = '來来 個个 側侧 傷伤 僅仅 優优 兩两 別别 動动 勢势 區区 參参 單单 國国 報报 夠够 學学 對对 幹干 庫库 彈弹 彎弯 後后 復复 慣惯 應应 拋抛 撐撑 擊击 擲掷 擺摆 時时 晉晋 標标 檢检 歲岁 沒没 況况 測测 獻献 現现 發发 盤盘 確确 積积 穩稳 節节 約约 組组 統统 網网 緊紧 練练 縱纵 績绩 繼继 續续 腳脚 與与 藥药 衝冲 裡里 複复 見见 記记 設设 評评 試试 話话 認认 請请 讀读 變变 資资 賽赛 蹤踪 躍跃 軀躯 較较 載载 轉转 這这 連连 週周 進进 過过 遠远 選选 還还 邊边 錄录 長长 門门 開开 間间 關关 際际 雙双 離离 項项 預预 領领 顏颜 顯显 體体 髖髋 麼么 點点 齡龄';
+const S2MAP = {}; S2PAIRS.split(' ').forEach(p => { S2MAP[p[0]] = p[1]; });
+const toHans = s => typeof s === 'string' ? s.replace(/[一-鿿]/g, c => S2MAP[c] || c) : s;
+T['zh-Hans'] = (function () {
+  const src = T['zh-Hant'], out = {};
+  Object.keys(src).forEach(k => {
+    const v = src[k];
+    if (typeof v === 'function') out[k] = function () { return toHans(v.apply(null, arguments)); };
+    else out[k] = JSON.parse(JSON.stringify(v), (kk, vv) => toHans(vv));
+  });
+  out.hands = { '右手': '右手', '左手': '左手', '雙手': '双手' };
+  return out;
+})();
+
+// 測項名稱（主要測試＋其他測試）
+const NAMES = {
+  en: {
+    s10: ['10 m Sprint', 'Acceleration'], s20: ['20 m Sprint', 'Linear sprint speed'], cmj: ['Countermovement Jump (CMJ)', 'Vertical power (hands on hips)'],
+    broad: ['Standing Broad Jump', 'Horizontal power'], ift: ['30-15 Intermittent Fitness Test', 'Intermittent aerobic capacity (V<sub>IFT</sub>)'],
+    cmjArm: 'CMJ with Arm Swing', lateral: 'Lateral Bound (Skater Jump)', spider: 'Tennis Spider Drill', agility: '5-10-5 Pro Agility', reactive: 'Reactive 5-10-5',
+    rot: 'Med Ball Rotational Throw', serveThrow: 'Med Ball Overhead Serve Throw', serveSpeed: 'Serve Speed', grip: 'Grip Strength', gripNd: 'Grip Strength (non-dominant)', hop: '10/5 Repeated Hop (RSI)', s30: '30 m Sprint', pullUp: 'Pull-up',
+    land: 'Single-leg landing stabilisation time', force: 'Peak landing force (relative to body mass)', dj: 'Single-leg drop jump RSI', ankle: 'Ankle dorsiflexion range of motion',
+    mob: { trunkFlexExt: 'trunk flexion/extension', hipRot: 'hip rotation', shoulderRot: 'shoulder rotation', hipShoulderSep: 'hip–shoulder separation', ankleDF: 'ankle dorsiflexion' },
+    short: { s10: '10 m sprint', s20: '20 m sprint', cmj: 'CMJ', broad: 'standing broad jump', ift: 'intermittent aerobic capacity (V<sub>IFT</sub>)' }
+  },
+  'zh-Hant': {
+    s10: ['10 米衝刺', '起步加速：第一步夠不夠快'], s20: ['20 米衝刺', '衝刺速度：追球跑得快不快'], cmj: ['縱跳（CMJ）', '腿部爆發力：往上跳的力量'],
+    broad: ['立定跳遠', '腿部爆發力：往前蹬的力量'], ift: ['30-15 間歇體能', '體力：長盤比賽撐不撐得住'],
+    cmjArm: '擺臂縱跳', lateral: '側向跳', spider: '蜘蛛跑', agility: '5-10-5 變向', reactive: '反應式 5-10-5',
+    rot: '藥球轉體拋擲', serveThrow: '藥球發球拋擲', serveSpeed: '發球速度', grip: '握力', gripNd: '握力（非慣用手）', hop: '10/5 連續跳（RSI）', s30: '30 米衝刺', pullUp: '引體向上',
+    land: '單腳落地後站穩的時間', force: '落地時承受的衝擊', dj: '落地後再跳起的彈性', ankle: '腳踝彎曲角度',
+    mob: { trunkFlexExt: '軀幹前彎／後仰', hipRot: '髖關節旋轉', shoulderRot: '肩關節旋轉', hipShoulderSep: '髖肩分離', ankleDF: '腳踝彎曲角度' },
+    short: { s10: '10 米衝刺', s20: '20 米衝刺', cmj: '縱跳', broad: '立定跳遠', ift: '有氧耐力' }
+  }
+};
+NAMES['zh-Hans'] = JSON.parse(JSON.stringify(NAMES['zh-Hant']), (k, v) => toHans(v));
+const UNIT = { s: { en: 's', zh: '秒' }, cm: { en: 'cm', zh: 'cm' }, m: { en: 'm', zh: 'm' }, kmh: { en: 'km/h', zh: 'km/h' }, kg: { en: 'kg', zh: 'kg' }, nkg: { en: 'N/kg', zh: 'N/kg' }, none: { en: '', zh: '' }, reps: { en: '', zh: '' } };
+
+// ───────── 圖示（Adam 原版） ─────────
+const S = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">';
+const IC = {
+  run: S + '<circle cx="15.5" cy="4" r="2.2" fill="currentColor" stroke="none"/><path d="M13.5 7.5 10 13l4 3-1.5 5.5M10 13l-5 .5M13.5 7.5l4 3.5 3-1M14 16l4.5 2"/></svg>',
+  jump: S + '<circle cx="12" cy="3.8" r="2.2" fill="currentColor" stroke="none"/><path d="M12 7v7M12 8.5 6.5 4.5M12 8.5l5.5-4M12 14l-4.5 3 1 4M12 14l4.5 3-1 4"/></svg>',
+  heart: '<svg viewBox="0 0 24 24"><path d="M12 21.5S2.5 15.6 2.5 8.8A4.9 4.9 0 0 1 12 6.4a4.9 4.9 0 0 1 9.5 2.4C21.5 15.6 12 21.5 12 21.5z" fill="currentColor"/><path d="M5 12h3.5l1.7-2.8 2.8 5.3 1.7-2.5H19" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  agi: S + '<path d="M3 20.5 8.5 14l4.5 3.5L20 7"/><path d="M14.5 6.5H20.5V12.5"/></svg>',
+  str: S + '<path d="M7.5 12h9"/><rect x="3.5" y="7" width="4" height="10" rx="1.2" fill="currentColor"/><rect x="16.5" y="7" width="4" height="10" rx="1.2" fill="currentColor"/><path d="M1.5 10v4M22.5 10v4"/></svg>',
+  ball: S + '<circle cx="12" cy="12" r="9.5"/><path d="M4.5 6.5c3 2 4.5 5.5 3.5 11M19.5 6.5c-3 2-4.5 5.5-3.5 11"/></svg>',
+  cal: S + '<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M7.5 13.5h.01M12 13.5h.01M16.5 13.5h.01M7.5 17h.01M12 17h.01" stroke-width="2.8"/></svg>',
+  eye: S + '<circle cx="11" cy="11" r="7"/><path d="m16.2 16.2 5 5"/></svg>',
+  up: S + '<path d="M7 11v9.5H3.5V11zM7 19.5l3.2 1H17a2 2 0 0 0 2-1.6l1.3-6.3a2 2 0 0 0-2-2.4H14l.8-4a1.8 1.8 0 0 0-3.4-1L7 11"/></svg>',
+  target: S + '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg>',
+  shield: S + '<path d="M12 2.5 4 5.5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10v-6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>',
+  coach: S + '<circle cx="12" cy="7" r="4"/><path d="M4 21.5c.8-4.5 4-7 8-7s7.2 2.5 8 7"/></svg>',
+  bar: '<svg viewBox="0 0 24 24"><rect x="3" y="13" width="4.5" height="8" rx="1" fill="#188052"/><rect x="9.75" y="8" width="4.5" height="13" rx="1" fill="#188052"/><rect x="16.5" y="3" width="4.5" height="18" rx="1" fill="#9fcf3a"/></svg>'
+};
+const ICC = { run: '#188052', jump: '#2c6db5', heart: '#e0483e', agi: '#d9781c', str: '#7a3e9d', ball: '#7c9a12' };
+const ic = (k, cls) => `<span class="${cls || 'ic'}" style="color:${ICC[k] || '#163E30'}">${IC[k]}</span>`;
+
+// ───────── 工具 ─────────
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = v => { const x = parseFloat(v); return isFinite(x) && x > 0 ? x : null; };
+const Phi = z => { // 標準常態累積（Abramowitz-Stegun 7.1.26）
+  const t = 1 / (1 + .3275911 * Math.abs(z) / Math.SQRT2);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - .284496736) * t + .254829592) * t * Math.exp(-z * z / 2);
+  return .5 * (1 + (z < 0 ? -y : y));
+};
+const pr = (m, sd, v, low) => Math.max(1, Math.min(99, Math.round(Phi((low ? m - v : v - m) / sd) * 100)));
+const tierOf = p => p >= 75 ? 0 : p >= 50 ? 1 : p >= 25 ? 2 : 3; // 0=Excellent … 3=Focus
+const TIER_CLS = ['t4', 't3', 't2', 't1'];
+const asymPct = (a, b) => { const m = Math.max(a, b); return m ? Math.round(Math.abs(a - b) / m * 100) : 0; };
+const symLevel = p => p < 10 ? 0 : p <= 15 ? 1 : 2; // 與網頁端 asymClass 相同：<10 良好、10–15 注意、>15 風險
+const SYM_CLS = ['g', 'y', 'r'];
+const fmtN = (v, d) => { if (v == null) return ''; const s = d == null ? String(+(+v).toFixed(3)) : (+v).toFixed(d); return s; };
+function parseDate(s) { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
+
+// ───────── 狀態 ─────────
+const params = new URLSearchParams(location.search);
+const testId = params.get('id') || '';
+let lang = (function () {
+  const q = params.get('lang'); if (T[q]) return q;
+  try { const s = localStorage.getItem('yj_report_lang'); if (T[s]) return s; } catch (e) {}
+  return 'en';
+})();
+let DATA = null;
+
+function token() {
+  const h = new URLSearchParams(location.hash.slice(1)).get('tk');
+  if (h) { try { sessionStorage.setItem('yj_tk', h); } catch (e) {} history.replaceState(null, '', location.pathname + location.search); return h; }
+  try { return sessionStorage.getItem('yj_tk') || localStorage.getItem('yj_token') || ''; } catch (e) { return ''; }
+}
+const TK = token();
+
+function applyChrome() {
+  const t = T[lang];
+  document.documentElement.lang = lang;
+  document.body.className = lang;
+  document.querySelectorAll('[data-t]').forEach(el => { el.innerHTML = t[el.dataset.t] || ''; });
+  document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang ? 'true' : 'false'));
+}
+
+function showState(msgKey, retry) {
+  const t = T[lang];
+  document.getElementById('out').innerHTML = `<div class="state">${esc(t[msgKey] || msgKey)}${retry ? `<br><br><button type="button" onclick="load()" style="padding:10px 18px;border-radius:8px;border:0;background:#163E30;color:#fff;font:inherit">${t.retry}</button>` : ''}</div>`;
+}
+
+function showLogin() {
+  const t = T[lang], zh = lang !== 'en';
+  document.getElementById('out').innerHTML = `<form class="state" id="lf" autocomplete="on"><p>${t.needLogin}</p>
+   <p style="margin-top:14px"><input id="lu" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="${zh ? '教練帳號' : 'Coach account'}" style="width:100%;padding:12px;border:1px solid #cfdacf;border-radius:10px;font:inherit" required></p>
+   <p style="margin-top:8px"><input id="lp" name="password" type="password" autocomplete="current-password" placeholder="${zh ? '密碼' : 'Password'}" style="width:100%;padding:12px;border:1px solid #cfdacf;border-radius:10px;font:inherit" required></p>
+   <p style="margin-top:12px"><button id="lb" style="width:100%;padding:12px;border:0;border-radius:10px;background:#163E30;color:#fff;font:inherit;font-weight:700">${zh ? '登入' : 'Sign in'}</button></p><small id="le" style="color:#c62828"></small></form>`;
+  document.getElementById('lf').onsubmit = async ev => {
+    ev.preventDefault();
+    const b = document.getElementById('lb'); b.disabled = true;
+    try {
+      const r = await (await fetch(API + '?' + new URLSearchParams({ action: 'login', user: document.getElementById('lu').value.trim(), pass: document.getElementById('lp').value }))).json();
+      if (!r.token) throw new Error(r.error || 'Login failed');
+      try { localStorage.setItem('yj_token', r.token); localStorage.setItem('yj_user', r.name || ''); sessionStorage.removeItem('yj_tk'); } catch (x) {}
+      location.reload();
+    } catch (x) { document.getElementById('le').textContent = x.message; b.disabled = false; }
+  };
+}
+
+async function load() {
+  applyChrome();
+  if (!testId) return showState('notFound');
+  if (!TK) return showLogin();
+  document.getElementById('out').innerHTML = `<div class="state"><div class="spin"></div>${T[lang].loading}<small>${T[lang].loadingHint}</small></div>`;
+  let d = null;
+  for (let attempt = 0; attempt < 2 && !d; attempt++) {
+    try {
+      const r = await fetch(API + '?' + new URLSearchParams({ action: 'loadRecord', testId, token: TK }));
+      d = await r.json();
+    } catch (e) { if (attempt) return showState('netErr', true); await new Promise(r => setTimeout(r, 800)); }
+  }
+  if (d.needLogin) return showLogin();
+  if (d.error || !d.rec) return showState(d.error ? d.error : 'notFound');
+  DATA = d;
+  render();
+}
+
+// ───────── 報告內容 ─────────
+function build(d) {
+  const rec = d.rec, t = T[lang], N = NAMES[lang], zh = lang !== 'en';
+  const u = k => UNIT[k][zh ? 'zh' : 'en'];
+  const bd = parseDate(rec.birthday), td = parseDate(rec.testDate);
+  const ageY = bd && td ? (td - bd) / (365.2425 * 864e5) : (num(d.age) || null);
+  const sex = rec.gender === '女' ? 'Female' : 'Male';
+  const grp = ageY == null ? null : ageY < 14 ? 'U14' : ageY < 16 ? 'U16' : 'U18';
+  const intlOK = ageY != null && ageY >= 12 && ageY < 20;   // 未滿 12、20 歲以上不比國際常模
+
+  // 主要測試（有國際常模的）
+  const KEY = [
+    { k: 's10', v: num(rec.sprint10m), unit: 's', low: true, n: intlOK && NORMS.DTB[sex][grp] && NORMS.DTB[sex][grp].s10, icon: 'run', dom: 'speed' },
+    { k: 's20', v: num(rec.sprint20m), unit: 's', low: true, n: intlOK && NORMS.DTB[sex][grp] && NORMS.DTB[sex][grp].s20, icon: 'run', dom: 'speed' },
+    { k: 'cmj', v: num(rec.cmjNoArm), unit: 'cm', low: false, n: intlOK && NORMS.DTB[sex][grp] && NORMS.DTB[sex][grp].cmj, icon: 'jump', dom: 'power', caution: true },
+    { k: 'broad', v: num(rec.broadJump), unit: 'cm', low: false, n: intlOK && NORMS.DO[sex][grp] && NORMS.DO[sex][grp].broad, icon: 'jump', dom: 'power' },
+    { k: 'ift', v: num(rec.IFT30_15), unit: 'kmh', low: false, n: intlOK && sex === 'Male' && ageY >= 16 && NORMS.HD20.Male.U18.ift, icon: 'heart', dom: 'aero' }
+  ];
+  const key = [], extra = [];
+  KEY.forEach(x => {
+    if (x.v == null) return;
+    if (x.n) { x.p = pr(x.n[0], x.n[1], x.v, x.low); x.tier = tierOf(x.p); key.push(x); }
+    else extra.push({ icon: x.icon, name: N[x.k][0], val: fmtN(x.v), unit: u(x.unit) });
+  });
+
+  // 其他測試
+  const lr = (l, r) => { l = num(l); r = num(r); return { l, r }; };
+  const addLR = (icon, name, L, R, unit) => {
+    const { l, r } = lr(L, R);
+    if (l == null && r == null) return;
+    if (l != null && r != null) {
+      const lv = symLevel(asymPct(l, r));
+      extra.push({ icon, name, val: `${t.L} ${fmtN(l)}　${t.R} ${fmtN(r)}`, unit: u(unit), note: t.sym[lv] });
+    } else {
+      const side = l != null ? t.L : t.R;
+      extra.push({ icon, name, val: `${side} ${fmtN(l != null ? l : r)}`, unit: u(unit), note: t.notTested(l != null ? t.Right : t.Left) });
+    }
+  };
+  const add1 = (icon, name, v, unit) => { v = num(v); if (v != null) extra.push({ icon, name, val: fmtN(v), unit: u(unit) }); };
+  add1('jump', N.cmjArm, rec.cmjHeight, 'cm');
+  addLR('jump', N.lateral, rec.lateralJumpL, rec.lateralJumpR, 'cm');
+  add1('agi', N.spider, rec.spiderRun, 's');
+  addLR('agi', N.agility, rec.agility515L, rec.agility515R, 's');
+  add1('agi', N.reactive, rec.agility515Reactive, 's');
+  add1('run', N.s30, rec.sprint30m, 's');
+  addLR('str', N.rot, rec.rotationalThrowL, rec.rotationalThrowR, 'm');
+  add1('str', N.serveThrow, rec.servingThrow, 'm');
+  add1('ball', N.serveSpeed, rec.serveSpeed, 'kmh');
+  add1('str', N.grip, rec.gripStrength, 'kg');
+  add1('str', N.gripNd, rec.gripStrengthNd, 'kg');
+  add1('jump', N.hop, rec.hop10_5, 'none');
+  if (rec.pullUp) extra.push({ icon: 'str', name: N.pullUp, val: esc(rec.pullUp), unit: esc(rec.pullUpUnit || '') });
+
+  // 左右平衡
+  const w = num(rec.weight);
+  const limbs = [];
+  const injuries = [];
+  const sideWord = (l, r, lowerBetter) => { const leftWorse = lowerBetter ? l > r : l < r; return leftWorse ? t.left : t.right; };
+  const limbLR = (name, L, R, lowerBetter, injFn, digits, unitTxt) => {
+    const l = num(L), r = num(R);
+    if (l == null || r == null) return;
+    const p = asymPct(l, r), lv = symLevel(p);
+    const item = { name, lv, p };
+    if (lv > 0) {
+      const mx = Math.max(l, r);
+      item.bars = [[t.L, l, l / mx], [t.R, r, r / mx]];
+      item.worse = lowerBetter ? (l > r ? 0 : 1) : (l < r ? 0 : 1);
+      item.unitTxt = unitTxt; item.digits = digits;
+      const side = sideWord(l, r, lowerBetter);
+      const ratio = (Math.max(l, r) / Math.min(l, r)).toFixed(1);
+      item.line = t.asymLine(p, side, ratio, lowerBetter);
+      if (lv === 2 && injFn) injuries.push(injFn(zh ? side : side.replace(' side', '')));
+    }
+    limbs.push(item);
+  };
+  limbLR(N.land, rec.singleLegLandL, rec.singleLegLandR, true, t.injLand, 2, u('s'));
+  if (w) limbLR(N.force, num(rec.singleLegLandForceL) && num(rec.singleLegLandForceL) / w, num(rec.singleLegLandForceR) && num(rec.singleLegLandForceR) / w, true, t.injForce, 1, u('nkg'));
+  limbLR(N.dj, rec.singleLegDJL, rec.singleLegDJR, false, t.injDJ, 2, '');
+  limbLR(N.lateral, rec.lateralJumpL, rec.lateralJumpR, false, t.injLat, 0, u('cm'));
+
+  // 活動度（pass／fail）
+  const mob = rec.mobility || {};
+  const mobState = id => {
+    const m = mob[id]; if (!m) return null;
+    if ('v' in m && m.v) return m.v === 'fail' ? 'one' : m.v === 'pass' ? 'ok' : null;
+    const fl = m.L === 'fail', fr = m.R === 'fail';
+    if (!m.L && !m.R) return null;
+    return fl && fr ? 'both' : fl ? 'L' : fr ? 'R' : 'ok';
+  };
+  const mobLabel = s => ({ both: t.mobBoth, L: t.mobL, R: t.mobR, ok: t.mobOk, one: t.mobOne })[s];
+  const ank = mobState('ankleDF');
+  if (ank) limbs.push({ name: N.ankle, mob: true, lv: ank === 'ok' ? 0 : 2, label: mobLabel(ank) });
+  Object.keys(N.mob).forEach(id => {
+    const s = mobState(id);
+    if (!s || s === 'ok') return;
+    if (id !== 'ankleDF') limbs.push({ name: N.mob[id].charAt(0).toUpperCase() + N.mob[id].slice(1), mob: true, lv: 2, label: mobLabel(s) });
+    const how = s === 'both' ? t.bilat : s === 'L' ? (zh ? t.mobL : 'left') : s === 'R' ? (zh ? t.mobR : 'right') : (zh ? t.mobOne : '');
+    injuries.push(zh ? t.injMob(N.mob[id], how) : t.injMob(N.mob[id], how).replace(/ \(\)$/, ''));
+  });
+
+  // 一眼看懂
+  const good = key.filter(x => x.p >= 50);
+  const strengthsHTML = !key.length ? t.noIntlStrength : good.length
+    ? t.strengthsText(t.join(good.map(x => N.short[x.k])), good.every(x => x.p >= 75))
+    : t.strengthsNone;
+  let priorityHTML = t.priorityNone;
+  const weak = key.filter(x => x.p < 50).sort((a, b) => a.p - b.p);
+  if (weak.length) {
+    const dom = weak[0].dom;
+    const inDom = weak.filter(x => x.dom === dom).map(x => N.short[x.k]);
+    priorityHTML = t.priorityText(t.domains[dom], t.join(inDom));
+  }
+  const capFirst = s => zh ? s : s.charAt(0).toUpperCase() + s.slice(1);
+  const KM0 = { sprint10m: N.short.s10, avg515: N.agility, spiderRun: N.spider, cmjHeight: N.cmjArm, broadJump: N.short.broad, lateralAvg: N.lateral, landAvg: N.land, nkgAvg: N.force, djAvg: N.dj, rThrowAvg: N.rot, servingThrow: N.serveThrow, IFT30_15: N.short.ift, gripStrength: N.grip, serveSpeed: N.serveSpeed, hop10_5: N.hop };
+  if (!key.length) priorityHTML = t.noIntlPriority(t.join((rec.keyMetrics || []).map(k => KM0[k]).filter(Boolean).slice(0, 3)));
+  const injuryHTML = injuries.length ? capFirst(zh ? injuries.join('；') : injuries.join('; ')) + t.injSuffix : t.injuryNone;
+
+  // 下次複測重點：教練勾的優先，沒有就自動挑（受傷風險＋最弱項，最多 3 個）
+  const KM = { sprint10m: N.short.s10, avg515: N.agility, spiderRun: N.spider, cmjHeight: N.cmjArm, broadJump: N.short.broad, lateralAvg: N.lateral, landAvg: N.land, nkgAvg: N.force, djAvg: N.dj, rThrowAvg: N.rot, servingThrow: N.serveThrow, IFT30_15: N.short.ift, gripStrength: N.grip, serveSpeed: N.serveSpeed, hop10_5: N.hop };
+  let re = (rec.keyMetrics || []).map(k => KM[k]).filter(Boolean);
+  if (!re.length) {
+    limbs.filter(x => x.lv === 2).forEach(x => re.push(x.name));
+    weak.forEach(x => re.push(N.short[x.k]));
+  }
+  re = [...new Set(re)].slice(0, 3);
+
+  // 頁首
+  const m = td ? td.getMonth() : 9;
+  const season = t.seasons[m === 11 || m < 2 ? 0 : m < 5 ? 1 : m < 8 ? 2 : 3];
+  const year = td ? (m === 0 || m === 1 ? td.getFullYear() - 1 : td.getFullYear()) : '';
+  const name = String(rec.playerName || '').trim();
+  const ini = (name.match(/[A-Za-z]/) ? name.match(/[A-Za-z]/)[0].toUpperCase() : name.charAt(0)) || '·';
+  const grpLabel = ageY == null ? '' : ageY < 12 ? 'U12' : ageY < 14 ? 'U14' : ageY < 16 ? 'U16' : ageY < 18 ? 'U18' : (zh ? '18+' : '18+');
+  const sexLabel = sex === 'Male' ? t.male : t.female;
+  const hand = t.hands[rec.dominantHand] || esc(rec.dominantHand || '—');
+
+  return { rec, ageY, grpLabel, sexLabel, hand, name, ini, season, year, key, extra, limbs, strengthsHTML, priorityHTML, injuryHTML, re, td, intlOK, u };
+}
+
+function render() {
+  applyChrome();
+  const d = DATA, t = T[lang], N = NAMES[lang], b = build(d);
+  const rec = b.rec;
+  document.title = `${b.name} · ${lang === 'en' ? 'Physical Performance Report' : (lang === 'zh-Hans' ? '体能测评成果' : '體能測評成果')}`;
+  const keyRows = b.key.map(x => {
+    const tw = t.tierWords[x.tier];
+    return `<tr><td class="it">${ic(x.icon)}<div><b>${N[x.k][0]}</b><small>${N[x.k][1]}</small></div></td>
+      <td class="val">${fmtN(x.v)}<u>${b.u(x.unit)}</u></td>
+      <td class="zone"><div class="zb"><span class="t1"></span><span class="t2"></span><span class="t3"></span><span class="t4"></span><i style="left:${x.p}%"></i></div>
+        <div class="zl">${t.zl.map(s => `<span>${s}</span>`).join('')}</div></td>
+      <td class="rd"><span class="tg ${TIER_CLS[x.tier]}">${tw[0]}</span><small>${tw[1]}</small>${x.caution ? `<em>${t.cmjCaution}</em>` : ''}</td></tr>`;
+  }).join('');
+  const baseMode = !b.key.length;
+  const extraRows = b.extra.length ? b.extra.map(o => `<div class="o">${ic(o.icon, 'oi')}<span class="on">${o.name}</span><span class="ov">${o.val}<u>${o.unit}</u></span>${o.note ? `<small>${o.note}</small>` : ''}</div>`).join('') : `<p class="tn">${t.addNone}</p>`;
+  const limbRows = b.limbs.length ? b.limbs.map(x => {
+    if (x.mob) return `<div class="l"><div class="lt"><b>${x.name}</b><span class="st ${SYM_CLS[x.lv]}">${x.label}</span></div></div>`;
+    let h = `<div class="l"><div class="lt"><b>${x.name}</b><span class="st ${SYM_CLS[x.lv]}">${t.sym[x.lv]}</span></div>`;
+    if (x.bars) {
+      h += x.bars.map((bb, i) => `<div class="bars"><span>${bb[0]}</span><div><i class="${i === x.worse ? 'w' : ''}" style="width:${Math.round(bb[2] * 100)}%"></i></div><b>${fmtN(bb[1], x.digits)} ${x.unitTxt}</b></div>`).join('');
+      h += `<small>${x.line}</small>`;
+    }
+    return h + '</div>';
+  }).join('') : `<p class="tn">${t.limbNone}</p>`;
+  const summary = String(rec.summary || '').trim();
+  const coachName = String(rec.coach || '').trim();
+  const nextTest = String(rec.nextTest || '').trim();
+
+  document.getElementById('out').innerHTML = `<div class="sheet"><section class="pg">
+<header class="ban"><div class="court"></div><div class="ball"></div>
+ <div class="brand"><b>${t.academy}</b><span>${t.dept}</span></div>
+ <div class="tt"><h1>${t.title(b.season, b.year)}</h1><div class="sub">${t.sub}</div></div></header>
+<div class="main">
+ ${baseMode ? '' : `<aside>
+  <div class="box"><h3>${IC.eye}${t.howTitle}</h3>
+   <p>${b.intlOK ? t.howText : t.howNoIntl}</p>
+   ${baseMode ? '' : `${t.tiers.map((x, i) => `<div class="tier"><span class="blk ${TIER_CLS[i]}"></span><b>${x[0]}</b><small>${x[1]}</small></div>`).join('')}
+   <div class="mk"><i></i>${t.marker}</div>
+   <p class="tn">${t.bandNote}</p>`}</div>
+  ${baseMode ? '' : `<div class="box ob${b.extra.length > 11 ? ' dense' : ''}"><h3>${IC.bar}${t.addTitle}</h3><p class="tn">${t.addNote}</p>${extraRows}</div>`}
+ </aside>`}
+ <div class="right">
+  <div class="top">
+   <div class="hero"><div class="av">${esc(b.ini)}</div><div class="hn"><b>${esc(b.name)}</b><span class="pill">${b.grpLabel} · ${b.sexLabel}</span></div>
+    <div class="facts"><span>${t.age}<b>${b.ageY != null ? Math.floor(b.ageY) + ' ' + t.yrs : '—'}</b></span><span>${t.height}<b>${num(rec.height) ? num(rec.height) + ' cm' : '—'}</b></span>
+     <span>${t.mass}<b>${num(rec.weight) ? num(rec.weight) + ' kg' : '—'}</b></span><span>${t.hand}<b>${b.hand}</b></span></div></div>
+   <div class="glance"><h2>${t.glance}</h2>
+    <div class="g good">${IC.up}<div><b>${t.strengths}</b>${b.strengthsHTML}</div></div>
+    <div class="g work">${IC.target}<div><b>${t.priority}</b>${b.priorityHTML}</div></div>
+    <div class="g care">${IC.shield}<div><b>${t.injury}</b>${esc(b.injuryHTML).replace(/&lt;(\/?sub)&gt;/g, '<$1>')}</div></div></div>
+  </div>
+  ${baseMode ? `<div class="card base"><h3>${IC.bar}${t.baseTitle}<small>${t.baseSub}</small></h3><div class="bgrid">${extraRows}</div></div>` : `<div class="card"><h3>${ic('run', 'h')}${t.keyTitle}<small>${t.keySub}</small></h3>
+   ${b.key.length ? `<table><thead><tr><th>${t.thTest}</th><th>${t.thRes}</th><th>${t.thPos}</th><th>${t.thInt}</th></tr></thead><tbody>${keyRows}</tbody></table>` : `<div class="empty-key">${t.keyNone}</div>`}</div>`}
+  <div class="bot">
+   <div class="card lr"><h3>${IC.shield}${t.limbTitle}</h3>${limbRows}</div>
+   <div class="card coach"><h3>${IC.coach}${t.coachTitle}</h3>
+    ${summary ? `<div class="q">“${esc(summary)}”${coachName ? `<span>${esc(t.coachBy(coachName))}</span>` : ''}</div>` : `<div class="q none">${t.coachNone}</div>`}
+    ${b.re.length ? `<div class="nx"><b>${t.reTitle}</b>${b.re.map(x => `<span>${x}</span>`).join('')}</div>` : ''}</div>
+  </div>
+ </div>
+</div>
+<footer><div class="tl">${IC.cal}${t.schedule}</div><div class="ds">${t.thisTest} <b>${b.td ? t.dateFmt(b.td) : esc(rec.testDate)}</b><i></i>${t.nextTest} <b class="nx2">${nextTest ? esc(nextTest) : t.tbd}</b></div>
+ <div class="src">${t.refs}</div>
+ <div class="mt">${IC.ball}${t.motto}</div></footer>
+</section></div>`;
+}
+
+// ───────── 事件 ─────────
+document.querySelectorAll('.lang button').forEach(btn => btn.addEventListener('click', () => {
+  lang = btn.dataset.lang;
+  try { localStorage.setItem('yj_report_lang', lang); } catch (e) {}
+  if (DATA) render(); else applyChrome();
+}));
+// 手機版面改用 class 控制（產生 PDF 時要能暫時切回 A4）
+function setMob() { const m = window.innerWidth <= 1100 && !document.body.classList.contains('pdfing'); document.body.classList.toggle('mob', m); document.documentElement.classList.toggle('mob', m); }
+setMob(); window.addEventListener('resize', setMob);
+window.addEventListener('beforeprint', () => { document.body.classList.add('pdfing'); setMob(); });
+window.addEventListener('afterprint', () => { document.body.classList.remove('pdfing'); setMob(); });
+document.getElementById('printBtn').addEventListener('click', () => window.print());
+// 直接產生橫式 A4 PDF（不靠瀏覽器列印：部分瀏覽器與 App 內嵌網頁會忽略橫式設定或不能列印）
+function loadScript(src) {
+  return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
+}
+async function downloadPDF() {
+  if (!DATA) return;
+  const t = T[lang];
+  const ov = document.createElement('div'); ov.className = 'busy'; ov.textContent = t.pdfBusy; document.body.appendChild(ov);
+  try {
+    if (!window.html2canvas) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    if (!window.jspdf) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    document.body.classList.add('pdfing'); setMob();
+    await new Promise(r => setTimeout(r, 150));
+    const pg = document.querySelector('.pg');
+    const canvas = await window.html2canvas(pg, { scale: 2.5, backgroundColor: '#F5F7F2', useCORS: true, scrollX: 0, scrollY: -window.scrollY });
+    const pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 297, 210);
+    const rec = DATA.rec || {};
+    const title = lang === 'en' ? 'Physical_Performance_Report' : (lang === 'zh-Hans' ? '体能测评成果' : '體能測評成果');
+    pdf.save(`${String(rec.playerName || 'report').trim()}_${rec.testDate || ''}_${title}.pdf`);
+  } catch (e) {
+    alert(t.pdfErr);
+  } finally {
+    document.body.classList.remove('pdfing'); setMob();
+    ov.remove();
+  }
+}
+document.getElementById('pdfBtn').addEventListener('click', downloadPDF);
+document.getElementById('backBtn').addEventListener('click', e => {
+  e.preventDefault();
+  if (history.length > 1) history.back(); else location.href = 'index.html';
+});
+window.load = load;
+load();
+</script>
+</body>
+</html>

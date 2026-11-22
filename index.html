@@ -557,6 +557,64 @@
     .rp-trend { font-family: var(--f-m); font-size: 10.5px; color: var(--faint); text-align: right; }
     .rp-trend.up { color: var(--pos); } .rp-trend.down { color: var(--crit); }
 
+    /* 三格重點（取代總分框） */
+    .rp-hl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .rp-hl > div { background: var(--tint); border: 1px solid var(--line); border-radius: 5px; padding: 12px 16px; }
+    .rp-hl .k { font-size: 11px; color: var(--muted); }
+    .rp-hl .big { font-family: var(--f-d); font-size: 30px; font-weight: 600; line-height: 1.15; margin-top: 2px;
+                  font-variant-numeric: tabular-nums; }
+    .rp-hl .big small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 3px; }
+    .rp-hl .sub { font-size: 12px; color: var(--ink2); margin-top: 1px; }
+    @media (max-width: 560px) { .rp-hl { grid-template-columns: 1fr; } }
+    .rp-foot1 { margin-top: 6px; }
+
+    /* 縱向：個人前後對比（實測值） */
+    .rp-lg { border-top: 1px solid var(--line); }
+    .rp-lh, .rp-lr { display: grid; grid-template-columns: 1fr 92px 92px 108px; gap: 13px; align-items: center; }
+    .rp-lh { font-family: var(--f-m); font-size: 9px; letter-spacing: .08em; color: var(--faint); padding: 7px 0 6px; }
+    .rp-lh span:not(:first-child), .rp-lr > div:not(:first-child) { text-align: right; }
+    .rp-lr { padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .rp-lr .nm { font-size: 12.5px; font-weight: 500; }
+    .rp-lr .v { font-family: var(--f-d); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .rp-lr .v.prev { color: var(--muted); font-weight: 500; }
+    .rp-lr .v u { text-decoration: none; font-size: 10px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+    .rp-lr .d { font-family: var(--f-m); font-size: 11px; color: #000; white-space: nowrap; }
+    .rp-lr .d.na { color: var(--faint); }
+    /* 第一次檢測：本次數值排成格子，不畫空的前次／變化欄 */
+    .rp-chips { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); }
+    .rp-chips > div { padding: 7px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between;
+                      gap: 8px; padding-right: 18px; }
+    .rp-chips .nm { font-size: 12px; } .rp-chips .v { font-family: var(--f-d); font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .rp-chips .v u { text-decoration: none; font-size: 10px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+    @media (max-width: 560px) { .rp-chips { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) {
+      .rp-lh, .rp-lr { grid-template-columns: minmax(64px, 1fr) 58px 62px 78px; gap: 6px; }
+      .rp-lr .v { font-size: 14px; } .rp-lr .d { font-size: 10px; }
+      .rp-pv { grid-template-columns: minmax(64px, 1fr) 48px minmax(0, 1.6fr); gap: 8px; }
+      .rp-pv .pr { font-size: 15px; }
+    }
+    .rp-empty { padding: 12px 0; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
+
+    /* 橫向：同齡 PR＋五標刻度（學測五標：底12／後25／均50／前75／頂88） */
+    .rp-pr { border-top: 1px solid var(--line); }
+    .rp-pv { display: grid; grid-template-columns: 1fr 70px minmax(0, 2.2fr); gap: 13px; align-items: center;
+             padding: 6px 0 8px; border-bottom: 1px solid var(--line); }
+    .rp-pv.hd { padding: 7px 0 4px; font-family: var(--f-m); font-size: 9px; letter-spacing: .08em; color: var(--faint); }
+    .rp-pv .nm { font-size: 12.5px; font-weight: 500; }
+    .rp-pv .pr { font-family: var(--f-d); font-size: 18px; font-weight: 600; text-align: right; white-space: nowrap;
+                 font-variant-numeric: tabular-nums; }
+    .rp-pv .pr small { font-family: var(--f-m); font-size: 9px; color: var(--muted); font-weight: 400; margin-right: 3px; }
+    .rp-pv .pr.na { font-family: var(--f-m); font-size: 10.5px; color: var(--faint); font-weight: 400; }
+    .rp-five { position: relative; height: 30px; }
+    .rp-five .rail { position: absolute; left: 0; right: 0; top: 14px; height: 12px; background: var(--tint);
+                     border: 1px solid var(--line); border-radius: 3px; }
+    .rp-five .tk { position: absolute; top: 11px; height: 18px; width: 1px; background: var(--bench); }
+    .rp-five .tl { position: absolute; top: 0; transform: translateX(-50%); font-size: 9.5px; color: var(--muted); white-space: nowrap; }
+    /* 2026-10-24 Adam：PR 改成柱狀條（從 0 填到 PR），刻度線疊在條上方便對五標 */
+    .rp-five .bar { position: absolute; left: 0; top: 14px; height: 12px; border-radius: 3px; background: var(--brand); }
+    .rp-five .tk { z-index: 1; }
+    .rp-five .none { position: absolute; left: 0; right: 0; top: 12px; font-size: 10.5px; color: var(--faint); }
+
     /* 左右差：雙向對照 */
     .rp-asym { display: grid; gap: 9px; }
     .rp-ai { border: 1px solid var(--line); border-left: 3px solid var(--crit);
@@ -1352,6 +1410,10 @@
       .rp-row2 { grid-template-columns: 300px 1fr; gap: 22px; }
       .rp-find ul, .rp-find p { line-height: 1.5; }
       .rp-m { padding: 4px 0; }
+      /* 縱向／橫向兩區塊（2026-10-23）：測滿約 16 項時會溢到第 2 頁 → 列印時列高收緊 */
+      .rp-lr { padding: 2px 0; } .rp-lr .v { font-size: 14px; } .rp-lh { padding: 4px 0 3px; }
+      .rp-pv { padding: 1px 0 2px; } .rp-five { height: 24px; }
+      .rp-five .rail, .rp-five .bar { top: 11px; height: 10px; } .rp-five .tk { top: 8px; height: 16px; } .rp-five .none { top: 7px; }
       .rp-asym { grid-template-columns: repeat(3, 1fr); gap: 10px; }   /* 左右差 3 張卡橫排，省約 240px */
       .rp-summary.empty .rp-sum-text { min-height: 64px; }
       .rp-foot { margin-top: 4px; padding-top: 6px; }
@@ -1610,6 +1672,20 @@
       padding: 3px 10px; font-size: 12px; cursor: pointer; font-family: inherit; color: var(--muted);
     }
     .who-bar button:hover { border-color: var(--primary); color: var(--primary); }
+    /* v2 快速開始（取代原本的介紹橫幅） */
+    .quick { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 12px; margin: 10px 0 18px; }
+    @media (max-width: 1100px) { .quick { grid-template-columns: 1fr 1fr; } }
+    .qk { display: block; background: #fff; border: 1.5px solid var(--line); border-radius: 16px; padding: 16px 18px; text-decoration: none; color: inherit; }
+    .qk b { display: block; font-size: 17px; color: var(--primary); margin-bottom: 4px; }
+    .qk span { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .qk-main { background: #163E30; border-color: #163E30; }
+    .qk-main b { color: #D8EF5F; } .qk-main span { color: #cfe0d4; }
+    .qk:hover { border-color: var(--primary); }
+    @media (max-width: 760px) { .quick { grid-template-columns: 1fr; } }
+    .draft-btn-new { background: #163E30 !important; color: #D8EF5F !important; }
+    /* v2：只保留新版報告 → 隱藏舊版報告預覽（程式仍在，要恢復把下面兩行刪掉即可） */
+    .main-grid > .report-wrap { display: none !important; }
+    .main-grid { grid-template-columns: minmax(0, 760px) !important; justify-content: center; }
 
     /* ── 載入提示 ── */
     #loadingMsg {
@@ -1815,35 +1891,11 @@
       <span id="whoAmI"></span>
       <button type="button" id="logoutBtn">登出</button>
     </div>
-    <section class="hero no-print">
-      <div class="hero-content">
-        <div class="eyebrow">Tennis Performance Lab</div>
-        <h1>網球體能檢測<br />報告系統</h1>
-        <p>
-          輸入球員資料、核心能力分數與檢測數據，立即生成一份可以給家長、球員與教練共同討論的專業報告。
-          不只是測數字，而是把體能轉成場上的訓練方向。
-        </p>
-
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="#assessmentForm">開始輸入檢測資料</a>
-          <a class="btn btn-ghost" href="#reportCard">查看報告預覽</a>
-        </div>
-      </div>
-
-      <div class="hero-panel">
-        <div class="hero-stat">
-          <small>Report Output</small>
-          <strong>Radar + Analysis</strong>
-        </div>
-        <div class="hero-stat">
-          <small>Training Focus</small>
-          <strong>6 Weeks Plan</strong>
-        </div>
-        <div class="hero-stat">
-          <small>Data Collection</small>
-          <strong>CSV Export</strong>
-        </div>
-      </div>
+    <section class="quick no-print" aria-label="快速開始">
+      <a class="qk qk-main" href="app/"><b>📱 教練工作台</b><span>球員清單、該複測提醒、個人輸入、報告（跟手機 App 同一套）</span></a>
+      <a class="qk" href="station.html"><b>📋 團體分站輸入</b><span>一站一項、名單往下填，自動存檔，測完再整批完成</span></a>
+      <a class="qk" href="#assessmentForm"><b>✏️ 舊版輸入表單</b><span>原本的一頁式表單（含照片上傳）</span></a>
+      <a class="qk" href="#recordPanel" onclick="setTimeout(()=>{const b=document.getElementById('recordRefreshBtn'); if(b) b.click();},50)"><b>📄 歷史報告</b><span>可切換英文／繁體／簡體、下載 PDF</span></a>
     </section>
 
     <section class="main-grid">
@@ -2348,7 +2400,10 @@
               </div>
             </header>
 
-            <section class="rp-verdict">
+            <!-- 2026-10-24 Adam：「文字太多、看不到重點」→ 總分框不再顯示（JS 仍寫入，僅隱藏），改三格重點數字 -->
+            <section class="rp-hl" id="rpHighlights"></section>
+
+            <section class="rp-verdict" style="display:none">
               <div>
                 <div class="rp-score"><b id="overallScore">—</b><span>/ 100</span></div>
                 <div class="rp-gauge">
@@ -2366,36 +2421,28 @@
               </div>
             </section>
 
+            <!-- 2026-10-23 Adam：雷達圖拿掉，改成縱向（個人前後對比）＋橫向（同齡 PR）兩區塊。
+                 縱向比實測值；橫向只給 PR＋五標位置，不出現分數。 -->
             <section class="rp-sec">
               <div class="rp-sechead">
-                <div><p class="rp-eyebrow">Core Ability</p><h3>核心能力總覽</h3></div>
-                <p class="rp-note">虛線＝同齡中位；空心＝本次無法計分</p>
+                <div><p class="rp-eyebrow">Progress</p><h3>個人前後對比</h3></div>
+                <p class="rp-note">跟自己比</p>
               </div>
-              <div class="rp-row2">
-                <div>
-                  <svg class="rp-radar" id="radarSvg" viewBox="0 0 300 292" width="100%" height="auto" role="img"></svg>
-                  <div class="rp-key">
-                    <span><i class="rp-sw"></i><span id="rpKeyName">球員</span></span>
-                    <span><i class="rp-sw d"></i>同齡中位</span>
-                    <span><i class="rp-sw o"></i>未計分</span>
-                  </div>
-                </div>
-                <div class="rp-finds" id="rpFinds"></div>
-              </div>
+              <div class="rp-lg" id="rpLong"></div>
+              <p class="rp-note rp-foot1" id="rpLongNote"></p>
             </section>
 
             <section class="rp-sec">
               <div class="rp-sechead">
-                <div><p class="rp-eyebrow">Key Data</p><h3>關鍵數據 vs 同齡</h3></div>
-                <p class="rp-note">圓點＝他的位置；中線＝同齡中位</p>
+                <div><p class="rp-eyebrow">Peer Position</p><h3>同齡位置</h3></div>
+                <p class="rp-note" id="rpPeerGroup"></p>
               </div>
-              <div class="rp-mhead">
-                <span>項目</span><span style="text-align:right">本次</span>
-                <span style="display:flex;justify-content:space-between"><span>← 落後</span><span>中位</span><span>領先 →</span></span>
-                <span style="text-align:right">vs 上次</span>
-              </div>
-              <div class="rp-mtx" id="dataGrid"></div>
-              <p class="rp-note" style="margin-top:7px" id="rpTrendNote"></p>
+              <div class="rp-pr" id="rpPeer"></div>
+              <p class="rp-note rp-foot1" id="rpPeerNote"></p>
+            </section>
+
+            <section class="rp-sec" id="rpExtraSec" style="display:none">
+              <div class="rp-finds" id="rpFinds"></div>
             </section>
 
             <section class="rp-sec" id="asymmetryCard" style="display:none">
@@ -2534,7 +2581,14 @@
 
   <script>
     // ===== 設定：部署 Apps Script 後，把 URL 貼在這裡 =====
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzui0D7wBTHs02oqO87bbabZdvdvEW0FuHtmxMWfQAot30pm5C62AkjBvQSxltp8ldE/exec';
+    // v2（2026-11-22）：測試環境可用 ?api= 指到測試副本的 /exec（只接受 Apps Script 網址），分站頁與新版報告會沿用
+    const SCRIPT_URL = (function () {
+      const PROD = 'https://script.google.com/macros/s/AKfycbzui0D7wBTHs02oqO87bbabZdvdvEW0FuHtmxMWfQAot30pm5C62AkjBvQSxltp8ldE/exec';
+      const q = new URLSearchParams(location.search).get('api');
+      if (q && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(q)) { try { sessionStorage.setItem('yj_api', q); } catch (e) {} return q; }
+      const DEF = PROD;   // 預設接正式後台；測試時網址加 ?api=測試副本的 /exec
+      try { return sessionStorage.getItem('yj_api') || DEF; } catch (e) { return DEF; }
+    })();
 
     // ===== 連線：自動重試＋失敗紀錄（2026-09-14）=====
     // 實測：Apps Script「執行作業」顯示每次都 2–8 秒跑完，瀏覽器卻偶爾等 30–130 秒後收到 404。
@@ -3013,7 +3067,6 @@
       if (photoDataUrl) av.innerHTML = `<img src="${photoDataUrl}" alt="" />`;
       else av.textContent = (rec.playerName || '—').trim().charAt(0);
       $('reportName').textContent = rec.playerName || '未命名球員';
-      $('rpKeyName').textContent  = rec.playerName || '球員';
       $('rpBio').innerHTML = [
         ['年齡', age != null ? `${age} 歲` : '—'],
         ['身高', rec.height ? `${rec.height} cm` : '—'],
@@ -3109,35 +3162,6 @@
           : `分數為同組百分位：50 分＝同組中位，不是及格線。${nTxt}`;
       }
 
-      // ── 各能力分數與實測值：只列量得到的事實 ──
-      // 2026-09-15 Adam：「報告裡寫出來的每一個字都是教練對球員體能的專業判斷，不能馬虎」。
-      // 原本依分數 ≥55／<55 套固定句子（強項／待加強／場上會怎麼樣／訓練方向）：句子沒有引用數據、
-      // 還推論到沒測過的場上表現 → 系統只列分數＋比較筆數＋實測值；判斷由教練寫。
-      const DIM_ITEMS = {
-        speedAgility:   ['sprint10m', 'avg515', 'spiderRun'],
-        lowerPower:     ['cmjHeight', 'broadJump', 'lateralAvg'],
-        singleLegDecel: ['landAvg', 'nkgAvg', 'djAvg'],
-        rotational:     ['rThrowAvg'],
-        throwing:       ['servingThrow'],
-        cardio:         ['IFT30_15']
-      };
-      const poolSelf = s.poolExcludesSelf ? '不含本人' : '含本人';
-      const itemText = id => {
-        const it = dExtraItems.find(x => x.id === id);
-        if (!it) return '';
-        const v = it.get(rec);
-        if (v === null || v === undefined || v === '' || !(toNum(v) > 0)) return '';
-        return `${escapeHtml(it.label.replace(/\s*\(.*\)\s*$/, ''))} ${escapeHtml(String(v))}${escapeHtml((it.unit || '').trim() ? ' ' + it.unit.trim() : '')}`;
-      };
-      const factLines = metricConfig.filter(m => m.active && currentDimStates[m.id] !== 'untested').map(m => {
-        const d = (s.dims || {})[m.id] || {};
-        const vals = (DIM_ITEMS[m.id] || []).map(itemText).filter(Boolean).join(' · ');
-        const head = (currentDimStates[m.id] === 'scored' && s[m.id] != null)
-          ? `<b>${escapeHtml(m.label)} ${s[m.id]}</b>` + (d.n ? `<span class="rp-n">同組比較 ${d.n} 筆（${poolSelf}）</span>` : '')
-          : `<b>${escapeHtml(m.label)} —</b><span class="rp-n">同組資料不足，不計分</span>`;
-        return `<li>${head}${vals ? '<br>' + vals : ''}</li>`;
-      });
-
       // D｜其他測試的補充：教練勾選的項目（帶數值）+ 自由文字
       const otherTests = [];
       (rec.dExtraSelected || []).forEach(id => {
@@ -3161,9 +3185,8 @@
         else if (d.v)     { mobLines.push(`${escapeHtml(it.label)}：${mobSym(d.v)}`); }
       });
 
+      // 2026-10-23：雷達圖與「各能力分數」拿掉（報告不出現分數），實測值改在「個人前後對比」呈現
       const finds = [];
-      if (factLines.length)
-        finds.push(['c','各能力分數與實測值','Measured', '<ul>' + factLines.join('') + '</ul>']);
       if (otherTests.length || mobLines.length)
         finds.push(['c','其他測試','Extra',
           '<ul>' + otherTests.map(x => `<li>${escapeHtml(x)}</li>`).join('')
@@ -3171,55 +3194,12 @@
       $('rpFinds').innerHTML = finds.map(f =>
         `<div class="rp-find ${f[0]}"><div class="bar"></div><div>`
         + `<h4>${f[1]} <em>${f[2]}</em></h4>${f[3]}</div></div>`).join('');
+      $('rpExtraSec').style.display = finds.length ? '' : 'none';
 
-      // ── 關鍵數據 vs 同齡（中線＝中位，往右＝領先）──
-      // 為什麼要對照條：維度分數會抹平差異 —— 王柏雨「速度與變向 52」其實是
-      // 10m 第 7 百分位 + 5-10-5 第 93 百分位平均出來的，數字卡片看不出這件事。
-      const hist = (result && result.history) || [];
-      const prev = hist.length ? hist[0] : null;
-      const grid = $('dataGrid');
-      grid.innerHTML = mList.map(m => {
-        const unit = m.unit ? `<u>${escapeHtml(m.unit)}</u>` : '';
-        // vs 上次：方向依指標性質（越小越好 vs 越大越好）
-        let trend = '—', tcls = '';
-        if (prev && prev.values[m.id] != null) {
-          const d = m.value - prev.values[m.id];
-          if (Math.abs(d) > 1e-9) {
-            const better = m.lower ? d < 0 : d > 0;
-            tcls  = better ? 'up' : 'down';
-            trend = (d > 0 ? '+' : '') + Math.round(d * 100) / 100;
-          } else trend = '持平';
-        }
-        const trendCell = `<div class="rp-trend ${tcls}">${trend}</div>`;
-
-        if (m.pct === null || m.pct === undefined) {
-          return `<div class="rp-m"><div class="nm">${escapeHtml(m.label)}</div>`
-            + `<div class="val">${m.value}${unit}</div>`
-            + `<div class="rp-scale"><div class="rail"></div><div class="mid"></div>`
-            + `<span class="none">無同齡基準 · 僅顯示數值</span></div>${trendCell}</div>`;
-        }
-        // >50 綠（中位之上即為正面）／40–50 琥珀／<40 紅
-        const tone = m.pct > 50 ? 'g' : (m.pct >= 40 ? 'y' : 'r');
-        const p = Math.max(2, Math.min(98, m.pct));
-        const fill = p >= 50 ? `left:50%;width:${p - 50}%` : `left:${p}%;width:${50 - p}%`;
-        const note = m.rankNote ? escapeHtml(m.rankNote) : `第 ${m.pct} 百分位`;
-        const med  = (m.median !== null && m.median !== undefined)
-                   ? (m.pct === 50 ? '｜正好中位' : `｜中位 ${m.median}`) : '';
-        // 標籤靠右時會超出邊界 → 改成貼右緣往左寫
-        const tagPos = p > 72 ? `right:calc(${100 - p}% + 10px)` : `left:calc(${p}% + 10px)`;
-        return `<div class="rp-m"><div class="nm">${escapeHtml(m.label)}</div>`
-          + `<div class="val">${m.value}${unit}</div>`
-          + `<div class="rp-scale ${tone}"><div class="rail"></div><div class="mid"></div>`
-          + `<div class="fill" style="${fill}"></div>`
-          + `<div class="dot" style="left:calc(${p}% - 5px)"></div>`
-          + `<div class="tag" style="${tagPos}">${note}${med}</div></div>${trendCell}</div>`;
-      }).join('') || '<div class="rp-m"><div class="nm">尚無資料</div><div class="val">—</div>'
-                   + '<div class="rp-scale"><span class="none">叫出報告後顯示與同齡的對照</span></div>'
-                   + '<div class="rp-trend">—</div></div>';
-
-      $('rpTrendNote').textContent = prev
-        ? `「vs 上次」對照 ${prev.testDate}（${prev.testId}）。`
-        : '「vs 上次」本次無資料 —— 這是首次以此基準計分，第二次檢測後此欄會顯示進退幅度。';
+      // ── 橫向：同齡 PR ／ 縱向：個人前後對比（2026-10-23 取代雷達圖與關鍵數據對照條）──
+      // v33 起後台回 peerMetrics（所有測項、基準不足退即時池）；舊後台／舊資料退回 6 項 metrics
+      renderPeer((result && result.peerMetrics && result.peerMetrics.length) ? result.peerMetrics : mList, rec, age);
+      renderLongitudinal(rec, result);
 
       // ── 訓練方向：屬於教練判斷，系統不再套固定句子（2026-09-15）──
       // 教練填寫的位置還沒做 → 在那之前整區不顯示，避免印出空白或系統代寫的內容。
@@ -3235,10 +3215,9 @@
       $('rpSummaryBy').textContent = sumText ? `— ${rec.coach || '教練'}` : '';
       $('rpSummary').classList.toggle('empty', !sumText);
 
-      drawRadarChart(s);
       displayAsymmetry(rec);
       renderCoachPage(rec, result, acadName);
-      $('reportCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      ($('newReportLink') && !$('newReportLink').hidden ? $('newReportLink') : $('submitBtn')).scrollIntoView({ behavior: 'smooth', block: 'center' });   // v2：舊版報告已隱藏
     }
 
     /* ══════════════ 報告第 2 頁：教練頁 ══════════════
@@ -3475,9 +3454,23 @@
       b.disabled = true;
       b.textContent = `✅ 已送出（${testId}）`;
       b.title = '這筆已經寫進後台。要輸入下一位請按下方的「重設」鈕。';
+      // v2：新版報告連結＋把這個人當天的分站暫存標成已完成（避免之後又被合併一次）
+      let a = $('newReportLink');
+      if (!a) { a = document.createElement('a'); a.id = 'newReportLink'; a.className = 'btn'; a.target = '_blank'; a.rel = 'noopener';
+        a.style.cssText = 'display:block;text-align:center;margin-top:10px;background:#163E30;color:#D8EF5F;text-decoration:none';
+        b.parentNode.insertBefore(a, b.nextSibling); }
+      a.href = 'report.html?id=' + encodeURIComponent(testId);
+      a.textContent = '📄 打開報告（可下載 PDF）';
+      a.hidden = false;
+      try {
+        const nm = (getVal('playerName') || '').trim(), d = getVal('testDate') || '';
+        if (nm && d) fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'markStationDone', token: sessionToken, date: d, playerName: nm, testId }) }).catch(() => {});
+      } catch (e) {}
     }
     function clearSubmitted() {
       submittedTestId = null;
+      if ($('newReportLink')) $('newReportLink').hidden = true;
       const b = $('submitBtn');
       if (!b) return;
       b.disabled = false;
@@ -3676,7 +3669,7 @@
           </div>
           <div class="draft-item-progress">編號 ${escapeHtml(r.testId)}　${escapeHtml(r.ageGroup || '')}${r.age ? '　' + r.age + ' 歲' : ''}</div>
           <div class="draft-item-actions">
-            <button class="draft-btn draft-btn-load" onclick="openRecord('${r.testId}', this)">📄 叫出報告</button>
+            <a class="draft-btn draft-btn-new" href="report.html?id=${encodeURIComponent(r.testId)}" target="_blank" rel="noopener" style="text-decoration:none">📄 報告</a>
             <button class="draft-btn draft-btn-del" onclick="deleteRecordUI('${r.testId}','${escapeHtml(r.playerName||'')}')">🗑 刪除</button>
           </div>
         </div>`).join('');
@@ -4079,6 +4072,169 @@
       {id:'hr3', label:'3分鐘心跳恢復率 (3-min HR Recovery)', unit:' %', get:r=>{const m=toNum(r.IFTmaxHR),h=toNum(r.IFTHR3min);return (m>0&&h>0)?r2((m-h)/m*100):null;}},
     ];
 
+    /* ══════════════ 報告：縱向（個人前後對比）＋橫向（同齡 PR） ══════════════
+       2026-10-23 Adam：雷達圖拿掉，報告不出現「分數」。
+       - 縱向比「實測值」：孩子真正的進步，不受同齡組換人、升組、常模更新影響。
+       - 橫向只給 PR＋學測五標位置，讓家長看到「落在同齡哪一段」，而不是一個成績。 */
+
+    // 姓名比對用：繁→簡（OpenCC TSCharacters 的常用字段），解決「吳逸洋／吴逸洋」被當成兩個人
+    const T2S_FROM = '丟並乾亂亙亞佇佈佔併來侖侶侷俁係俔俠俥俬倀倆倈倉個們倖倫偉側偵偽傑傖傘備傢傭傯傳傴債傷傾僂僅僉僑僕僞僥僨僱價儀儁儂億儈儉儎儐儔儕儘償優儲儷儺儻儼兇兌兒兗內兩冊冑冪凈凍凜凱別刪剄則剋剎剗剛剝剮剴創剷劃劇劉劊劌劍劑勁動務勛勝勞勢勩勱勳勵勸勻匭匯匱區協卹卻卽厙厠厤厭厲厴參叄叢吒吳吶呂咼員唄唸問啓啞啟啢喚喪喫喬單喲嗆嗇嗊嗎嗚嗩嗶嘆嘍嘓嘔嘖嘗嘜嘩嘮嘯嘰嘵嘸嘽噁噓噝噠噥噦噯噲噴噸噹嚀嚇嚌嚐嚕嚙嚥嚦嚨嚮嚲嚳嚴嚶囀囁囂囅囈囉囌囑囪圇國圍園圓圖團垻埡埰執堅堊堖堝堯報場塊塋塏塒塗塚塢塤塵塹墊墜墮墰墳墶墻墾壇壋壎壓壘壙壚壜壞壟壠壢壩壪壯壺壼壽夠夢夥夾奐奧奩奪奬奮奼妝姍姦娛婁婦婭媧媯媼媽嫋嫗嫵嫺嫻嫿嬀嬃嬈嬋嬌嬙嬡嬤嬪嬰嬸孃孌孫學孿宮寀寢實寧審寫寬寵寶將專尋對導尷屆屍屓屜屢層屨屬岡峯峴島峽崍崑崗崙崢崬嵐嵗嶁嶄嶇嶔嶗嶠嶢嶧嶨嶮嶸嶺嶼嶽巋巒巔巖巰巹帥師帳帶幀幃幗幘幟幣幫幬幹幾庫廁廂廄廈廎廕廚廝廟廠廡廢廣廩廬廳弒弔弳張強彆彈彌彎彔彙彠彥彫彲彿後徑從徠復徵徹恆恥悅悞悵悶悽惡惱惲惻愛愜愨愴愷愾慄態慍慘慚慟慣慤慪慫慮慳慶慼慾憂憊憐憑憒憖憚憤憫憮憲憶懇應懌懍懞懟懣懨懲懶懷懸懺懼懾戀戇戔戧戩戰戱戲戶拋挩挱挾捨捫捱捲掃掄掗掙掛採揀揚換揮揯損搖搗搵搶摑摜摟摯摳摶摺摻撈撏撐撓撟撣撥撫撲撳撻撾撿擁擄擇擊擋擔據擠擣擬擯擰擱擲擴擷擺擻擼擾攄攆攏攔攖攙攛攜攝攢攣攤攪攬敎敓敗敘敵數斂斃斆斕斬斷於旂旣昇時晉晝暈暉暘暢暫曄曆曇曉曏曖曠曨曬書會朧朮東枴柵柺査桿梔梘條梟梲棄棊棖棗棟棧棲棶椏楊楓楨業極榘榦榪榮榲榿構槍槓槤槧槨槮槳槶槼樁樂樅樑樓標樞樣樧樳樸樹樺樿橈橋機橢橫檁檉檔檜檟檢檣檮檯檳檸檻櫃櫓櫚櫛櫝櫞櫟櫥櫧櫨櫪櫫櫬櫱櫳櫸櫻欄欅權欏欒欖欞欽歎歐歟歡歲歷歸歿殘殞殤殫殭殮殯殲殺殻殼毀毆毿氂氈氌氣氫氬氳氾汎汙決沒沖況泝洩洶浹涇涗涼淒淚淥淨淩淪淵淶淺渙減渢渦測渾湊湞湧湯溈準溝溫溮溳溼滄滅滌滎滙滬滯滲滷滸滻滾滿漁漊漚漢漣漬漲漵漸漿潁潑潔潙潛潤潯潰潷潿澀澆澇澐澗澠澤澦澩澮澱濁濃濕濘濚濛濜濟濤濫濰濱濺濼濾瀂瀅瀆瀉瀋瀏瀕瀘瀝瀟瀠瀦瀧瀨瀰瀲瀾灃灄灑灕灘灝灣灤灧灩災為烏烴無煉煒煙煢煥煩煬熅熒熗熱熲熾燁燈燉燒燙燜營燦燬燭燴燻燼燾爍爐爛爭爲爺爾牀牆牘牽犖犛犢犧狀狹狽猙猶猻獁獃獄獅獎獨獪獫獮獰獲獵獷獸獺獻獼玀現琱琺琿瑋瑒瑣瑤瑩瑪瑲璉璡璣璦璫環璵璸璽璿瓊瓏瓔瓚甌甕產産甦甯畝畢畫異畵當疇疊痙痠痾瘂瘋瘍瘓瘞瘡瘧瘮瘲瘺瘻療癆癇癉癒癘癟癡癢癤癥癧癩癬癭癮癰癱癲發皁皚皰皸皺盃盜盞盡監盤盧盪眞眥眾睏睜睞瞘瞞瞶瞼矇矓矚矯硃硜硤硨硯碕碩碭碸確碼磑磚磠磣磧磯磽礄礆礎礙礦礪礫礬礱祕祿禍禎禕禡禦禪禮禰禱禿秈稅稈稜稟種稱穀穌積穎穠穡穢穩穫穭窩窪窮窯窵窶窺竄竅竇竈竊竪競筆筍筧箇箋箏節範築篋篔篠篤篩篳簀簍簑簞簡簣簫簹簽簾籃籌籙籛籜籟籠籤籩籪籬籮籲粵糉糝糞糧糰糲糴糶糹糾紀紂約紅紆紇紈紉紋納紐紓純紕紖紗紘紙級紛紜紝紡紮細紱紲紳紵紹紺紼紿絀終絃組絆絎結絕絛絝絞絡絢給絨絰統絲絳絶絹綁綃綆綈綉綌綏綑經綜綞綠綢綣綫綬維綯綰綱網綳綴綵綸綹綺綻綽綾綿緄緇緊緋緑緒緓緔緗緘緙線緝緞締緡緣緦編緩緬緯緱緲練緶緹緻緼縈縉縊縋縐縑縕縗縛縝縞縟縣縧縫縭縮縱縲縴縵縶縷縹總績繃繅繆繒織繕繚繞繡繢繩繪繫繭繮繯繰繳繹繼繽繾纇纈纊續纍纏纓纔纖纘纜缽罈罌罎罰罵罷羅羆羈羋羣羥羨義羶習翫翬翹翽耬耮聖聞聯聰聲聳聵聶職聹聽聾肅脅脈脛脣脩脫脹腎腖腡腦腫腳腸膃膕膚膠膩膽膾膿臉臍臏臘臚臟臠臢臥臨臺與興舉舊舘艙艤艦艫艱艷芻苧茲荊莊莖莢莧華菴菸萇萊萬萴萵葉葒葤葦葯葷蒐蒓蒔蒕蒞蒼蓀蓆蓋蓮蓯蓴蓽蔔蔘蔞蔣蔥蔦蔭蕁蕆蕎蕒蕓蕕蕘蕢蕩蕪蕭蕷薀薈薊薌薑薔薘薟薦薩薴薹薺藍藎藝藥藪藴藶藹藺蘀蘄蘆蘇蘊蘋蘚蘞蘢蘭蘺蘿虆處虛虜號虧虯蛺蛻蜆蝕蝟蝦蝨蝸螄螞螢螻螿蟄蟈蟎蟣蟬蟯蟲蟶蟻蠁蠅蠆蠍蠐蠑蠔蠟蠣蠨蠱蠶蠻衆衊術衕衚衛衝袞裊裏補裝裡製複褌褘褲褳褸褻襇襉襏襖襝襠襤襪襬襯襲襴覈見覎規覓視覘覡覥覦親覬覯覲覷覺覽覿觀觴觶觸訁訂訃計訊訌討訐訒訓訕訖託記訛訝訟訣訥訩訪設許訴訶診註証詁詆詎詐詒詔評詖詗詘詛詞詠詡詢詣試詩詫詬詭詮詰話該詳詵詼詿誄誅誆誇誌認誑誒誕誘誚語誠誡誣誤誥誦誨說説誰課誶誹誼誾調諂諄談諉請諍諏諑諒論諗諛諜諝諞諡諢諤諦諧諫諭諮諱諳諶諷諸諺諼諾謀謁謂謄謅謊謎謐謔謖謗謙謚講謝謠謡謨謫謬謭謳謹謾譁證譎譏譖識譙譚譜譟譫譭譯議譴護譸譽譾讀讅變讋讎讒讓讕讖讚讜讞豈豎豐豔豬豶貓貝貞貟負財貢貧貨販貪貫責貯貰貲貳貴貶買貸貺費貼貽貿賀賁賂賃賄賅資賈賊賑賒賓賕賙賚賜賞賠賡賢賣賤賦賧質賫賬賭賴賵賺賻購賽賾贄贅贇贈贊贋贍贏贐贓贔贖贗贛贜赬趕趙趨趲跡踐踰踴蹌蹕蹟蹠蹣蹤蹺躂躉躊躋躍躑躒躓躕躚躡躥躦躪軀車軋軌軍軑軒軔軛軟軤軫軲軸軹軺軻軼軾較輅輇輈載輊輒輓輔輕輛輜輝輞輟輥輦輩輪輬輯輳輸輻輼輾輿轀轂轄轅轆轉轍轎轔轟轡轢轤辦辭辮辯農迴逕這連週進遊運過達違遙遜遞遠遡適遲遷選遺遼邁還邇邊邏邐郟郵鄆鄉鄒鄔鄖鄧鄭鄰鄲鄴鄶鄺酇酈醃醖醜醞醟醣醫醬醱釀釁釃釅釋釐釒釓釔釕釗釘釙針釣釤釦釧釩釵釷釹釺鈀鈁鈃鈄鈅鈈鈉鈍鈎鈐鈑鈒鈔鈕鈞鈡鈣鈥鈦鈧鈮鈰鈳鈴鈷鈸鈹鈺鈽鈾鈿鉀鉅鉆鉈鉉鉋鉍鉑鉕鉗鉚鉛鉞鉢鉤鉦鉬鉭鉳鉶鉸鉺鉻鉿銀銃銅銍銑銓銖銘銚銛銜銠銣銥銦銨銩銪銫銬銱銳銷銹銻銼鋁鋃鋅鋇鋌鋏鋒鋙鋝鋟鋣鋤鋥鋦鋨鋩鋪鋭鋮鋯鋰鋱鋶鋸鋼錁錄錆錇錈錏錐錒錕錘錙錚錛錟錠錡錢錦錨錩錫錮錯録錳錶錸錼鍀鍁鍃鍅鍆鍇鍈鍊鍋鍍鍔鍘鍚鍛鍠鍤鍥鍩鍬鍰鍵鍶鍺鍼鍾鎂鎄鎇鎊鎌鎔鎖鎘鎚鎛鎡鎢鎣鎦鎧鎩鎪鎬鎭鎮鎰鎲鎳鎵鎶鎸鎿鏃鏇鏈鏌鏍鏐鏑鏗鏘鏜鏝鏞鏟鏡鏢鏤鏨鏰鏵鏷鏹鏽鐃鐋鐐鐒鐓鐔鐘鐙鐝鐠鐦鐧鐨鐫鐮鐲鐳鐵鐶鐸鐺鐿鑄鑊鑌鑑鑒鑔鑕鑞鑠鑣鑥鑭鑰鑱鑲鑷鑹鑼鑽鑾鑿钁钂長門閂閃閆閈閉開閌閎閏閑閒間閔閘閡閣閤閥閨閩閫閬閭閱閲閶閹閻閼閽閾閿闃闆闇闈闊闋闌闍闐闒闓闔闕闖關闞闠闡闢闤闥陘陝陞陣陰陳陸陽隉隊階隕際隨險隯隱隴隸隻雋雖雙雛雜雞離難雲電霑霢霧霽靂靄靆靈靉靚靜靝靦靨鞏鞝鞦鞽韁韃韆韉韋韌韍韓韙韜韝韞韻響頁頂頃項順頇須頊頌頎頏預頑頒頓頗領頜頡頤頦頭頮頰頲頴頷頸頹頻頽顆題額顎顏顒顓顔願顙顛類顢顥顧顫顬顯顰顱顳顴風颭颮颯颱颳颶颸颺颻颼飀飄飆飈飛飠飢飣飥飩飪飫飭飯飱飲飴飼飽飾飿餃餄餅餈餉養餌餎餏餑餒餓餕餖餘餚餛餜餞餡館餬餱餳餵餶餷餺餼餾餿饁饃饅饈饉饊饋饌饑饒饗饜饞饢馬馭馮馱馳馴馹駁駐駑駒駔駕駘駙駛駝駟駡駢駭駰駱駸駿騁騂騅騌騍騎騏騖騙騤騫騭騮騰騶騷騸騾驀驁驂驃驄驅驊驌驍驏驕驗驚驛驟驢驤驥驦驪驫骯髏髒體髕髖髮鬆鬍鬚鬢鬥鬧鬨鬩鬮鬱鬹魎魘魚魛魢魨魯魴魷魺鮁鮃鮊鮋鮍鮎鮐鮑鮒鮓鮚鮜鮝鮞鮦鮪鮫鮭鮮鮳鮶鮺鯀鯁鯇鯉鯊鯒鯔鯕鯖鯗鯛鯝鯡鯢鯤鯧鯨鯪鯫鯰鯴鯷鯽鯿鰁鰂鰃鰈鰉鰍鰏鰐鰒鰓鰛鰜鰟鰠鰣鰥鰨鰩鰭鰮鰱鰲鰳鰵鰷鰹鰺鰻鰼鰾鱂鱅鱈鱉鱒鱔鱖鱗鱘鱝鱟鱠鱣鱤鱧鱨鱭鱯鱷鱸鱺鳥鳧鳩鳬鳲鳳鳴鳶鴆鴇鴉鴒鴕鴛鴝鴞鴟鴣鴦鴨鴯鴰鴴鴻鴿鵂鵃鵐鵑鵒鵓鵜鵝鵠鵡鵪鵬鵮鵯鵰鵲鵷鵾鶇鶉鶊鶓鶖鶘鶚鶡鶥鶩鶬鶯鶲鶴鶹鶺鶻鶼鶿鷀鷁鷂鷄鷊鷓鷖鷗鷙鷚鷥鷦鷫鷯鷲鷳鷴鷸鷹鷺鷽鸇鸌鸏鸕鸘鸚鸛鸝鸞鹵鹹鹺鹼鹽麗麥麩麪麫麯麴麵麼麽黃黌點黨黲黴黶黷黽黿鼂鼉鼕鼴齊齋齎齏齒齔齕齗齙齜齟齠齡齣齦齧齪齬齲齶齷龍龎龐龔龕龜鿓';
+    const T2S_TO   = '丢并干乱亘亚伫布占并来仑侣局俣系伣侠伡私伥俩俫仓个们幸伦伟侧侦伪杰伧伞备家佣偬传伛债伤倾偻仅佥侨仆伪侥偾雇价仪俊侬亿侩俭傤傧俦侪尽偿优储俪傩傥俨凶兑儿兖内两册胄幂净冻凛凯别删刭则克刹刬刚剥剐剀创铲划剧刘刽刿剑剂劲动务勋胜劳势勚劢勋励劝匀匦汇匮区协恤却即厍厕历厌厉厣参叁丛咤吴呐吕呙员呗念问启哑启唡唤丧吃乔单哟呛啬唝吗呜唢哔叹喽啯呕啧尝唛哗唠啸叽哓呒啴恶嘘咝哒哝哕嗳哙喷吨当咛吓哜尝噜啮咽呖咙向亸喾严嘤啭嗫嚣冁呓啰苏嘱囱囵国围园圆图团坝垭采执坚垩垴埚尧报场块茔垲埘涂冢坞埙尘堑垫坠堕坛坟垯墙垦坛垱埙压垒圹垆坛坏垄垅坜坝塆壮壶壸寿够梦伙夹奂奥奁夺奖奋姹妆姗奸娱娄妇娅娲妫媪妈袅妪妩娴娴婳妫媭娆婵娇嫱嫒嬷嫔婴婶娘娈孙学孪宫采寝实宁审写宽宠宝将专寻对导尴届尸屃屉屡层屦属冈峰岘岛峡崃昆岗仑峥岽岚岁嵝崭岖嵚崂峤峣峄峃崄嵘岭屿岳岿峦巅岩巯卺帅师帐带帧帏帼帻帜币帮帱干几库厕厢厩厦庼荫厨厮庙厂庑废广廪庐厅弑吊弪张强别弹弥弯录汇彟彦雕彨佛后径从徕复征彻恒耻悦悮怅闷凄恶恼恽恻爱惬悫怆恺忾栗态愠惨惭恸惯悫怄怂虑悭庆戚欲忧惫怜凭愦慭惮愤悯怃宪忆恳应怿懔蒙怼懑恹惩懒怀悬忏惧慑恋戆戋戗戬战戯戏户抛捝挲挟舍扪挨卷扫抡挜挣挂采拣扬换挥搄损摇捣揾抢掴掼搂挚抠抟折掺捞挦撑挠挢掸拨抚扑揿挞挝捡拥掳择击挡担据挤捣拟摈拧搁掷扩撷摆擞撸扰摅撵拢拦撄搀撺携摄攒挛摊搅揽教敚败叙敌数敛毙敩斓斩断于旗既升时晋昼晕晖旸畅暂晔历昙晓向暧旷昽晒书会胧术东拐栅拐查杆栀枧条枭棁弃棋枨枣栋栈栖梾桠杨枫桢业极矩干杩荣榅桤构枪杠梿椠椁椮桨椢椝桩乐枞梁楼标枢样榝桪朴树桦椫桡桥机椭横檩柽档桧槚检樯梼台槟柠槛柜橹榈栉椟橼栎橱槠栌枥橥榇蘖栊榉樱栏榉权椤栾榄棂钦叹欧欤欢岁历归殁残殒殇殚僵殓殡歼杀壳壳毁殴毵牦毡氇气氢氩氲泛泛污决没冲况溯泄汹浃泾涚凉凄泪渌净凌沦渊涞浅涣减沨涡测浑凑浈涌汤沩准沟温浉涢湿沧灭涤荥汇沪滞渗卤浒浐滚满渔溇沤汉涟渍涨溆渐浆颍泼洁沩潜润浔溃滗涠涩浇涝沄涧渑泽滪泶浍淀浊浓湿泞溁蒙浕济涛滥潍滨溅泺滤澛滢渎泻沈浏濒泸沥潇潆潴泷濑弥潋澜沣滠洒漓滩灏湾滦滟滟灾为乌烃无炼炜烟茕焕烦炀煴荧炝热颎炽烨灯炖烧烫焖营灿毁烛烩熏烬焘烁炉烂争为爷尔床墙牍牵荦牦犊牺状狭狈狰犹狲犸呆狱狮奖独狯猃狝狞获猎犷兽獭献猕猡现雕珐珲玮玚琐瑶莹玛玱琏琎玑瑷珰环玙瑸玺璇琼珑璎瓒瓯瓮产产苏宁亩毕画异画当畴叠痉酸疴痖疯疡痪瘗疮疟瘆疭瘘瘘疗痨痫瘅愈疠瘪痴痒疖症疬癞癣瘿瘾痈瘫癫发皂皑疱皲皱杯盗盏尽监盘卢荡真眦众困睁睐眍瞒瞆睑蒙眬瞩矫朱硁硖砗砚埼硕砀砜确码硙砖硵碜碛矶硗硚硷础碍矿砺砾矾砻秘禄祸祯祎祃御禅礼祢祷秃籼税秆棱禀种称谷稣积颖秾穑秽稳获穞窝洼穷窑窎窭窥窜窍窦灶窃竖竞笔笋笕个笺筝节范筑箧筼筿笃筛筚箦篓蓑箪简篑箫筜签帘篮筹箓篯箨籁笼签笾簖篱箩吁粤粽糁粪粮团粝籴粜纟纠纪纣约红纡纥纨纫纹纳纽纾纯纰纼纱纮纸级纷纭纴纺扎细绂绁绅纻绍绀绋绐绌终弦组绊绗结绝绦绔绞络绚给绒绖统丝绛绝绢绑绡绠绨绣绤绥捆经综缍绿绸绻线绶维绹绾纲网绷缀彩纶绺绮绽绰绫绵绲缁紧绯绿绪绬绱缃缄缂线缉缎缔缗缘缌编缓缅纬缑缈练缏缇致缊萦缙缢缒绉缣缊缞缚缜缟缛县绦缝缡缩纵缧纤缦絷缕缥总绩绷缫缪缯织缮缭绕绣缋绳绘系茧缰缳缲缴绎继缤缱颣缬纩续累缠缨才纤缵缆钵坛罂坛罚骂罢罗罴羁芈群羟羡义膻习玩翚翘翙耧耢圣闻联聪声耸聩聂职聍听聋肃胁脉胫唇修脱胀肾胨脶脑肿脚肠腽腘肤胶腻胆脍脓脸脐膑腊胪脏脔臜卧临台与兴举旧馆舱舣舰舻艰艳刍苎兹荆庄茎荚苋华庵烟苌莱万荝莴叶荭荮苇药荤搜莼莳蒀莅苍荪席盖莲苁莼荜卜参蒌蒋葱茑荫荨蒇荞荬芸莸荛蒉荡芜萧蓣蕰荟蓟芗姜蔷荙莶荐萨苧苔荠蓝荩艺药薮蕴苈蔼蔺萚蕲芦苏蕴苹藓蔹茏兰蓠萝蔂处虚虏号亏虬蛱蜕蚬蚀猬虾虱蜗蛳蚂萤蝼螀蛰蝈螨虮蝉蛲虫蛏蚁蚃蝇虿蝎蛴蝾蚝蜡蛎蟏蛊蚕蛮众蔑术同胡卫冲衮袅里补装里制复裈袆裤裢褛亵裥裥袯袄裣裆褴袜摆衬袭襕核见觃规觅视觇觋觍觎亲觊觏觐觑觉览觌观觞觯触讠订讣计讯讧讨讦讱训讪讫托记讹讶讼诀讷讻访设许诉诃诊注证诂诋讵诈诒诏评诐诇诎诅词咏诩询诣试诗诧诟诡诠诘话该详诜诙诖诔诛诓夸志认诳诶诞诱诮语诚诫诬误诰诵诲说说谁课谇诽谊訚调谄谆谈诿请诤诹诼谅论谂谀谍谞谝谥诨谔谛谐谏谕咨讳谙谌讽诸谚谖诺谋谒谓誊诌谎谜谧谑谡谤谦谥讲谢谣谣谟谪谬谫讴谨谩哗证谲讥谮识谯谭谱噪谵毁译议谴护诪誉谫读谉变詟雠谗让谰谶赞谠谳岂竖丰艳猪豮猫贝贞贠负财贡贫货贩贪贯责贮贳赀贰贵贬买贷贶费贴贻贸贺贲赂赁贿赅资贾贼赈赊宾赇赒赉赐赏赔赓贤卖贱赋赕质赍账赌赖赗赚赙购赛赜贽赘赟赠赞赝赡赢赆赃赑赎赝赣赃赪赶赵趋趱迹践逾踊跄跸迹跖蹒踪跷跶趸踌跻跃踯跞踬蹰跹蹑蹿躜躏躯车轧轨军轪轩轫轭软轷轸轱轴轵轺轲轶轼较辂辁辀载轾辄挽辅轻辆辎辉辋辍辊辇辈轮辌辑辏输辐辒辗舆辒毂辖辕辘转辙轿辚轰辔轹轳办辞辫辩农回迳这连周进游运过达违遥逊递远溯适迟迁选遗辽迈还迩边逻逦郏邮郓乡邹邬郧邓郑邻郸邺郐邝酂郦腌酝丑酝蒏糖医酱酦酿衅酾酽释厘钅钆钇钌钊钉钋针钓钐扣钏钒钗钍钕钎钯钫钘钭钥钚钠钝钩钤钣钑钞钮钧钟钙钬钛钪铌铈钶铃钴钹铍钰钸铀钿钾巨钻铊铉铇铋铂钷钳铆铅钺钵钩钲钼钽锫铏铰铒铬铪银铳铜铚铣铨铢铭铫铦衔铑铷铱铟铵铥铕铯铐铞锐销锈锑锉铝锒锌钡铤铗锋铻锊锓铘锄锃锔锇铓铺锐铖锆锂铽锍锯钢锞录锖锫锩铔锥锕锟锤锱铮锛锬锭锜钱锦锚锠锡锢错录锰表铼镎锝锨锪钫钔锴锳炼锅镀锷铡钖锻锽锸锲锘锹锾键锶锗针钟镁锿镅镑镰镕锁镉锤镈镃钨蓥镏铠铩锼镐镇镇镒镋镍镓鿔镌镎镞旋链镆镙镠镝铿锵镗镘镛铲镜镖镂錾镚铧镤镪锈铙铴镣铹镦镡钟镫镢镨锎锏镄镌镰镯镭铁镮铎铛镱铸镬镔鉴鉴镲锧镴铄镳镥镧钥镵镶镊镩锣钻銮凿镢镋长门闩闪闫闬闭开闶闳闰闲闲间闵闸阂阁合阀闺闽阃阆闾阅阅阊阉阎阏阍阈阌阒板暗闱阔阕阑阇阗阘闿阖阙闯关阚阓阐辟阛闼陉陕升阵阴陈陆阳陧队阶陨际随险陦隐陇隶只隽虽双雏杂鸡离难云电沾霡雾霁雳霭叇灵叆靓静靔腼靥巩绱秋鞒缰鞑千鞯韦韧韨韩韪韬鞲韫韵响页顶顷项顺顸须顼颂颀颃预顽颁顿颇领颌颉颐颏头颒颊颋颕颔颈颓频颓颗题额颚颜颙颛颜愿颡颠类颟颢顾颤颥显颦颅颞颧风飐飑飒台刮飓飔飏飖飕飗飘飙飚飞饣饥饤饦饨饪饫饬饭飧饮饴饲饱饰饳饺饸饼糍饷养饵饹饻饽馁饿馂饾余肴馄馃饯馅馆糊糇饧喂馉馇馎饩馏馊馌馍馒馐馑馓馈馔饥饶飨餍馋馕马驭冯驮驰驯驲驳驻驽驹驵驾骀驸驶驼驷骂骈骇骃骆骎骏骋骍骓骔骒骑骐骛骗骙骞骘骝腾驺骚骟骡蓦骜骖骠骢驱骅骕骁骣骄验惊驿骤驴骧骥骦骊骉肮髅脏体髌髋发松胡须鬓斗闹哄阋阄郁鬶魉魇鱼鱽鱾鲀鲁鲂鱿鲄鲅鲆鲌鲉鲏鲇鲐鲍鲋鲊鲒鲘鲞鲕鲖鲔鲛鲑鲜鲓鲪鲝鲧鲠鲩鲤鲨鲬鲻鲯鲭鲞鲷鲴鲱鲵鲲鲳鲸鲮鲰鲶鲺鳀鲫鳊鳈鲗鳂鲽鳇鳅鲾鳄鳆鳃鳁鳒鳑鳋鲥鳏鳎鳐鳍鳁鲢鳌鳓鳘鲦鲣鲹鳗鳛鳔鳉鳙鳕鳖鳟鳝鳜鳞鲟鲼鲎鲙鳣鳡鳢鲿鲚鳠鳄鲈鲡鸟凫鸠凫鸤凤鸣鸢鸩鸨鸦鸰鸵鸳鸲鸮鸱鸪鸯鸭鸸鸹鸻鸿鸽鸺鸼鹀鹃鹆鹁鹈鹅鹄鹉鹌鹏鹐鹎雕鹊鹓鹍鸫鹑鹒鹋鹙鹕鹗鹖鹛鹜鸧莺鹟鹤鹠鹡鹘鹣鹚鹚鹢鹞鸡鹝鹧鹥鸥鸷鹨鸶鹪鹔鹩鹫鹇鹇鹬鹰鹭鸴鹯鹱鹲鸬鹴鹦鹳鹂鸾卤咸鹾碱盐丽麦麸面面曲曲面么么黄黉点党黪霉黡黩黾鼋鼌鼍冬鼹齐斋赍齑齿龀龁龂龅龇龃龆龄出龈啮龊龉龋腭龌龙厐庞龚龛龟鿒';
+    const T2S = (() => { const m = new Map(); for (let i = 0; i < T2S_FROM.length; i++) m.set(T2S_FROM[i], T2S_TO[i]); return m; })();
+    function nameKey(n) {
+      return Array.from(String(n || '').trim().toLowerCase().replace(/\s+/g, ' '))
+        .map(c => T2S.get(c) || c).join('');
+    }
+
+    // 縱向要比的項目：[id, 越小越好?]。藥球兩項球重不同時不比（1kg 與 2kg 不能互比）
+    const LONG_ITEMS = [
+      ['sprint10m',true], ['sprint30m',true], ['avg515',true], ['spiderRun',true],
+      ['cmjHeight',false], ['broadJump',false], ['lateralAvg',false], ['hop10_5',false],
+      ['landAvg',true], ['nkgAvg',true], ['djAvg',false],
+      ['rThrowAvg',false], ['servingThrow',false], ['mbOverheadThrow',false],
+      ['IFT30_15',false], ['hr1',false], ['hr3',false],
+      ['gripStrength',false], ['isoMidThigh',false], ['isoUpperLimb',false],
+      ['pushUp',false], ['pullUp',false], ['squat',false], ['serveSpeed',false]
+    ];
+    const MB_ITEMS = ['servingThrow', 'mbOverheadThrow', 'rThrowAvg'];
+    function longValue(rec, id) {
+      if (id === 'squat')  return toNum(rec.squat)  > 0 ? { v: toNum(rec.squat),  u: rec.squatUnit  || 'kg' } : null;
+      if (id === 'pullUp') return toNum(rec.pullUp) > 0 ? { v: toNum(rec.pullUp), u: rec.pullUpUnit || '次' } : null;
+      const it = dExtraItems.find(x => x.id === id);
+      const v = it ? toNum(it.get(rec)) : 0;
+      return v > 0 ? { v: v, u: (it.unit || '').trim() } : null;
+    }
+    const shortLabel = id => { const it = dExtraItems.find(x => x.id === id); return it ? it.label.replace(/\s*\(.*\)\s*$/, '') : id; };
+    const fmtNum = v => String(Math.round(v * 100) / 100);
+
+    function longRows(rec, prev) {
+      return LONG_ITEMS.map(([id, lower]) => {
+        const cur = longValue(rec, id);
+        if (!cur) return null;
+        const pv = prev ? longValue(prev, id) : null;
+        const o = { id, label: shortLabel(id), cur, pv, compared: false, better: null, rel: 0, d: '' };
+        if (!pv) return o;
+        if (pv.u !== cur.u) { o.d = '單位不同'; o.skip = true; return o; }
+        if (MB_ITEMS.includes(id) && prev.mbWeight && rec.mbWeight && String(prev.mbWeight) !== String(rec.mbWeight)) {
+          o.d = '球重不同'; o.skip = true; return o;
+        }
+        const diff = Math.round((cur.v - pv.v) * 100) / 100;
+        o.compared = true;
+        if (diff === 0) { o.d = '持平'; return o; }
+        o.better = lower ? diff < 0 : diff > 0;
+        o.rel = Math.abs(diff) / pv.v;
+        const mag = fmtNum(Math.abs(diff));
+        o.d = (o.better ? '▲ ' : '▼ ')
+            + (cur.u === '秒' ? (diff < 0 ? '快 ' : '慢 ') + mag + ' 秒' : (diff > 0 ? '+' : '−') + mag + (cur.u ? ' ' + cur.u : ''));
+        return o;
+      }).filter(Boolean);
+    }
+    const vHtml = x => fmtNum(x.v) + (x.u ? `<u>${escapeHtml(x.u)}</u>` : '');
+
+    function paintLong(rec, prev, note) {
+      const rows = longRows(rec, prev);
+      const cmp  = rows.filter(r => r.compared || r.skip);
+      const box  = $('rpLong');
+      if (prev && cmp.length) {
+        box.className = 'rp-lg';
+        box.innerHTML = `<div class="rp-lh"><span>項目</span><span>${escapeHtml(prev.testDate || '前次')}</span>`
+          + `<span>${escapeHtml(rec.testDate || '本次')}</span><span>變化</span></div>`
+          + cmp.map(r => `<div class="rp-lr"><div class="nm">${escapeHtml(r.label)}</div>`
+              + `<div class="v prev">${vHtml(r.pv)}</div><div class="v">${vHtml(r.cur)}</div>`
+              + `<div class="d${r.compared && r.better !== null ? '' : ' na'}">${escapeHtml(r.d)}</div></div>`).join('');
+        const fresh = rows.filter(r => !r.pv).map(r => r.label);
+        $('rpLongNote').textContent = fresh.length ? `另有 ${fresh.length} 項本次新增，下次起比較。` : '';
+      } else {
+        box.className = 'rp-chips';
+        box.innerHTML = rows.map(r => `<div><span class="nm">${escapeHtml(r.label)}</span><span class="v">${vHtml(r.cur)}</span></div>`).join('')
+          || '<div class="rp-empty">本次沒有可呈現的實測值。</div>';
+        $('rpLongNote').textContent = /失敗/.test(note || '') ? note : '';   // 「第一次檢測」重點格已寫，不重複
+      }
+      const up = cmp.filter(r => r.better === true);
+      hlState.long = prev && cmp.length
+        ? { improved: up.length, compared: cmp.filter(r => r.compared).length,
+            best: up.sort((x, y) => y.rel - x.rel)[0] || null, since: prev.testDate }
+        : { first: !note || !/讀取/.test(note), loading: /讀取/.test(note || ''), tested: rows.length };
+      renderHighlights();
+    }
+
+    // 三格重點：只寫量得到的事實（2026-09-15 規則：系統不下判斷）
+    const hlState = { long: null, peer: null };
+    function renderHighlights() {
+      const L = hlState.long || {}, P = hlState.peer;
+      const tile = (k, big, sub) => `<div><div class="k">${k}</div><div class="big">${big}</div><div class="sub">${sub || '&nbsp;'}</div></div>`;
+      const t1 = L.loading ? tile('比前次進步', '…', '讀取前次紀錄中')
+               : L.compared != null ? tile('比前次進步', `${L.improved}<small>/ ${L.compared} 項</small>`, `與 ${escapeHtml(L.since)} 相比`)
+               : tile('本次檢測', `${L.tested || 0}<small>項</small>`, '第一次檢測，下次起可看進步');
+      const t2 = L.best ? tile('進步最多', escapeHtml(L.best.label), escapeHtml(L.best.d.replace(/^▲\s*/, '')))
+               : tile('進步最多', '—', L.compared != null ? '本次沒有進步的項目' : '下次檢測後顯示');
+      const t3 = P ? tile('同齡最突出', `PR ${P.pr}`, escapeHtml(P.label))
+               : tile('同齡最突出', '—', '同齡資料不足，暫不比較');
+      $('rpHighlights').innerHTML = t1 + t2 + t3;
+    }
+
+    // 找這位球員「本次之前」最近的一筆：同名（繁簡視為同一人）＋同性別；兩邊都有生日時生日也要相同（防同名不同人）
+    let longToken = 0;
+    async function renderLongitudinal(rec, result) {
+      const my = ++longToken;
+      paintLong(rec, null, '讀取前次紀錄中…');
+      try {
+        let list = (typeof allRecords !== 'undefined' && allRecords.length) ? allRecords : null;
+        if (!list) {
+          const r = await callApi('listRecords', { action: 'listRecords', token: sessionToken }, NET_READ);
+          if (handleAuthError(r) || r.error) throw new Error(r.error || 'auth');
+          list = r.records || [];
+        }
+        const key = nameKey(rec.playerName), curId = result && result.testId;
+        const cands = list.filter(r => r.testId !== curId && nameKey(r.playerName) === key
+                                     && (!rec.gender || !r.gender || r.gender === rec.gender)
+                                     && String(r.testDate || '') < String(rec.testDate || ''))
+                          .sort((a, b) => String(a.testDate) < String(b.testDate) ? 1 : -1);
+        let prev = null;
+        for (const c of cands.slice(0, 3)) {
+          const r = await callApi('loadRecord', { action: 'loadRecord', token: sessionToken, testId: c.testId }, NET_READ);
+          if (my !== longToken) return;                 // 已經換看別人的報告了
+          if (!r || r.error || !r.rec) continue;
+          if (rec.birthday && r.rec.birthday && rec.birthday !== r.rec.birthday) continue;
+          prev = Object.assign({}, r.rec, { testDate: c.testDate });
+          break;
+        }
+        if (my !== longToken) return;
+        paintLong(rec, prev, prev ? '' : '第一次檢測，下次起顯示前後對比。');
+      } catch (e) {
+        if (my !== longToken) return;
+        paintLong(rec, null, '前次紀錄讀取失敗（網路不穩），請重新叫出報告再印。');
+        hlState.long = { loading: false, tested: longRows(rec, null).length }; renderHighlights();
+      }
+    }
+
+    // 橫向：PR（1–99）＋學測五標刻度。沒有同齡基準（未滿 10 人）的項目不硬算
+    const FIVE = [[12,'底標'], [25,'後標'], [50,'均標'], [75,'前標'], [88,'頂標']];
+    function renderPeer(mList, rec, age) {
+      const grp = normGroupLabel(age, rec.gender);
+      const ok  = mList.filter(m => m.pct !== null && m.pct !== undefined);
+      const no  = mList.filter(m => m.pct === null || m.pct === undefined).map(m => m.label);
+      const ns  = ok.map(m => m.n).filter(Boolean);
+      $('rpPeerGroup').textContent = `跟 ${grp}${/^U1[24]$/.test(grp) ? '（男女合併）' : ''}比`
+        + (ns.length ? ` · ${Math.min(...ns)}–${Math.max(...ns)} 人` : '');
+      const labels = FIVE.map(([p, t]) => `<span class="tl" style="left:${p}%">${t}</span>`).join('');
+      const ticks  = FIVE.map(([p]) => `<i class="tk" style="left:${p}%"></i>`).join('');
+      const head = `<div class="rp-pv hd"><div>項目</div><div style="text-align:right">PR</div>`
+                 + `<div class="rp-five" style="height:14px">${labels}</div></div>`;
+      const rows = ok.map(m => {
+        const pr = Math.max(1, Math.min(99, Math.round(m.pct)));
+        return `<div class="rp-pv"><div class="nm">${escapeHtml(m.label)}</div><div class="pr"><small>PR</small>${pr}</div>`
+             + `<div class="rp-five"><div class="rail"></div><div class="bar" style="width:${pr}%"></div>${ticks}</div></div>`;
+      });
+      $('rpPeer').innerHTML = rows.length ? head + rows.join('')
+        : '<div class="rp-empty">同齡資料還不足 10 人，暫不比較。</div>';
+      $('rpPeerNote').textContent = (rows.length ? 'PR 82＝贏過同組約 82% 的人；PR 50 是中間，不是及格線。' : '')
+        + (no.length ? `　未滿 10 人暫不比較：${no.join('、')}` : '');
+      const top = ok.reduce((a, b) => (!a || b.pct > a.pct) ? b : a, null);
+      hlState.peer = top ? { label: top.label, pr: Math.max(1, Math.min(99, Math.round(top.pct))) } : null;
+      renderHighlights();
+    }
+
     function renderDExtraChecklist() {
       const box = $('dExtraChecklist');
       if (!box) return;
@@ -4201,7 +4357,7 @@
       const noteEl = $('sampleSizeNote');
       if (noteEl) noteEl.textContent = '⚠ 預覽模式：雷達分數未實際計算，送出後才會與同組球員比較';
 
-      $('reportCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      ($('newReportLink') && !$('newReportLink').hidden ? $('newReportLink') : $('submitBtn')).scrollIntoView({ behavior: 'smooth', block: 'center' });   // v2：舊版報告已隱藏
     }
 
     // ─────────────── 登入 ───────────────
