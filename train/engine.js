@@ -176,10 +176,13 @@
     Object.keys(cfg.groups).forEach(group => {
       const g = cfg.groups[group];
       let left = todo.filter(p => (cfg.groups[p.group] ? p.group : '小朋友') === group).map(info);
+      // 同一時間最多開幾堂＝這組有幾位體能教練（沒設定教練就不限）
+      const nCoach = (input.coaches || []).filter(c => c.type === '體能' && c.group === group).length || 99;
+      const open = t => slots.filter(s => s.group === group && overlap(t, t + g.dur, toMin(s.start), toMin(s.end))).length < nCoach;
       while (true) {
         const count = {};
         left.forEach(x => Object.keys(x.cand).forEach(t => count[t] = (count[t] || 0) + 1));
-        const times = Object.keys(count).map(Number);
+        const times = Object.keys(count).map(Number).filter(open);
         if (!times.length) break;
         times.sort((a, b) => (Math.min(count[b], g.cap) - Math.min(count[a], g.cap)) || (a - b));
         const t = times[0];
@@ -284,6 +287,50 @@
       s.status = flags.some(f => f === '撞到網球' || f === '超過人數上限') ? 'bad' : (flags.length ? 'warn' : 'ok');
     });
     return slots;
+  }
+
+  /**
+   * 明天誰可以練：每個人網球前後的空檔
+   * 回 { people:[{name, group, tennis:[...], windows:[{start,end,min,where}], best, status}], notIn:[name] }
+   *   status：ok＝有完整一堂的空檔、warn＝只有半堂、bad＝沒空檔、leave＝請假
+   */
+  function availability(input, cfg) {
+    cfg = Object.assign({}, CFG, cfg || {});
+    const roster = input.roster || [];
+    const byName = {}; roster.forEach(p => byName[p.name] = p);
+    const leave = new Set(input.leave || []);
+    const busy = {}, notIn = new Set();
+    (input.tennis || []).forEach(t => (t.players || []).forEach(n => {
+      if (!byName[n]) { notIn.add(n); return; }
+      (busy[n] = busy[n] || []).push([toMin(t.start), toMin(t.end)]);
+    }));
+    const brk = (cfg.breaks || []).map(x => [toMin(x[0]), toMin(x[1])]);
+    const people = Object.keys(busy).map(n => {
+      const p = byName[n];
+      const g = cfg.groups[p.group] || cfg.groups['小朋友'];
+      const lo = Math.max(cfg.open, isNaN(toMin(p.earliest)) ? 0 : toMin(p.earliest));
+      const hi = Math.min(cfg.close, isNaN(toMin(p.latest)) ? 24 * 60 : toMin(p.latest));
+      const tb = busy[n].slice().sort((a, b) => a[0] - b[0]);
+      const all = tb.concat(brk).sort((a, b) => a[0] - b[0]);
+      const wins = [];
+      tb.forEach(x => {
+        // 之前：往前找到上一個不能排的時間
+        const prev = all.filter(y => y[1] <= x[0]).reduce((m, y) => Math.max(m, y[1]), lo);
+        const bs = Math.max(prev, lo), be = x[0];
+        if (be - bs >= cfg.minPartial) wins.push({ start: fmt(Math.max(bs, be - g.dur)), end: fmt(be), min: Math.min(be - bs, g.dur), where: '網球前' });
+        const next = all.filter(y => y[0] >= x[1]).reduce((m, y) => Math.min(m, y[0]), hi);
+        const as = x[1], ae = Math.min(next, hi);
+        if (ae - as >= cfg.minPartial) wins.push({ start: fmt(as), end: fmt(Math.min(ae, as + g.dur)), min: Math.min(ae - as, g.dur), where: '網球後' });
+      });
+      const seen = {}; const windows = wins.filter(w => !seen[w.start] && (seen[w.start] = 1)).sort((a, b) => b.min - a.min || toMin(a.start) - toMin(b.start));
+      const best = windows[0] || null;
+      const status = leave.has(n) ? 'leave' : !best ? 'bad' : best.min >= g.dur ? 'ok' : 'warn';
+      return { name: n, group: p.group, team: p.team, unclassified: !!p.unclassified, dur: g.dur,
+        tennis: tb.map(x => fmt(x[0]) + '–' + fmt(x[1])), windows: windows.sort((a, b) => toMin(a.start) - toMin(b.start)), best, status };
+    });
+    const order = { ok: 0, warn: 1, bad: 2, leave: 3 };
+    people.sort((a, b) => order[a.status] - order[b.status] || a.group.localeCompare(b.group) || (a.best && b.best ? toMin(a.best.start) - toMin(b.best.start) : 0));
+    return { people, notIn: Array.from(notIn) };
   }
 
   /** 轉成 Adam 平常貼群組的格式 */
@@ -448,7 +495,7 @@
     return rows;
   }
 
-  const API = { CFG, fmt, toMin, weekday, addDays, daysBetween, normDate, nameIndex, parseTennisText, schedule, recheck, toChatText,
+  const API = { CFG, availability, fmt, toMin, weekday, addDays, daysBetween, normDate, nameIndex, parseTennisText, schedule, recheck, toChatText,
     category, sessionLoads, loadStatus, suggestSession, backfillRows, WEAK_ADD };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.TrainEngine = API;
 })(typeof window !== 'undefined' ? window : globalThis);

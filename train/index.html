@@ -83,6 +83,17 @@ select,input[type=text],input[type=time],textarea{border:1.5px solid #cfdacf;bor
 textarea{width:100%;min-height:220px;font-family:var(--num);font-size:14px;line-height:1.6}
 
 /* 網球繳交看板 */
+.paste-card textarea{min-height:200px}
+.avt{display:grid;gap:6px}
+.avr{display:grid;grid-template-columns:minmax(100px,1.1fr) minmax(110px,1fr) minmax(0,2.2fr) auto;gap:6px 12px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--bg);border-left:4px solid var(--ok)}
+.avr.warn{border-left-color:#e0a030}.avr.bad{border-left-color:var(--bad)}.avr.leave{border-left-color:#b8c3bd;opacity:.65}
+.avr .nm,.avr .tn{display:grid;min-width:0}
+.wins{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.win{display:inline-flex;flex-direction:column;padding:4px 9px;border-radius:9px;background:var(--card);border:1.5px solid var(--line);font-family:var(--num);font-size:13px;font-weight:700;line-height:1.25}
+.win small{font-family:-apple-system,BlinkMacSystemFont,"PingFang TC",sans-serif;font-weight:500;font-size:11px;color:var(--mut)}
+.win.full{border-color:#9bd08a}.win.half{border-color:#e9c27a;background:var(--warn-bg)}
+.win.best{box-shadow:0 0 0 2px var(--g3) inset}
+@media (max-width:640px){.avr{grid-template-columns:1fr auto}.avr .tn{grid-column:1/-1}.avr .wins{grid-column:1/-1}.avr .tg{grid-row:1;grid-column:2}}
 .tsub{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
 .tc{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;background:var(--bg);font-size:13px;font-weight:700;white-space:nowrap}
 .tc.miss{background:var(--bad-bg);color:var(--bad)}
@@ -355,7 +366,7 @@ function start() {
   };
   $('#nav').hidden = st.me.type === '網球';
   // 網球教練預設看「明天」（要交的那天）
-  setDate(st.me.type === '網球' ? E.addDays(today(), 1) : (IS_DEV && today() < '2026-11-25' ? '2026-11-24' : today()));
+  setDate(E.addDays(today(), 1));
 }
 document.querySelectorAll('.nav button').forEach(b => b.onclick = () => go(b.dataset.v));
 function go(v) {
@@ -374,8 +385,8 @@ async function load() {
     if (seq !== loadSeq) return;
     prep(d);
     st.day = d; st.dirty = false; st.sugg = {};
-    if (d.plan && d.plan.slots.length) { st.slots = d.plan.slots; st.planStatus = d.plan.status; st.planAt = d.plan.at; E.recheck(st.slots, engineInput()); }
-    else { st.slots = autoPlan(); st.planStatus = ''; st.planAt = ''; }
+    if (d.plan && d.plan.slots.length) { st.slots = d.plan.slots; st.planStatus = d.plan.status; st.planAt = d.plan.at; st.showPlan = true; E.recheck(st.slots, engineInput()); }
+    else { st.slots = autoPlan(); st.planStatus = ''; st.planAt = ''; st.showPlan = false; }
     if (!st.slots.find(s => s.id === st.curSlot)) st.curSlot = (st.slots[0] || {}).id || null;
     if (!st.curPlayer || !d.roster.find(p => p.name === st.curPlayer)) st.curPlayer = (st.slots[0] && st.slots[0].players[0]) || (d.roster[0] || {}).name;
     render();
@@ -430,51 +441,78 @@ function submissions() {
     return { c, st: late ? 'late' : 'ok', txt: (late ? '遲交 ' : '') + (at ? at.slice(5).replace('-', '/') : '已交'), n: mine.length };
   });
 }
+function relDay(d) { const t = today(); return d === t ? '今天' : d === E.addDays(t, 1) ? '明天' : d === E.addDays(t, -1) ? '昨天' : dLabel(d); }
 function renderPlan() {
   const d = st.day, subs = submissions();
-  const inTennis = new Set([].concat(...d.tennis.map(t => t.players)));
-  const rosterSet = new Set(d.roster.map(p => p.name));
-  const notIn = [...inTennis].filter(n => !rosterSet.has(n));
+  const A = E.availability({ roster: d.roster, tennis: d.tennis, leave: d.leave });
+  const cnt = k => A.people.filter(p => p.status === k).length;
   const placed = [].concat(...st.slots.map(s => s.players));
   const nWarn = st.slots.filter(s => s.status === 'warn').length, nBad = st.slots.filter(s => s.status === 'bad').length;
   const missing = subs.filter(s => s.st === 'miss');
   const stateTxt = st.dirty ? '有調整還沒存' : st.planStatus === '定案' ? '已定案・' + (st.planAt || '').slice(5) : st.planStatus === '草案' ? '草案已存・' + (st.planAt || '').slice(5) : '系統草案（還沒存）';
   const unplaced = (st.unplaced || []).filter(u => !placed.includes(u.name));
-  $('#app').innerHTML = `<div class="stack">
-    <section class="card stack" aria-labelledby="h-ten">
-      <div class="row between"><h2 id="h-ten">網球課表</h2><div class="row"><span class="sm mut">截止 ${dLabel(E.addDays(st.date, -1))} 20:00</span><button class="btn sec" id="pasteBtn">貼上備忘錄</button></div></div>
-      ${d.tennis.length ? `<div class="tsub">${subs.map(s => `<span class="tc ${s.st}" title="${esc(s.c.name)}">${s.st === 'ok' ? '✓' : s.st === 'late' ? '⏰' : '✕'} ${esc(s.c.name)} <span class="xs" style="font-weight:500">${esc(s.txt)}</span></span>`).join('')}</div>
-        ${missing.length ? `<p class="sm mut" style="margin:0">${missing.length} 位網球教練還沒交。他們的學生今天如果有課，可能沒被排進來。</p>` : ''}`
-      : `<div class="empty"><b>這天還沒有網球課表</b>等網球教練在手機上交，或先把 Adam 的備忘錄整段貼進來。</div>`}
-    </section>
+  const rel = relDay(st.date);
+  const unc = A.people.filter(p => p.unclassified).length;
 
+  const pasteCard = `<section class="card stack paste-card">
+      <div><p class="eyebrow" style="margin:0">步驟 1</p><h2>貼上${esc(rel)}的網球課表</h2></div>
+      <textarea id="inlineT" placeholder="把網球教練的備忘錄整段貼進來，例如：&#10;9-10 王圣盈  賴&#10;8-10 刘珈妮莫可妍 鄭&#10;1-3 李一凡女 杨杺颖 小白 宥"></textarea>
+      <div id="inlinePrev" class="sm mut">下午的 1–7 點會自動當成 13–19 點。名字黏在一起、後面接教練都讀得懂。</div>
+      <div class="row" style="justify-content:flex-end"><button class="btn" id="inlineGo" disabled>分析${esc(rel)}誰能練 →</button></div>
+    </section>`;
+
+  const tennisCard = `<section class="card stack" aria-labelledby="h-ten">
+      <div class="row between"><div><p class="eyebrow" style="margin:0">步驟 1</p><h2 id="h-ten">${esc(rel)}的網球課表</h2></div><div class="row"><span class="sm mut">截止 ${dLabel(E.addDays(st.date, -1))} 20:00</span><button class="btn sec" id="pasteBtn">重新貼上</button></div></div>
+      <div class="tsub">${subs.map(s => `<span class="tc ${s.st}" title="${esc(s.c.name)}">${s.st === 'ok' ? '✓' : s.st === 'late' ? '⏰' : '✕'} ${esc(s.c.name)} <span class="xs" style="font-weight:500">${esc(s.txt)}</span></span>`).join('')}</div>
+      ${missing.length ? `<p class="sm mut" style="margin:0">${missing.length} 位網球教練還沒交，他們的學生可能沒列進來。</p>` : ''}
+    </section>`;
+
+  const winChip = (p, w) => `<span class="win ${w.min >= p.dur ? 'full' : 'half'} ${p.best === w ? 'best' : ''}">${esc(w.start)}–${esc(w.end)}<small>${esc(w.where)}${w.min < p.dur ? '・' + w.min + '分' : ''}</small></span>`;
+  const stTag = { ok: '<span class="pill ok">可以練</span>', warn: '<span class="pill warn">只有半堂</span>', bad: '<span class="pill bad">沒空檔</span>', leave: '<span class="pill idle">請假</span>' };
+  const analysis = `<section class="card stack" aria-labelledby="h-av">
+      <div class="row between"><div><p class="eyebrow" style="margin:0">步驟 2</p><h2 id="h-av">${esc(rel)}可以訓練的人</h2></div>
+        <div class="row" style="gap:6px"><span class="pill ok">🟢 ${cnt('ok')}</span><span class="pill warn">🟡 ${cnt('warn')}</span><span class="pill bad">🔴 ${cnt('bad')}</span><span class="pill idle">請假 ${cnt('leave')}</span></div></div>
+      ${unc ? `<div class="note warn sm">${unc} 位在 01 球員總表還沒填「班級組別」，先當小朋友（60 分鐘）算。請到 01 補上大隊／小朋友。</div>` : ''}
+      ${A.people.length ? `<div class="avt">${A.people.map(p => `<div class="avr ${p.status}">
+          <div class="nm"><b>${esc(p.name)}</b><span class="xs mut">${esc(p.team || p.group)}${p.unclassified ? '・組別未填' : ''}・${p.dur} 分</span></div>
+          <div class="tn"><span class="xs mut">網球</span><span class="num sm">${p.tennis.map(esc).join('、')}</span></div>
+          <div class="wins">${p.status === 'leave' ? '<span class="sm mut">今天請假</span>' : p.windows.length ? p.windows.map(w => winChip(p, w)).join('') : '<span class="sm mut">網球前後都沒有 30 分鐘以上的空檔</span>'}</div>
+          <div class="tg">${stTag[p.status]}</div>
+        </div>`).join('')}</div>` : `<div class="empty"><b>網球課表上沒有體能學員</b>名字都對不到 01 球員總表。可能是暱稱還沒登記。</div>`}
+      ${A.notIn.length ? `<details class="sm"><summary>另有 ${A.notIn.length} 人對不到 01 球員總表（只上網球，或暱稱還沒登記）</summary><p class="mut" style="margin:8px 0 0">${A.notIn.map(esc).join('、')}<br>如果其中有人要上體能：到 01 球員總表找到他，在「暱稱」欄填上網球表的叫法；新學員就新增一列。</p></details>` : ''}
+    </section>`;
+
+  const planPart = st.showPlan ? `
+    <div class="row between"><div><p class="eyebrow" style="margin:0">步驟 3</p><h2>體能時段</h2></div><div class="row"><button class="btn ghost" id="addSlot">＋ 加一堂</button><button class="btn ghost" id="leaveBtn">請假（${d.leave.length}）</button></div></div>
     <div class="sum">
       <div><b>${placed.length}</b><span>位排進體能</span></div>
       <div><b>${st.slots.length}</b><span>堂課</span></div>
       <div><b style="color:${nWarn + nBad ? 'var(--warn)' : 'var(--ok)'}">${nWarn + nBad}</b><span>堂要注意</span></div>
       <div><b>${d.leave.length}</b><span>位請假</span></div>
     </div>
-
-    <div class="row between"><h2>體能時段</h2><div class="row"><button class="btn ghost" id="addSlot">＋ 加一堂</button><button class="btn ghost" id="leaveBtn">請假（${d.leave.length}）</button></div></div>
-    ${st.slots.length ? `<div class="slots">${st.slots.map(slotCard).join('')}</div>` : (d.tennis.length ? `<div class="card empty"><b>今天沒有要上體能的人</b>網球課表上的名字都不在體能名單裡。</div>` : '')}
-
+    ${st.slots.length ? `<div class="slots">${st.slots.map(slotCard).join('')}</div>` : `<div class="card empty"><b>沒有要上體能的人</b></div>`}
     ${unplaced.length ? `<div class="note warn"><b>排不進來（${unplaced.length}）</b><br>${unplaced.map(u => esc(u.name) + '：' + esc(u.reason)).join('<br>')}</div>` : ''}
-
-    <div class="row">
-      ${notIn.length ? `<details class="sm" style="flex:1;min-width:220px"><summary>網球表上另有 ${notIn.length} 人不在體能名單</summary><p class="mut">${notIn.map(esc).join('、')}<br>他們今天只上網球，不用排體能。如果其中有人該上體能，請加進「11 體能名單」。</p></details>` : ''}
-    </div>
-
     <div class="actbar"><div class="actbar-in">
       <div class="st"><b>${esc(stateTxt)}</b>${nBad ? '🔴 有撞課，定案前要處理' : nWarn ? '🟡 有提醒，確認後可以定案' : '🟢 都沒問題'}</div>
       <button class="btn sec" id="rerun">重新排</button>
       <button class="btn sec" id="copyBtn">複製到群組</button>
       <button class="btn lime" id="lockBtn" ${nBad ? 'disabled' : ''}>${st.planStatus === '定案' && !st.dirty ? '已定案 ✓' : '定案'}</button>
-    </div></div>
-  </div>`;
+    </div></div>`
+    : (A.people.length ? `<div class="actbar"><div class="actbar-in"><div class="st"><b>${cnt('ok') + cnt('warn')} 位${esc(rel)}可以練</b>看過名單沒問題，就讓系統排時段</div><button class="btn sec" id="leaveBtn">請假（${d.leave.length}）</button><button class="btn lime" id="planGo">幫我排課 →</button></div></div>` : '');
 
+  $('#app').innerHTML = `<div class="stack">${d.tennis.length ? tennisCard + analysis : pasteCard}${d.tennis.length ? planPart : ''}</div>`;
+
+  if (!d.tennis.length) {
+    const ta = $('#inlineT'); let parsed = null;
+    ta.oninput = () => { parsed = previewParse(ta.value, $('#inlinePrev')); $('#inlineGo').disabled = !(parsed && parsed.entries.length); };
+    $('#inlineGo').onclick = () => doImport(parsed, $('#inlineGo'));
+    return;
+  }
   $('#pasteBtn').onclick = pasteSheet;
+  const lb = $('#leaveBtn'); if (lb) lb.onclick = leaveSheet;
+  const pg = $('#planGo'); if (pg) pg.onclick = () => { st.slots = autoPlan(true); st.showPlan = true; st.dirty = true; render(); setTimeout(() => { const h = document.querySelector('.slots'); h && h.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); };
+  if (!st.showPlan) return;
   $('#addSlot').onclick = addSlotSheet;
-  $('#leaveBtn').onclick = leaveSheet;
   $('#rerun').onclick = () => {
     const doit = () => { st.slots = autoPlan(true); st.dirty = true; render(); toast('已依最新網球課表重排（手動加的課保留）'); };
     st.dirty || st.planStatus ? confirmSheet('重新排？', '系統會依網球課表重排，你拖過的人會回到系統建議的位置（手動加的課會保留）。', '重新排', doit) : doit();
@@ -485,6 +523,32 @@ function renderPlan() {
   document.querySelectorAll('[data-coach]').forEach(b => b.onclick = () => coachSheet(b.dataset.coach));
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { st.curSlot = b.dataset.go; go('sess'); });
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => confirmSheet('刪掉這堂？', '這堂的人會變成沒排到。', '刪掉', () => { st.slots = st.slots.filter(s => s.id !== b.dataset.del); markDirty(); }));
+}
+function previewParse(text, el) {
+  const codes = st.day.coaches.filter(c => c.type === '網球').map(c => c.code || c.name);
+  const parsed = E.parseTennisText(text, { roster: st.day.roster, coachCodes: codes });
+  const rs = new Set(st.day.roster.map(p => p.name));
+  const ppl = new Set([].concat(...parsed.entries.map(e => e.players)));
+  const inR = [...ppl].filter(n => rs.has(n));
+  el.innerHTML = parsed.entries.length ? `讀到 <b>${parsed.entries.length}</b> 堂網球、<b>${ppl.size}</b> 位球員，其中 <b>${inR.length}</b> 位是體能學員。` +
+    (parsed.bad.length ? `<div class="note warn" style="margin-top:6px">這幾行看不懂，會略過：<br>${parsed.bad.map(esc).join('<br>')}</div>` : '') : (text.trim() ? '還沒讀到時間，格式像「1-3 名字 教練」。' : '');
+  return parsed;
+}
+async function doImport(parsed, btn) {
+  btn.disabled = true; btn.textContent = '分析中…';
+  try { await api('importTennis', { date: st.date, entries: parsed.entries, by: st.me.name }); closeSheet(); toast('網球課表已存，下面是分析結果'); st.showPlan = false; await load(); }
+  catch (e) { toast('存不進去：' + e.message); btn.disabled = false; btn.textContent = '再試一次'; }
+}
+function pasteSheet() {
+  sheet(`<h2>重新貼上網球課表</h2><p class="mut sm">這天原本的網球課表會被取代。</p>
+    <textarea id="pT" placeholder="9-10 王圣盈  賴&#10;8-10 刘珈妮莫可妍 鄭&#10;…"></textarea>
+    <div id="pPrev" class="sm" style="margin-top:8px"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn ghost" id="pNo">取消</button><button class="btn" id="pOk" disabled>重新分析</button></div>`, () => {
+    let parsed = null;
+    $('#pT').oninput = () => { parsed = previewParse($('#pT').value, $('#pPrev')); $('#pOk').disabled = !(parsed && parsed.entries.length); };
+    $('#pNo').onclick = closeSheet;
+    $('#pOk').onclick = () => doImport(parsed, $('#pOk'));
+  });
 }
 function slotCard(s) {
   const g = E.CFG.groups[s.group] || { cap: 8 };
@@ -585,30 +649,6 @@ function leaveSheet() {
 async function setLeave(names) {
   try { await api('setLeave', { date: st.date, names, by: st.me.name }); st.day.leave = names; toast('請假已存（' + names.length + ' 人）'); }
   catch (e) { toast('存不進去：' + e.message); }
-}
-function pasteSheet() {
-  sheet(`<h2>貼上網球備忘錄</h2><p class="mut sm">整段貼上就好，像「1-3 莫可妍 刘珈妮 鄭」。下午的 1–7 點會自動當成 13–19 點。這天原本的網球課表會被取代。</p>
-    <textarea id="pT" placeholder="9-10 王圣盈  賴&#10;8-10 刘珈妮莫可妍 鄭&#10;…"></textarea>
-    <div id="pPrev" class="sm" style="margin-top:8px"></div>
-    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn ghost" id="pNo">取消</button><button class="btn" id="pOk" disabled>匯入並重排</button></div>`, () => {
-    let parsed = null;
-    const codes = st.day.coaches.filter(c => c.type === '網球').map(c => c.code || c.name);
-    $('#pT').oninput = () => {
-      parsed = E.parseTennisText($('#pT').value, { roster: st.day.roster, coachCodes: codes });
-      const rs = new Set(st.day.roster.map(p => p.name));
-      const ppl = new Set([].concat(...parsed.entries.map(e => e.players)));
-      const inR = [...ppl].filter(n => rs.has(n));
-      $('#pPrev').innerHTML = parsed.entries.length ? `讀到 <b>${parsed.entries.length}</b> 堂網球、<b>${ppl.size}</b> 位球員，其中 <b>${inR.length}</b> 位在體能名單。` +
-        (parsed.bad.length ? `<div class="note warn" style="margin-top:6px">這幾行看不懂，會略過：<br>${parsed.bad.map(esc).join('<br>')}</div>` : '') : '';
-      $('#pOk').disabled = !parsed.entries.length;
-    };
-    $('#pNo').onclick = closeSheet;
-    $('#pOk').onclick = async () => {
-      $('#pOk').disabled = true; $('#pOk').textContent = '匯入中…';
-      try { await api('importTennis', { date: st.date, entries: parsed.entries, by: st.me.name }); closeSheet(); toast('網球課表已匯入，重新排課中'); const keep = st.slots.filter(s => s.manual); await load(); if (!st.day.plan) { st.slots = keep.concat(st.slots); } st.slots = autoPlan(true); st.dirty = true; render(); }
-      catch (e) { toast('匯入失敗：' + e.message); $('#pOk').disabled = false; $('#pOk').textContent = '匯入並重排'; }
-    };
-  });
 }
 async function savePlan(status, quiet) {
   try {
