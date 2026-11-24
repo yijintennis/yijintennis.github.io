@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#163E30">
+<title>體能排課台｜奕晉</title>
+<!--
+  奕晉體能排課台 v0.1（2026-11-24 測試版）
+  網球課表 → 排體能時段 → 這堂練什麼 → 練完回填 → 球員頁
+  資料：本機測試走 /api（dev_server.py → 副本）；上線改走 Apps Script /exec（同一組 action）
+-->
+<style>
+:root{
+  --g:#163E30;--g2:#1f5a3f;--g3:#2d7553;--lime:#D8EF5F;--bg:#F3F6F1;--card:#fff;--ink:#13261e;--mut:#5b6e64;--line:#e2e9e2;--soft:#e9f2e7;
+  --ok:#188052;--ok-bg:#e3f4e9;--warn:#a85d06;--warn-bg:#fff3dc;--bad:#c62828;--bad-bg:#fde7e4;--idle:#7b8a82;--idle-bg:#eef1ee;
+  --shadow:0 1px 3px rgba(22,62,48,.08),0 4px 14px rgba(22,62,48,.04);
+  --num:"SF Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--lime);outline-offset:2px}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.mut{color:var(--mut)}.sm{font-size:13px}.xs{font-size:12px}
+[hidden]{display:none!important}
+
+/* 頂部 */
+.top{position:sticky;top:0;z-index:30;background:var(--g);color:#fff;padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));padding-top:max(10px,env(safe-area-inset-top))}
+.top-in{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;letter-spacing:.02em;flex:1;min-width:120px}
+.brand i{width:10px;height:10px;border-radius:50%;background:var(--lime);display:inline-block;box-shadow:0 0 0 3px rgba(216,239,95,.25)}
+.test{font-size:11px;font-weight:700;background:var(--lime);color:var(--g);padding:2px 7px;border-radius:5px}
+.datebar{display:flex;align-items:center;gap:2px;background:rgba(255,255,255,.1);border-radius:12px;padding:2px}
+.datebar button{border:0;background:none;color:#fff;width:40px;height:40px;border-radius:10px;font-size:20px}
+.datebar button:hover{background:rgba(255,255,255,.12)}
+.datebar label{position:relative;padding:0 8px;font-weight:700;min-width:116px;text-align:center}
+.datebar input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+.me{font-size:13px;background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:999px;padding:7px 12px}
+
+/* 分頁 */
+.nav{position:sticky;top:60px;z-index:25;background:var(--card);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1120px;margin:0 auto;display:flex;padding:0 max(8px,env(safe-area-inset-right)) 0 max(8px,env(safe-area-inset-left))}
+.nav button{flex:1;border:0;background:none;padding:12px 6px 10px;font-weight:700;color:var(--mut);border-bottom:3px solid transparent;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:14px}
+.nav button small{font-size:11px;font-weight:500;opacity:.75}
+.nav button[aria-selected=true]{color:var(--g);border-bottom-color:var(--g)}
+@media (max-width:640px){
+  .top-in{flex-wrap:nowrap;gap:8px}.brand{font-size:15px;min-width:0;flex:1;white-space:nowrap;overflow:hidden}.brand .bt{display:none}
+  .datebar label{min-width:92px;padding:0 4px;font-size:15px}.datebar button{width:34px}.me{padding:7px 10px;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .actbar-in{padding:8px 8px 8px 12px;gap:6px}.actbar-in .st{font-size:12px;min-width:100%}.actbar .btn{min-height:40px;padding:0 12px;font-size:14px;flex:1}
+  .nav{position:fixed;top:auto;bottom:0;left:0;right:0;border-top:1px solid var(--line);border-bottom:0;padding-bottom:env(safe-area-inset-bottom)}
+  .nav button{border-bottom:0;border-top:3px solid transparent;padding:9px 4px 8px}
+  .nav button[aria-selected=true]{border-top-color:var(--g)}
+}
+main{max-width:1120px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right)) 140px max(16px,env(safe-area-inset-left))}
+
+/* 共用元件 */
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.stack{display:grid;gap:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+h2{font-size:18px;margin:0;line-height:1.3}
+h3{font-size:15px;margin:0}
+.eyebrow{font-size:12px;font-weight:700;color:var(--mut);letter-spacing:.06em}
+.btn{border:0;border-radius:12px;min-height:44px;padding:0 16px;font-weight:700;background:var(--g);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{background:var(--g2)}
+.btn.sec{background:var(--soft);color:var(--g)}
+.btn.sec:hover{background:#dcebd8}
+.btn.ghost{background:none;color:var(--g);border:1.5px solid #cfdacf}
+.btn.lime{background:var(--lime);color:var(--g)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.link{border:0;background:none;color:var(--g);font-weight:700;padding:6px 4px;text-decoration:underline;text-underline-offset:3px}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}.pill.idle{background:var(--idle-bg);color:var(--idle)}.pill.g{background:var(--g);color:#fff}.pill.lime{background:var(--lime);color:var(--g)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot.ok{background:var(--ok)}.dot.warn{background:#e0a030}.dot.bad{background:var(--bad)}.dot.idle{background:#b8c3bd}
+.empty{text-align:center;padding:28px 16px;color:var(--mut)}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+.note{background:var(--soft);border-radius:12px;padding:12px 14px;font-size:14px}
+.note.warn{background:var(--warn-bg)}
+select,input[type=text],input[type=time],textarea{border:1.5px solid #cfdacf;border-radius:10px;padding:9px 11px;background:#fff;min-height:44px}
+textarea{width:100%;min-height:220px;font-family:var(--num);font-size:14px;line-height:1.6}
+
+/* 網球繳交看板 */
+.tsub{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.tc{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;background:var(--bg);font-size:13px;font-weight:700;white-space:nowrap}
+.tc.miss{background:var(--bad-bg);color:var(--bad)}
+.tc.late{background:var(--warn-bg);color:var(--warn)}
+.tc.ok{background:var(--ok-bg);color:var(--ok)}
+
+/* 摘要 */
+.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.sum div{background:var(--card);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+.sum b{display:block;font-size:24px;font-family:var(--num);line-height:1.1}
+.sum span{font-size:12px;color:var(--mut)}
+@media (max-width:520px){.sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* 時段卡 */
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+@media (max-width:400px){.slots{grid-template-columns:1fr}}
+.slot{background:var(--card);border-radius:16px;box-shadow:var(--shadow);display:grid;grid-template-columns:6px minmax(0,1fr);overflow:hidden}
+.slot .bar{background:var(--ok)}
+.slot.warn .bar{background:#e0a030}.slot.bad .bar{background:var(--bad)}
+.slot-in{padding:14px 14px 12px;display:grid;gap:10px;min-width:0}
+.slot-h{display:flex;align-items:flex-start;gap:10px}
+.slot-t{font-family:var(--num);font-size:22px;font-weight:700;line-height:1}
+.slot-t small{display:block;font-size:12px;color:var(--mut);font-weight:500;margin-top:4px}
+.cap{margin-left:auto;text-align:right;display:grid;gap:4px;justify-items:end}
+.meter{width:84px;height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--g3)}
+.meter.full i{background:#e0a030}.meter.over i{background:var(--bad)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.pc{border:1.5px solid transparent;background:var(--soft);border-radius:10px;padding:6px 10px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:5px;min-height:36px}
+.pc:hover{border-color:var(--g3)}
+.pc.warn{background:var(--warn-bg);color:var(--warn)}
+.pc.bad{background:var(--bad-bg);color:var(--bad)}
+.pc .tri{font-size:10px;color:var(--warn)}
+.pc small{font-weight:500;font-size:11px;opacity:.8}
+.coachbtn{border:1.5px dashed #b9c9bd;background:none;border-radius:10px;padding:5px 10px;font-size:13px;font-weight:700;color:var(--g)}
+.flags{display:flex;flex-wrap:wrap;gap:6px}
+.slot-f{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.manual{font-size:11px;font-weight:700;color:var(--g);background:var(--lime);padding:1px 6px;border-radius:4px}
+
+/* 底部動作列 */
+.actbar{position:sticky;bottom:12px;z-index:20;margin-top:16px}
+@media (max-width:640px){.actbar{bottom:76px}}
+.actbar-in{background:var(--g);color:#fff;border-radius:16px;padding:10px 10px 10px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:0 8px 24px rgba(22,62,48,.25)}
+.actbar-in .st{flex:1;min-width:140px;font-size:13px}
+.actbar-in .st b{display:block;font-size:14px}
+.actbar .btn.sec{background:rgba(255,255,255,.12);color:#fff}
+.actbar .btn.sec:hover{background:rgba(255,255,255,.2)}
+
+/* 這堂練什麼 */
+.seg{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.seg button{flex:0 0 auto;border:1.5px solid #cfdacf;background:#fff;border-radius:12px;padding:8px 12px;text-align:left;min-height:44px}
+.seg button b{font-family:var(--num);display:block;font-size:15px}
+.seg button span{font-size:12px;color:var(--mut)}
+.seg button[aria-pressed=true]{border-color:var(--g);background:var(--g);color:#fff}
+.seg button[aria-pressed=true] span{color:#cfe3d6}
+.recent{display:flex;gap:6px;flex-wrap:wrap}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:820px){.opts{grid-template-columns:1fr}}
+.opt{border:1.5px solid var(--line);border-radius:16px;background:var(--card);padding:14px;text-align:left;display:grid;gap:10px;align-content:start;box-shadow:var(--shadow)}
+.opt:hover{border-color:var(--g3)}
+.opt[aria-pressed=true]{border:2.5px solid var(--g);padding:13px;background:#f6fbf3}
+.opt ol{margin:0;padding-left:20px;font-size:14px;display:grid;gap:3px}
+.opt li.f{font-weight:700}
+.opt li.f::after{content:" 弱項";font-size:11px;background:var(--lime);color:var(--g);padding:0 5px;border-radius:4px;margin-left:4px;font-weight:700}
+.opt li.w{color:var(--mut)}
+.lv{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:16px}
+.lv.重{background:var(--bad-bg);color:var(--bad)}.lv.中{background:var(--ok-bg);color:var(--ok)}.lv.輕{background:var(--idle-bg);color:var(--idle)}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.person{border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:8px;background:var(--card)}
+.person h3{display:flex;align-items:center;gap:8px}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.kv div{background:var(--bg);border-radius:8px;padding:6px 8px;min-width:0}
+.kv span{display:block;font-size:11px;color:var(--mut)}
+.kv b{font-size:13px;overflow-wrap:anywhere}
+.flag{font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.flag.grow{background:var(--lime);color:var(--g)}.flag.bad{background:var(--bad-bg);color:var(--bad)}.flag.warn{background:var(--warn-bg);color:var(--warn)}.flag.idle{background:var(--idle-bg);color:var(--idle)}
+.todo{font-size:14px;margin:0;padding-left:18px}
+
+/* 回填 */
+.fill{display:grid;gap:8px}
+.frow{display:grid;grid-template-columns:minmax(80px,1fr) auto auto;gap:8px 12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--card)}
+.frow .nm{font-weight:700}
+.frow .nm small{display:block;font-weight:500;color:var(--mut);font-size:12px}
+.tog{display:flex;border:1.5px solid #cfdacf;border-radius:10px;overflow:hidden}
+.tog button{border:0;background:#fff;padding:0 10px;min-height:40px;font-size:13px;font-weight:700;color:var(--mut)}
+.tog button[aria-pressed=true]{background:var(--g);color:#fff}
+.tog button.abs[aria-pressed=true]{background:var(--bad)}
+.step{display:flex;align-items:center;border:1.5px solid #cfdacf;border-radius:10px;overflow:hidden}
+.step button{border:0;background:var(--soft);width:38px;min-height:40px;font-size:18px;font-weight:700;color:var(--g)}
+.step output{min-width:40px;text-align:center;font-family:var(--num);font-weight:700}
+.frow .more{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.frow .more input{flex:1;min-width:160px}
+.frow.off{opacity:.6}
+@media (max-width:560px){.frow{grid-template-columns:1fr auto}.frow .rpe{grid-column:1/-1;justify-self:start}}
+
+/* 球員頁 */
+.ph{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.av{width:54px;height:54px;border-radius:16px;background:var(--g);color:var(--lime);display:grid;place-items:center;font-weight:800;font-size:22px}
+.pgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:820px){.pgrid{grid-template-columns:1fr}}
+.dim{display:grid;grid-template-columns:86px minmax(0,1fr) 70px;gap:8px;align-items:center;font-size:13px;margin-bottom:8px}
+.trk{height:16px;background:var(--bg);border-radius:4px;position:relative;overflow:hidden}
+.trk i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.trk i.a{background:#cfdacf}
+.trk i.b{background:var(--g3);top:5px;bottom:5px}
+.trk em{position:absolute;top:0;bottom:0;width:2px;background:var(--mut);left:50%;opacity:.35}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mut);margin:4px 0 10px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.legend .a::before{background:#cfdacf}.legend .b::before{background:var(--g3)}
+.weeks{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;align-items:end;height:150px}
+.wk{display:grid;justify-items:center;gap:3px;align-self:end}
+.wk i{display:block;width:100%;background:var(--g3);border-radius:4px 4px 0 0;min-height:2px}
+.wk i.hot{background:#e0a030}
+.wk span{font-size:10px;color:var(--mut);font-family:var(--num)}
+.mix{display:grid;gap:6px}
+.insight{border-left:4px solid var(--lime);background:var(--bg);border-radius:0 12px 12px 0;padding:10px 14px;font-size:15px}
+.hist{font-size:13px;display:grid;gap:4px;max-height:220px;overflow:auto}
+.hist div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:3px 0}
+
+/* 網球教練 */
+.tentry{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card)}
+.tentry .t{font-family:var(--num);font-weight:700}
+.deadline{background:var(--g);color:#fff;border-radius:16px;padding:14px 16px;display:flex;gap:12px;align-items:center}
+.deadline b{color:var(--lime);font-size:20px;font-family:var(--num)}
+.pick{display:flex;flex-wrap:wrap;gap:6px;max-height:240px;overflow:auto;padding:2px}
+.pick button{border:1.5px solid #cfdacf;background:#fff;border-radius:999px;padding:6px 12px;font-size:14px;min-height:38px}
+.pick button[aria-pressed=true]{background:var(--g);border-color:var(--g);color:#fff}
+
+/* 底部抽屜 */
+.sheet-bg{position:fixed;inset:0;background:rgba(10,25,18,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:min(560px,100%);max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:8px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.2)}
+@media (min-width:700px){.sheet-bg{align-items:center}.sheet{border-radius:20px}}
+.grab{width:40px;height:5px;border-radius:3px;background:#d5ddd7;margin:4px auto 12px}
+.sheet h2{margin-bottom:4px}
+.opt-list{display:grid;gap:8px;margin-top:12px}
+.opt-list button{display:flex;align-items:center;gap:10px;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:12px;min-height:52px}
+.opt-list button:hover{border-color:var(--g3)}
+.opt-list button b.num{font-family:var(--num)}
+.opt-list button span{margin-left:auto}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:60;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.loading{display:grid;place-items:center;padding:60px 0;color:var(--mut)}
+.spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--g);border-radius:50%;animation:sp 1s linear infinite;margin-bottom:10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.gate{max-width:420px;margin:40px auto}
+.gate .opt-list button{min-height:48px}
+details summary{cursor:pointer;font-weight:700;color:var(--g)}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <div class="brand"><i></i>體能<span class="bt">排課台</span> <span class="test" id="testTag" hidden>測試</span></div>
+  <div class="datebar" id="datebar" hidden>
+    <button id="prevD" aria-label="前一天">‹</button>
+    <label><span id="dLabel"></span><input type="date" id="dInput" aria-label="選日期"></label>
+    <button id="nextD" aria-label="後一天">›</button>
+  </div>
+  <button class="me" id="meBtn" hidden></button>
+</div></header>
+<nav class="nav" id="nav" hidden><div class="nav-in" role="tablist">
+  <button role="tab" data-v="plan" aria-selected="true">排課<small>時段</small></button>
+  <button role="tab" data-v="sess" aria-selected="false">這堂<small>練什麼</small></button>
+  <button role="tab" data-v="fill" aria-selected="false">回填<small>RPE</small></button>
+  <button role="tab" data-v="player" aria-selected="false">球員<small>進步</small></button>
+</div></nav>
+<main id="app"><div class="loading"><div class="spin"></div>載入中…</div></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="sheetRoot"></div>
+
+<script src="engine.js"></script>
+<script>
+'use strict';
+const E = window.TrainEngine;
+const IS_DEV = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+// 測試期：接「張無忌」副本的測試後台；正式上線改成 PROD_API
+const TEST_API = 'https://script.google.com/macros/s/AKfycbx7txO6BrZjh-EMSXpVWO00OVuQCBor8XOeSN7dt2KCMMLIT4uBnNwRxACHcgIvCZt1/exec';
+const PROD_API = 'https://script.google.com/macros/s/AKfycbzui0D7wBTHs02oqO87bbabZdvdvEW0FuHtmxMWfQAot30pm5C62AkjBvQSxltp8ldE/exec';
+const USE_TEST = true;
+const API = IS_DEV ? '/api' : (USE_TEST ? TEST_API : PROD_API);
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+
+const st = {
+  me: null, date: '', day: null, view: 'plan',
+  slots: [], dirty: false, planStatus: '', planAt: '',
+  curSlot: null, fill: {}, curPlayer: null, sugg: {}
+};
+
+function toast(m, ms) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), ms || 2400); }
+async function api(action, params) {
+  const tk = (st.me && st.me.token) || '';
+  const body = JSON.stringify(Object.assign({ action, token: tk }, params || {}));
+  const r = (!IS_DEV && action === 'login')
+    ? await fetch(API + '?' + new URLSearchParams({ action: 'login', user: params.user, pass: params.pass || '' }))
+    : await fetch(API, IS_DEV ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body } : { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body });
+  const d = await r.json();
+  if (d.needLogin) { logout(); throw new Error('needLogin'); }
+  if (d.error) throw new Error(d.error);
+  return d;
+}
+
+// ───────────── 日期 ─────────────
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+function dLabel(d) { return (+d.slice(5, 7)) + '/' + (+d.slice(8)) + '（' + E.weekday(d) + '）'; }
+function setDate(d) { st.date = d; $('#dLabel').textContent = dLabel(d); $('#dInput').value = d; load(); }
+$('#prevD').onclick = () => guardDirty(() => setDate(E.addDays(st.date, -1)));
+$('#nextD').onclick = () => guardDirty(() => setDate(E.addDays(st.date, 1)));
+$('#dInput').onchange = e => e.target.value && guardDirty(() => setDate(e.target.value));
+
+// ───────────── 抽屜 ─────────────
+function sheet(html, onMount) {
+  const root = $('#sheetRoot');
+  root.innerHTML = `<div class="sheet-bg" id="sbg"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
+  $('#sbg').addEventListener('click', e => { if (e.target.id === 'sbg') closeSheet(); });
+  document.addEventListener('keydown', escClose);
+  onMount && onMount(root);
+  const f = root.querySelector('button,input,select,textarea'); f && f.focus();
+}
+function escClose(e) { if (e.key === 'Escape') closeSheet(); }
+function closeSheet() { $('#sheetRoot').innerHTML = ''; document.removeEventListener('keydown', escClose); }
+function confirmSheet(title, msg, okText, fn) {
+  sheet(`<h2>${esc(title)}</h2><p class="mut">${esc(msg)}</p><div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" id="cNo">取消</button><button class="btn" id="cYes">${esc(okText)}</button></div>`, () => {
+    $('#cNo').onclick = closeSheet; $('#cYes').onclick = () => { closeSheet(); fn(); };
+  });
+}
+function guardDirty(fn) { if (st.dirty) confirmSheet('排課還沒存', '換日期會丟掉剛剛的調整。', '不存，直接換', fn); else fn(); }
+
+// ───────────── 登入 ─────────────
+function logout() { LS.del('yj_train_me'); st.me = null; gate(); }
+async function gate() {
+  $('#nav').hidden = true; $('#datebar').hidden = true; $('#meBtn').hidden = true;
+  if (IS_DEV) {
+    $('#testTag').hidden = false;
+    $('#app').innerHTML = `<div class="gate card"><h2>測試模式登入</h2><p class="mut sm">資料讀寫的是「張無忌」副本，正式表不會動。點一位教練看他的畫面。</p><div class="loading" id="cl"><div class="spin"></div></div></div>`;
+    try {
+      const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action: 'getDay', token: 'dev:x', date: today() }) }).then(r => r.json());
+      const cs = r.coaches || [];
+      const by = t => cs.filter(c => c.type === t);
+      $('#cl').outerHTML = `<p class="eyebrow" style="margin-top:14px">體能教練</p><div class="opt-list">${by('體能').map(c => `<button data-u="${esc(c.name)}"><b>${esc(c.name)}</b><span class="pill ${c.group === '大隊' ? 'g' : 'lime'}">${esc(c.group)}</span></button>`).join('')}</div>
+        <p class="eyebrow" style="margin-top:18px">網球教練（只看得到交課表）</p><div class="opt-list" style="grid-template-columns:repeat(3,1fr)">${by('網球').map(c => `<button data-u="${esc(c.name)}" style="justify-content:center"><b>${esc(c.name)}</b></button>`).join('')}</div>`;
+      document.querySelectorAll('[data-u]').forEach(b => b.onclick = () => doLogin(b.dataset.u));
+    } catch (e) { $('#app').innerHTML = `<div class="card empty"><b>連不到測試伺服器</b>請先在終端機跑 python3 dev_server.py</div>`; }
+  } else {
+    $('#testTag').hidden = !USE_TEST;
+    $('#app').innerHTML = `<form class="gate card stack" id="lf"><h2>教練登入</h2>${USE_TEST ? '<p class="note sm" style="margin:0">測試版：資料存在測試用的試算表，正式資料不會受影響。帳號用測試表的教練帳號。</p>' : ''}<input type="text" id="lu" placeholder="帳號" autocomplete="username" required><input type="password" id="lp" placeholder="密碼" autocomplete="current-password" required style="border:1.5px solid #cfdacf;border-radius:10px;padding:9px 11px;min-height:44px"><button class="btn">登入</button></form>`;
+    $('#lf').onsubmit = e => { e.preventDefault(); doLogin($('#lu').value.trim(), $('#lp').value); };
+  }
+}
+async function doLogin(user, pass) {
+  try {
+    let r = await api('login', { user, pass });
+    if (!IS_DEV) { st.me = { token: r.token, name: r.name }; const me = await api('trainMe', {}); r = Object.assign(me, { token: r.token }); }
+    st.me = r; LS.set('yj_train_me', JSON.stringify(r)); start();
+  }
+  catch (e) { toast(e.message); }
+}
+function start() {
+  $('#datebar').hidden = false; $('#meBtn').hidden = false;
+  $('#meBtn').textContent = (st.me.previewAs ? '預覽 ' + st.me.previewAs : st.me.name + (st.me.type === '網球' ? '（網球）' : '')) + ' ▾';
+  $('#meBtn').onclick = () => {
+    const real = st.me.realType || st.me.type;
+    const prev = (USE_TEST || IS_DEV) && real === '體能' && st.day ? `<p class="eyebrow" style="margin-top:14px">測試：用網球教練的身分預覽</p><div class="pick">${st.me.previewAs ? '<button id="pvOff" aria-pressed="true">回到體能教練</button>' : ''}${(st.day.coaches || []).filter(c => c.type === '網球').map(c => `<button data-pv="${esc(c.code || c.name)}">${esc(c.name)}</button>`).join('')}</div>` : '';
+    sheet(`<h2>${esc(st.me.name)}</h2><p class="mut">${esc(st.me.previewAs ? '預覽：網球教練 ' + st.me.previewAs : st.me.type + '教練' + (st.me.group ? '・' + st.me.group : ''))}</p>${prev}<div class="opt-list"><button id="lo">登出／換人</button></div>`, () => {
+      $('#lo').onclick = () => { closeSheet(); logout(); };
+      document.querySelectorAll('[data-pv]').forEach(b => b.onclick = () => { closeSheet(); st.me.realType = real; st.me.previewAs = b.dataset.pv; st.me.type = '網球'; st.me.code = b.dataset.pv; st.tdraft = null; start(); });
+      const off = $('#pvOff'); if (off) off.onclick = () => { closeSheet(); st.me.type = real; delete st.me.previewAs; st.me.code = ''; start(); };
+    });
+  };
+  $('#nav').hidden = st.me.type === '網球';
+  // 網球教練預設看「明天」（要交的那天）
+  setDate(st.me.type === '網球' ? E.addDays(today(), 1) : (IS_DEV && today() < '2026-11-25' ? '2026-11-24' : today()));
+}
+document.querySelectorAll('.nav button').forEach(b => b.onclick = () => go(b.dataset.v));
+function go(v) {
+  st.view = v;
+  document.querySelectorAll('.nav button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === v));
+  render(); window.scrollTo({ top: 0 });
+}
+
+// ───────────── 載入一天 ─────────────
+let loadSeq = 0;
+async function load() {
+  const seq = ++loadSeq;
+  $('#app').innerHTML = `<div class="loading"><div class="spin"></div>讀取 ${dLabel(st.date)} 的資料…</div>`;
+  try {
+    const d = await api('getDay', { date: st.date });
+    if (seq !== loadSeq) return;
+    prep(d);
+    st.day = d; st.dirty = false; st.sugg = {};
+    if (d.plan && d.plan.slots.length) { st.slots = d.plan.slots; st.planStatus = d.plan.status; st.planAt = d.plan.at; E.recheck(st.slots, engineInput()); }
+    else { st.slots = autoPlan(); st.planStatus = ''; st.planAt = ''; }
+    if (!st.slots.find(s => s.id === st.curSlot)) st.curSlot = (st.slots[0] || {}).id || null;
+    if (!st.curPlayer || !d.roster.find(p => p.name === st.curPlayer)) st.curPlayer = (st.slots[0] && st.slots[0].players[0]) || (d.roster[0] || {}).name;
+    render();
+  } catch (e) { if (e.message !== 'needLogin') $('#app').innerHTML = `<div class="card empty"><b>讀不到資料</b>${esc(e.message)}<br><button class="btn" style="margin-top:12px" onclick="load()">再試一次</button></div>`; }
+}
+function prep(d) {
+  const idx = E.nameIndex(d.roster);
+  d.idx = idx;
+  d.resolve = n => idx[String(n).toLowerCase()] || n;
+  d.tennis.forEach(t => t.players = t.players.map(d.resolve));
+  d.latest = {};
+  Object.keys(d.radar).forEach(n => { const h = d.radar[n]; d.latest[n] = h[h.length - 1]; });
+  // 程度沒填 → 用檢測總分暫估
+  d.roster.forEach(p => {
+    p.levelGuess = false;
+    if (!p.level && d.latest[p.name] && d.latest[p.name].total != null) {
+      const t = d.latest[p.name].total; p.level = t >= 60 ? '高' : t >= 45 ? '中' : '低'; p.levelGuess = true;
+    }
+  });
+}
+function engineInput() {
+  const d = st.day;
+  return { date: st.date, roster: d.roster, tennis: d.tennis, leave: d.leave, coaches: d.coaches };
+}
+function autoPlan(keepManual) {
+  const inp = engineInput();
+  inp.locked = keepManual ? st.slots.filter(s => s.manual) : [];
+  const r = E.schedule(inp);
+  st.unplaced = r.unplaced;
+  const out = r.slots.map((s, i) => Object.assign(s, { id: s.id || ('S' + (i + 1)) }));
+  E.recheck(out, inp);
+  return out;
+}
+function markDirty() { st.dirty = true; E.recheck(st.slots, engineInput()); render(); }
+
+// ───────────── render ─────────────
+function render() {
+  if (!st.day) return;
+  if (st.me.type === '網球') return renderTennisCoach();
+  ({ plan: renderPlan, sess: renderSess, fill: renderFill, player: renderPlayer })[st.view]();
+}
+
+/* ==== 1. 排課 ==== */
+function submissions() {
+  const d = st.day, codes = d.coaches.filter(c => c.type === '網球');
+  const deadline = E.addDays(st.date, -1) + ' 20:00';
+  return codes.map(c => {
+    const mine = d.tennis.filter(t => String(t.coach).split('、').some(x => x === c.name || x === c.code));
+    if (!mine.length) return { c, st: 'miss', txt: '未交' };
+    const at = mine.map(t => t.at).sort().pop() || '';
+    const late = at && at > deadline;
+    return { c, st: late ? 'late' : 'ok', txt: (late ? '遲交 ' : '') + (at ? at.slice(5).replace('-', '/') : '已交'), n: mine.length };
+  });
+}
+function renderPlan() {
+  const d = st.day, subs = submissions();
+  const inTennis = new Set([].concat(...d.tennis.map(t => t.players)));
+  const rosterSet = new Set(d.roster.map(p => p.name));
+  const notIn = [...inTennis].filter(n => !rosterSet.has(n));
+  const placed = [].concat(...st.slots.map(s => s.players));
+  const nWarn = st.slots.filter(s => s.status === 'warn').length, nBad = st.slots.filter(s => s.status === 'bad').length;
+  const missing = subs.filter(s => s.st === 'miss');
+  const stateTxt = st.dirty ? '有調整還沒存' : st.planStatus === '定案' ? '已定案・' + (st.planAt || '').slice(5) : st.planStatus === '草案' ? '草案已存・' + (st.planAt || '').slice(5) : '系統草案（還沒存）';
+  const unplaced = (st.unplaced || []).filter(u => !placed.includes(u.name));
+  $('#app').innerHTML = `<div class="stack">
+    <section class="card stack" aria-labelledby="h-ten">
+      <div class="row between"><h2 id="h-ten">網球課表</h2><div class="row"><span class="sm mut">截止 ${dLabel(E.addDays(st.date, -1))} 20:00</span><button class="btn sec" id="pasteBtn">貼上備忘錄</button></div></div>
+      ${d.tennis.length ? `<div class="tsub">${subs.map(s => `<span class="tc ${s.st}" title="${esc(s.c.name)}">${s.st === 'ok' ? '✓' : s.st === 'late' ? '⏰' : '✕'} ${esc(s.c.name)} <span class="xs" style="font-weight:500">${esc(s.txt)}</span></span>`).join('')}</div>
+        ${missing.length ? `<p class="sm mut" style="margin:0">${missing.length} 位網球教練還沒交。他們的學生今天如果有課，可能沒被排進來。</p>` : ''}`
+      : `<div class="empty"><b>這天還沒有網球課表</b>等網球教練在手機上交，或先把 Adam 的備忘錄整段貼進來。</div>`}
+    </section>
+
+    <div class="sum">
+      <div><b>${placed.length}</b><span>位排進體能</span></div>
+      <div><b>${st.slots.length}</b><span>堂課</span></div>
+      <div><b style="color:${nWarn + nBad ? 'var(--warn)' : 'var(--ok)'}">${nWarn + nBad}</b><span>堂要注意</span></div>
+      <div><b>${d.leave.length}</b><span>位請假</span></div>
+    </div>
+
+    <div class="row between"><h2>體能時段</h2><div class="row"><button class="btn ghost" id="addSlot">＋ 加一堂</button><button class="btn ghost" id="leaveBtn">請假（${d.leave.length}）</button></div></div>
+    ${st.slots.length ? `<div class="slots">${st.slots.map(slotCard).join('')}</div>` : (d.tennis.length ? `<div class="card empty"><b>今天沒有要上體能的人</b>網球課表上的名字都不在體能名單裡。</div>` : '')}
+
+    ${unplaced.length ? `<div class="note warn"><b>排不進來（${unplaced.length}）</b><br>${unplaced.map(u => esc(u.name) + '：' + esc(u.reason)).join('<br>')}</div>` : ''}
+
+    <div class="row">
+      ${notIn.length ? `<details class="sm" style="flex:1;min-width:220px"><summary>網球表上另有 ${notIn.length} 人不在體能名單</summary><p class="mut">${notIn.map(esc).join('、')}<br>他們今天只上網球，不用排體能。如果其中有人該上體能，請加進「11 體能名單」。</p></details>` : ''}
+    </div>
+
+    <div class="actbar"><div class="actbar-in">
+      <div class="st"><b>${esc(stateTxt)}</b>${nBad ? '🔴 有撞課，定案前要處理' : nWarn ? '🟡 有提醒，確認後可以定案' : '🟢 都沒問題'}</div>
+      <button class="btn sec" id="rerun">重新排</button>
+      <button class="btn sec" id="copyBtn">複製到群組</button>
+      <button class="btn lime" id="lockBtn" ${nBad ? 'disabled' : ''}>${st.planStatus === '定案' && !st.dirty ? '已定案 ✓' : '定案'}</button>
+    </div></div>
+  </div>`;
+
+  $('#pasteBtn').onclick = pasteSheet;
+  $('#addSlot').onclick = addSlotSheet;
+  $('#leaveBtn').onclick = leaveSheet;
+  $('#rerun').onclick = () => {
+    const doit = () => { st.slots = autoPlan(true); st.dirty = true; render(); toast('已依最新網球課表重排（手動加的課保留）'); };
+    st.dirty || st.planStatus ? confirmSheet('重新排？', '系統會依網球課表重排，你拖過的人會回到系統建議的位置（手動加的課會保留）。', '重新排', doit) : doit();
+  };
+  $('#copyBtn').onclick = copyChat;
+  $('#lockBtn').onclick = () => savePlan('定案');
+  document.querySelectorAll('[data-p]').forEach(b => b.onclick = () => playerSheet(b.dataset.s, b.dataset.p));
+  document.querySelectorAll('[data-coach]').forEach(b => b.onclick = () => coachSheet(b.dataset.coach));
+  document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { st.curSlot = b.dataset.go; go('sess'); });
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => confirmSheet('刪掉這堂？', '這堂的人會變成沒排到。', '刪掉', () => { st.slots = st.slots.filter(s => s.id !== b.dataset.del); markDirty(); }));
+}
+function slotCard(s) {
+  const g = E.CFG.groups[s.group] || { cap: 8 };
+  const pct = Math.min(100, Math.round(s.players.length / g.cap * 100));
+  const why = s.why || {};
+  const chips = s.players.map(n => {
+    const cls = s.clash && s.clash[n] ? 'bad' : s.partial && s.partial[n] ? 'warn' : '';
+    const p = st.day.roster.find(x => x.name === n) || {};
+    const tip = (s.clash && s.clash[n]) || (s.partial && s.partial[n] ? '只能上 ' + s.partial[n] + ' 分鐘' : '') || why[n] || '';
+    return `<button class="pc ${cls}" data-s="${s.id}" data-p="${esc(n)}" title="${esc(tip)}">${p.growth ? '<span class="tri">▲</span>' : ''}${esc(n)}${s.partial && s.partial[n] ? `<small>${s.partial[n]}分</small>` : ''}</button>`;
+  }).join('');
+  const opt = s.option ? `<span class="pill g">${esc(s.option)}</span>` : '';
+  return `<article class="slot ${s.status}"><div class="bar"></div><div class="slot-in">
+    <div class="slot-h">
+      <div class="slot-t">${esc(s.start)}<small>到 ${esc(s.end)}・${esc(s.group)}${s.team ? '・' + esc(s.team) : ''}</small></div>
+      ${s.manual ? '<span class="manual">手動</span>' : ''}
+      <div class="cap"><span class="num sm"><b>${s.players.length}</b> / ${g.cap} 人</span><div class="meter ${s.players.length > g.cap ? 'over' : s.players.length === g.cap ? 'full' : ''}"><i style="width:${pct}%"></i></div></div>
+    </div>
+    <div class="chips">${chips || '<span class="sm mut">還沒有人</span>'}</div>
+    ${s.flags && s.flags.length ? `<div class="flags">${s.flags.map(f => `<span class="pill ${/撞|超過/.test(f) ? 'bad' : 'warn'}">${esc(f)}</span>`).join('')}</div>` : ''}
+    <div class="slot-f">
+      <button class="coachbtn" data-coach="${s.id}">${s.coaches && s.coaches.length ? '教練：' + s.coaches.map(esc).join('＋') : '＋ 派教練'}</button>
+      <div class="row" style="gap:4px">${opt}${s.manual ? `<button class="link sm" data-del="${s.id}">刪掉</button>` : ''}<button class="link" data-go="${s.id}">練什麼 →</button></div>
+    </div>
+  </div></article>`;
+}
+function playerSheet(sid, name) {
+  const from = st.slots.find(s => s.id === sid);
+  const others = st.slots.filter(s => s.id !== sid && s.group === from.group);
+  const preview = to => { const c = JSON.parse(JSON.stringify(st.slots)); const f = c.find(s => s.id === sid), t = c.find(s => s.id === to.id); f.players = f.players.filter(n => n !== name); t.players.push(name); E.recheck(c, engineInput()); const tt = c.find(s => s.id === to.id); return tt.clash[name] ? ['bad', '撞到網球'] : tt.partial[name] ? ['warn', '只能 ' + tt.partial[name] + ' 分'] : tt.players.length > (E.CFG.groups[tt.group] || {}).cap ? ['bad', '超過人數'] : ['ok', '可以']; };
+  const why = (from.why || {})[name] || '';
+  const tn = st.day.tennis.filter(t => t.players.includes(name)).map(t => t.start + '–' + t.end).join('、');
+  sheet(`<h2>${esc(name)}</h2><p class="mut sm" style="margin:0">網球：${esc(tn || '—')}${why ? '<br>排在這裡：' + esc(why) : ''}</p>
+    <p class="eyebrow" style="margin-top:14px">移到別堂</p>
+    <div class="opt-list">${others.length ? others.map(o => { const [c, t] = preview(o); return `<button data-to="${o.id}"><b>${esc(o.start)}</b> ${esc(o.group)}・${o.players.length} 人<span class="pill ${c}">${esc(t)}</span></button>`; }).join('') : '<p class="sm mut">同組沒有其他堂。可以用「＋ 加一堂」開新的。</p>'}</div>
+    <div class="opt-list"><button id="toLeave">今天請假（從排課移除）</button><button id="toPlayer">看 ${esc(name)} 的球員頁</button></div>`, () => {
+    document.querySelectorAll('[data-to]').forEach(b => b.onclick = () => {
+      from.players = from.players.filter(n => n !== name); st.slots.find(s => s.id === b.dataset.to).players.push(name);
+      closeSheet(); markDirty(); toast(name + ' 移到 ' + st.slots.find(s => s.id === b.dataset.to).start);
+    });
+    $('#toLeave').onclick = async () => { closeSheet(); await setLeave(st.day.leave.concat([name])); from.players = from.players.filter(n => n !== name); markDirty(); };
+    $('#toPlayer').onclick = () => { closeSheet(); st.curPlayer = name; go('player'); };
+  });
+}
+function coachSheet(sid) {
+  const s = st.slots.find(x => x.id === sid);
+  const S = E.toMin(s.start), En = E.toMin(s.end);
+  const busy = n => st.slots.some(o => o.id !== sid && (o.coaches || []).includes(n) && E.toMin(o.start) < En && S < E.toMin(o.end));
+  const cs = st.day.coaches.filter(c => c.type === '體能');
+  sheet(`<h2>${esc(s.start)} 派教練</h2><p class="mut sm">${s.needTwo ? '這堂程度高低都有，建議兩位。' : '可以選一位或兩位。'}</p>
+    <div class="pick" style="margin-top:12px">${cs.map(c => `<button aria-pressed="${(s.coaches || []).includes(c.name)}" data-c="${esc(c.name)}">${esc(c.name)} <small>${esc(c.group)}${busy(c.name) ? '・同時段有課' : ''}</small></button>`).join('')}</div>
+    <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn" id="cOk">好了</button></div>`, () => {
+    document.querySelectorAll('[data-c]').forEach(b => b.onclick = () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'));
+    $('#cOk').onclick = () => { s.coaches = [...document.querySelectorAll('[data-c][aria-pressed=true]')].map(b => b.dataset.c); closeSheet(); markDirty(); };
+  });
+}
+function addSlotSheet() {
+  const times = []; for (let m = 8 * 60; m <= 19 * 60 + 30; m += 30) times.push(E.fmt(m));
+  const teams = [...new Set(st.day.roster.map(p => p.team).filter(Boolean))];
+  const placed = new Set([].concat(...st.slots.map(s => s.players)));
+  sheet(`<h2>加一堂</h2><p class="mut sm">大隊固定課、補課、或系統沒排到的人。</p>
+    <div class="row" style="margin-top:10px"><label class="sm">開始 <select id="aT">${times.map(t => `<option ${t === '10:00' ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+    <label class="sm">組別 <select id="aG"><option>大隊</option><option>小朋友</option></select></label></div>
+    ${teams.length ? `<p class="eyebrow" style="margin-top:14px">整隊加入</p><div class="pick">${teams.map(t => `<button data-team="${esc(t)}">${esc(t)}</button>`).join('')}</div>` : ''}
+    <p class="eyebrow" style="margin-top:14px">選人</p><input type="text" id="aQ" placeholder="搜尋名字或暱稱" style="width:100%;margin-bottom:8px">
+    <div class="pick" id="aP"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" id="aNo">取消</button><button class="btn" id="aOk">加進去</button></div>`, () => {
+    const sel = new Set();
+    const draw = () => { const q = $('#aQ').value.trim().toLowerCase(); $('#aOk').textContent = sel.size ? '加進去（' + sel.size + ' 人）' : '加進去'; $('#aP').innerHTML = st.day.roster.filter(p => !q || (p.name + ' ' + p.alias).toLowerCase().includes(q)).sort((x, y) => (sel.has(y.name) - sel.has(x.name)) || (placed.has(x.name) - placed.has(y.name))).map(p => `<button aria-pressed="${sel.has(p.name)}" data-n="${esc(p.name)}">${esc(p.name)}${placed.has(p.name) ? ' <small>已排</small>' : ''}</button>`).join(''); document.querySelectorAll('#aP [data-n]').forEach(b => b.onclick = () => { sel.has(b.dataset.n) ? sel.delete(b.dataset.n) : sel.add(b.dataset.n); draw(); }); };
+    draw(); $('#aQ').oninput = draw;
+    document.querySelectorAll('[data-team]').forEach(b => b.onclick = () => { st.day.roster.filter(p => p.team === b.dataset.team).forEach(p => sel.add(p.name)); $('#aG').value = '大隊'; draw(); b.setAttribute('aria-pressed', 'true'); });
+    $('#aNo').onclick = closeSheet;
+    $('#aOk').onclick = () => {
+      if (!sel.size) return toast('至少選一個人');
+      const g = $('#aG').value, t = $('#aT').value, dur = E.CFG.groups[g].dur;
+      st.slots.forEach(s => s.players = s.players.filter(n => !sel.has(n)));
+      const tm = [...new Set([...sel].map(n => (st.day.roster.find(p => p.name === n) || {}).team).filter(Boolean))];
+      const S0 = E.toMin(t), S1 = S0 + dur;
+      const free = st.day.coaches.filter(c => c.type === '體能' && c.group === g && !st.slots.some(o => (o.coaches || []).includes(c.name) && E.toMin(o.start) < S1 && S0 < E.toMin(o.end)));
+      st.slots.push({ id: 'M' + Date.now().toString(36), manual: true, start: t, end: E.fmt(S1), group: g, team: tm.length === 1 ? tm[0] : '', players: [...sel], coaches: free.slice(0, 1).map(c => c.name), why: {}, partial: {} });
+      st.slots = st.slots.filter(s => s.players.length || s.manual);
+      st.slots.sort((a, b) => E.toMin(a.start) - E.toMin(b.start));
+      closeSheet(); markDirty(); toast('已加一堂 ' + t);
+    };
+  });
+}
+function leaveSheet() {
+  const scheduledToday = new Set([].concat(...st.day.tennis.map(t => t.players)).filter(n => st.day.roster.find(p => p.name === n)));
+  const sel = new Set(st.day.leave);
+  sheet(`<h2>${dLabel(st.date)} 請假</h2><p class="mut sm">只列今天有網球、又在體能名單上的人。</p><div class="pick" id="lP" style="margin-top:10px"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn" id="lOk">存起來</button></div>`, () => {
+    const names = [...new Set([...scheduledToday, ...sel])];
+    const draw = () => { $('#lP').innerHTML = names.length ? names.map(n => `<button aria-pressed="${sel.has(n)}" data-n="${esc(n)}">${esc(n)}</button>`).join('') : '<p class="sm mut">今天沒有人要排。</p>'; document.querySelectorAll('#lP [data-n]').forEach(b => b.onclick = () => { sel.has(b.dataset.n) ? sel.delete(b.dataset.n) : sel.add(b.dataset.n); draw(); }); };
+    draw();
+    $('#lOk').onclick = async () => { closeSheet(); await setLeave([...sel]); st.slots.forEach(s => s.players = s.players.filter(n => !sel.has(n))); markDirty(); };
+  });
+}
+async function setLeave(names) {
+  try { await api('setLeave', { date: st.date, names, by: st.me.name }); st.day.leave = names; toast('請假已存（' + names.length + ' 人）'); }
+  catch (e) { toast('存不進去：' + e.message); }
+}
+function pasteSheet() {
+  sheet(`<h2>貼上網球備忘錄</h2><p class="mut sm">整段貼上就好，像「1-3 莫可妍 刘珈妮 鄭」。下午的 1–7 點會自動當成 13–19 點。這天原本的網球課表會被取代。</p>
+    <textarea id="pT" placeholder="9-10 王圣盈  賴&#10;8-10 刘珈妮莫可妍 鄭&#10;…"></textarea>
+    <div id="pPrev" class="sm" style="margin-top:8px"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn ghost" id="pNo">取消</button><button class="btn" id="pOk" disabled>匯入並重排</button></div>`, () => {
+    let parsed = null;
+    const codes = st.day.coaches.filter(c => c.type === '網球').map(c => c.code || c.name);
+    $('#pT').oninput = () => {
+      parsed = E.parseTennisText($('#pT').value, { roster: st.day.roster, coachCodes: codes });
+      const rs = new Set(st.day.roster.map(p => p.name));
+      const ppl = new Set([].concat(...parsed.entries.map(e => e.players)));
+      const inR = [...ppl].filter(n => rs.has(n));
+      $('#pPrev').innerHTML = parsed.entries.length ? `讀到 <b>${parsed.entries.length}</b> 堂網球、<b>${ppl.size}</b> 位球員，其中 <b>${inR.length}</b> 位在體能名單。` +
+        (parsed.bad.length ? `<div class="note warn" style="margin-top:6px">這幾行看不懂，會略過：<br>${parsed.bad.map(esc).join('<br>')}</div>` : '') : '';
+      $('#pOk').disabled = !parsed.entries.length;
+    };
+    $('#pNo').onclick = closeSheet;
+    $('#pOk').onclick = async () => {
+      $('#pOk').disabled = true; $('#pOk').textContent = '匯入中…';
+      try { await api('importTennis', { date: st.date, entries: parsed.entries, by: st.me.name }); closeSheet(); toast('網球課表已匯入，重新排課中'); const keep = st.slots.filter(s => s.manual); await load(); if (!st.day.plan) { st.slots = keep.concat(st.slots); } st.slots = autoPlan(true); st.dirty = true; render(); }
+      catch (e) { toast('匯入失敗：' + e.message); $('#pOk').disabled = false; $('#pOk').textContent = '匯入並重排'; }
+    };
+  });
+}
+async function savePlan(status, quiet) {
+  try {
+    const r = await api('savePlan', { date: st.date, slots: st.slots, status, by: st.me.name });
+    st.dirty = false; st.planStatus = status; st.planAt = r.at;
+    if (!quiet) { toast(status === '定案' ? '已定案，可以複製到群組了' : '草案已存'); render(); }
+  } catch (e) { toast('存不進去：' + e.message); }
+}
+function copyChat() {
+  const txt = E.toChatText(st.date, st.slots, st.day.leave);
+  const done = () => toast('已複製，可以貼到群組');
+  try { navigator.clipboard.writeText(txt).then(done, () => showText(txt)); } catch (e) { showText(txt); }
+}
+function showText(txt) { sheet(`<h2>複製這段</h2><textarea readonly id="cpT" style="min-height:180px">${esc(txt)}</textarea>`, () => { $('#cpT').select(); }); }
+
+/* ==== 2. 這堂練什麼 ==== */
+function slotSeg() {
+  return `<div class="seg" role="group" aria-label="選一堂">${st.slots.map(s => `<button aria-pressed="${s.id === st.curSlot}" data-slot="${s.id}"><b>${esc(s.start)}</b><span>${esc(s.team || s.group)}・${s.players.length} 人</span></button>`).join('')}</div>`;
+}
+function bindSeg() { document.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { st.curSlot = b.dataset.slot; render(); }); }
+function suggestion(s) {
+  const key = s.id + '|' + s.players.join(',');
+  if (!st.sugg[key]) {
+    const radar = {}; Object.keys(st.day.latest).forEach(n => radar[n] = st.day.latest[n]);
+    st.sugg[key] = E.suggestSession({ date: st.date, slot: s, roster: st.day.roster, logs: st.day.logs, radar, monitor: st.day.monitor });
+  }
+  return st.sugg[key];
+}
+function itemTxt(x) { return esc(x.name) + (x.warm ? ' ' + x.reps + (x.unit || '') : ' <span class="num mut">' + x.sets + '×' + x.reps + (x.unit && x.unit !== '次' ? ' ' + esc(x.unit) : '') + '</span>'); }
+function renderSess() {
+  const s = st.slots.find(x => x.id === st.curSlot);
+  if (!s) { $('#app').innerHTML = `<div class="card empty"><b>這天還沒有排課</b>先到「排課」排好時段。</div>`; return; }
+  const g = suggestion(s);
+  const chosen = s.option ? s.option.charAt(0) : g.recommend;
+  $('#app').innerHTML = `<div class="stack">
+    ${slotSeg()}
+    <section class="card stack">
+      <div class="row between"><div><p class="eyebrow" style="margin:0">${esc(s.start)}–${esc(s.end)}・${esc(s.team || s.group)}・${s.players.length} 人</p><h2>今天建議：${esc(g.type === '速度爆發' ? '速度＋爆發' : g.type)}${g.focus && s.group !== '小朋友' ? '，重點「' + esc(g.focus) + '」' : ''}</h2></div>
+        <span class="sm mut">帶課：${esc((s.coaches || []).join('＋') || '還沒派')}</span></div>
+      <div class="note">${esc(g.why)}</div>
+      ${g.recentDays.length ? `<div class="recent"><span class="sm mut">最近：</span>${g.recentDays.map(r => `<span class="pill idle">${r.date.slice(5).replace('-', '/')} ${esc(r.main)}</span>`).join('')}</div>` : ''}
+    </section>
+    <div class="opts">${g.options.map(o => `<button class="opt" aria-pressed="${o.level === chosen}" data-lv="${o.level}">
+      <div class="row between"><div class="row"><span class="lv ${o.level}">${o.level}</span><div><b>${esc(o.title)}</b><div class="sm mut num">${o.minutes} 分鐘</div></div></div>${o.level === g.recommend ? '<span class="pill lime">系統推薦</span>' : ''}</div>
+      <ol>${o.items.map(x => `<li class="${x.focus ? 'f' : ''} ${x.warm ? 'w' : ''}">${itemTxt(x)}</li>`).join('')}</ol>
+    </button>`).join('')}</div>
+    <p class="sm mut" style="margin:0">動作先用體能訓練紀錄裡最常出現的動作；Adam 的動作庫定版後換成正式動作卡。</p>
+    <section class="stack"><div class="row between"><h2>每個人的調整</h2><span class="sm mut">檢測＝05 雷達分數・負荷＝體能訓練紀錄</span></div>
+      <div class="people">${g.people.map(personCard).join('')}</div></section>
+    <div class="actbar"><div class="actbar-in"><div class="st"><b>選了「${esc(chosen)}」</b>${s.option ? '已記在這堂' : '還沒存，按右邊記下來'}</div><button class="btn lime" id="useOpt">用這個課表 → 回填</button></div></div>
+  </div>`;
+  bindSeg();
+  document.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { const o = g.options.find(x => x.level === b.dataset.lv); s.option = o.level + '・' + o.title; render(); });
+  $('#useOpt').onclick = async () => { const o = g.options.find(x => x.level === chosen); s.option = o.level + '・' + o.title; await savePlan(st.planStatus || '草案', true); go('fill'); };
+  document.querySelectorAll('[data-pp]').forEach(b => b.onclick = () => { st.curPlayer = b.dataset.pp; go('player'); });
+}
+function personCard(x) {
+  const ratio = x.ratio ? Math.round(x.ratio * 100) + '%' : '累積中';
+  return `<div class="person">
+    <h3><button class="link" style="padding:0;font-size:16px" data-pp="${esc(x.name)}">${esc(x.name)}</button>${x.level ? `<span class="pill idle">程度 ${esc(x.level)}</span>` : ''}${x.suggest ? `<span class="pill warn">建議 ${esc(x.suggest)}</span>` : ''}</h3>
+    ${x.flags.length ? `<div class="flags">${x.flags.map(f => `<span class="flag ${f[0]}">${esc(f[1])}</span>`).join('')}</div>` : ''}
+    <div class="kv">
+      <div><span>檢測弱項</span><b>${esc(x.weak || '—')}</b></div>
+      <div><span>近 7 天負荷</span><b class="num">${x.acute || 0}</b></div>
+      <div><span>對比平常</span><b class="num" style="color:${x.ratio >= 1.3 ? 'var(--bad)' : 'inherit'}">${ratio}</b></div>
+    </div>
+    <ul class="todo">${x.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+  </div>`;
+}
+
+/* ==== 3. 回填 ==== */
+function renderFill() {
+  const s = st.slots.find(x => x.id === st.curSlot);
+  if (!s) { $('#app').innerHTML = `<div class="card empty"><b>這天還沒有排課</b>先到「排課」排好時段。</div>`; return; }
+  const g = suggestion(s);
+  const lv = s.option ? s.option.charAt(0) : g.recommend;
+  const o = g.options.find(x => x.level === lv);
+  const key = s.id;
+  const F = st.fill[key] = st.fill[key] || {};
+  const defR = lv === '重' ? 7 : lv === '中' ? 6 : 4;
+  s.players.forEach(n => { if (!F[n]) F[n] = { status: '出席', rpe: defR, done: s.partial && s.partial[n] ? '部分完成' : '全部完成', note: s.partial && s.partial[n] ? '只上 ' + s.partial[n] + ' 分鐘' : '' }; });
+  const done = st.day.backfilled.includes(s.id);
+  const nOn = s.players.filter(n => F[n].status === '出席').length;
+  const nRows = E.backfillRows(st.date, s, o, F).length;
+  $('#app').innerHTML = `<div class="stack">
+    ${slotSeg()}
+    <section class="card stack">
+      <div class="row between"><div><p class="eyebrow" style="margin:0">${esc(s.start)} ${esc(s.team || s.group)}・課表「${esc(o.level + '・' + o.title)}」</p><h2>練完回填</h2></div>${done ? '<span class="pill ok">✓ 已回填過，再存會覆蓋</span>' : '<span class="pill idle">還沒回填</span>'}</div>
+      <p class="sm mut" style="margin:0">動作、組數已經照課表帶好。只要改有狀況的人：請假、缺席、沒做完、RPE 不一樣。</p>
+      <details class="sm"><summary>這堂的動作（${o.items.filter(x => !x.warm).length} 個）</summary><ol style="margin:8px 0 0;padding-left:20px">${o.items.filter(x => !x.warm).map(x => `<li>${itemTxt(x)}</li>`).join('')}</ol></details>
+    </section>
+    <div class="fill">${s.players.map(n => fillRow(n, F[n])).join('')}</div>
+    <div class="actbar"><div class="actbar-in"><div class="st"><b>${nOn}/${s.players.length} 人出席</b>會寫入 ${nRows} 列到體能訓練紀錄</div><button class="btn lime" id="saveFill">${done ? '更新回填' : '寫進訓練紀錄'}</button></div></div>
+  </div>`;
+  bindSeg();
+  document.querySelectorAll('[data-att]').forEach(b => b.onclick = () => { F[b.dataset.n].status = b.dataset.att; renderFill(); });
+  document.querySelectorAll('[data-rpe]').forEach(b => b.onclick = () => { const f = F[b.dataset.n]; f.rpe = Math.max(1, Math.min(10, f.rpe + (+b.dataset.rpe))); renderFill(); });
+  document.querySelectorAll('[data-done]').forEach(el => el.onchange = () => { F[el.dataset.done].done = el.value; });
+  document.querySelectorAll('[data-note]').forEach(el => el.oninput = () => { F[el.dataset.note].note = el.value; });
+  $('#saveFill').onclick = async () => {
+    const rows = E.backfillRows(st.date, s, o, F);
+    $('#saveFill').disabled = true; $('#saveFill').textContent = '寫入中…';
+    try { const r = await api('saveBackfill', { date: st.date, slotId: s.id, rows }); if (!st.day.backfilled.includes(s.id)) st.day.backfilled.push(s.id); toast('已寫入 ' + r.count + ' 列（測試分頁：體能訓練紀錄_回填測試）', 3200); renderFill(); }
+    catch (e) { toast('寫不進去：' + e.message); $('#saveFill').disabled = false; }
+  };
+}
+function fillRow(n, f) {
+  const off = f.status !== '出席';
+  return `<div class="frow ${off ? 'off' : ''}">
+    <div class="nm">${esc(n)}<small>${f.status === '出席' ? esc(f.done) : esc(f.status)}</small></div>
+    <div class="tog" role="group" aria-label="${esc(n)} 出席">${['出席', '請假', '缺席'].map(a => `<button data-att="${a}" data-n="${esc(n)}" class="${a === '缺席' ? 'abs' : ''}" aria-pressed="${f.status === a}">${a}</button>`).join('')}</div>
+    <div class="rpe">${off ? '' : `<div class="step" aria-label="${esc(n)} RPE"><button data-rpe="-1" data-n="${esc(n)}" aria-label="RPE 減一">−</button><output>${f.rpe}</output><button data-rpe="1" data-n="${esc(n)}" aria-label="RPE 加一">＋</button></div>`}</div>
+    ${off ? `<div class="more"><input type="text" data-note="${esc(n)}" value="${esc(f.note)}" placeholder="原因（選填）"></div>` : `<div class="more"><select data-done="${esc(n)}">${['全部完成', '部分完成', '依個別調整'].map(x => `<option ${x === f.done ? 'selected' : ''}>${x}</option>`).join('')}</select><input type="text" data-note="${esc(n)}" value="${esc(f.note)}" placeholder="備註（有狀況才寫）"></div>`}
+  </div>`;
+}
+
+/* ==== 4. 球員頁 ==== */
+function renderPlayer() {
+  const d = st.day, n = st.curPlayer;
+  const p = d.roster.find(x => x.name === n) || { name: n };
+  const hist = d.radar[n] || [];
+  const a = hist[hist.length - 2], b = hist[hist.length - 1];
+  const dims = ['速度與變向', '下肢爆發', '單腿減速', '轉體爆發', '投擲', '心肺適能'];
+  const sessions = E.sessionLoads(d.logs, () => (E.CFG.groups[p.group] || { dur: 90 }).dur).filter(x => x.player === n).sort((x, y) => x.date.localeCompare(y.date));
+  // 8 週負荷
+  const weeks = []; for (let i = 7; i >= 0; i--) { const end = E.addDays(st.date, -7 * i), startD = E.addDays(end, -6); weeks.push({ lbl: (+startD.slice(5, 7)) + '/' + (+startD.slice(8)), v: sessions.filter(x => x.date >= startD && x.date <= end).reduce((s, x) => s + x.load, 0) }); }
+  const mx = Math.max(1, ...weeks.map(w => w.v));
+  const since = E.addDays(st.date, -56);
+  const recent = sessions.filter(x => x.date >= since);
+  const mix = {}; d.logs.filter(l => l.player === n && E.normDate(l.date) >= since).forEach(l => { const c = E.category(l.exercise); mix[c] = (mix[c] || 0) + 1; });
+  const mixTot = Object.values(mix).reduce((s, v) => s + v, 0) || 1;
+  const ls = E.loadStatus(sessions, n, st.date);
+  let insight;
+  const both = a && b ? dims.filter(k => a.scores[k] != null && b.scores[k] != null) : [];
+  const wk = a && both.includes(a.weak) ? a.weak : (b && both.includes(b.weak) ? b.weak : null);
+  if (wk) insight = `弱項「${esc(wk)}」從 <b class="num">${fmtS(a.scores[wk])} → ${fmtS(b.scores[wk])}</b>（${esc(a.date.slice(5).replace('-', '/'))} → ${esc(b.date.slice(5).replace('-', '/'))}）。近 8 週練了 <b>${recent.length}</b> 堂。`;
+  else if (a && b && both.length) { const best = both.sort((x, y) => (b.scores[y] - a.scores[y]) - (b.scores[x] - a.scores[x]))[0]; insight = `進步最多的是「${esc(best)}」<b class="num">${fmtS(a.scores[best])} → ${fmtS(b.scores[best])}</b>。目前弱項「${esc(b.weak || '—')}」。近 8 週練了 <b>${recent.length}</b> 堂。`; }
+  else if (b) insight = `最近一次檢測 ${esc(b.date)}，弱項「${esc(b.weak || '—')}」。近 8 週練了 <b>${recent.length}</b> 堂。`;
+  else insight = `還沒有檢測資料。近 8 週練了 <b>${recent.length}</b> 堂。建議排一次檢測，之後才看得出進步。`;
+  const opts = d.roster.map(x => `<option ${x.name === n ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+  $('#app').innerHTML = `<div class="stack">
+    <section class="card stack">
+      <div class="ph"><div class="av">${esc((n || '?').slice(0, 1))}</div><div style="flex:1;min-width:140px"><h2>${esc(n)}</h2><div class="sm mut">${esc(p.group || '')}${p.team ? '・' + esc(p.team) : ''}${p.level ? '・程度 ' + esc(p.level) + (p.levelGuess ? '（檢測暫估）' : '') : ''}${p.growth ? '・▲生長期' : ''}</div></div>
+        <label class="sm mut">換人 <select id="pSel">${opts}</select></label></div>
+      <div class="insight">${insight}</div>
+    </section>
+    <div class="pgrid">
+      <section class="card"><h3>檢測：${a ? '上次 vs 這次' : '最近一次'}</h3>
+        ${b ? `<div class="legend">${a ? `<span class="a">${esc(a.date)}</span>` : ''}<span class="b">${esc(b.date)}</span><span>中線＝同齡平均 50</span></div>
+        ${dims.map(k => { const x = a ? a.scores[k] : null, y = b.scores[k]; if (x == null && y == null) return ''; return `<div class="dim"><span>${esc(k)}${k === b.weak ? ' ★' : ''}</span><span class="trk"><em></em>${x != null ? `<i class="a" style="width:${x}%"></i>` : ''}${y != null ? `<i class="b" style="width:${y}%"></i>` : ''}</span><span class="num">${x != null ? fmtS(x) + '→' : ''}${fmtS(y)}</span></div>`; }).join('')}
+        <p class="xs mut">★＝目前弱項。分數是同齡百分等級（0–100）。</p>` : `<div class="empty"><b>還沒有檢測</b>做完第一次檢測，這裡就會出現六項能力。</div>`}
+      </section>
+      <section class="card stack"><div><h3>近 8 週訓練負荷</h3><p class="xs mut" style="margin:2px 0 0">每週加總（RPE × 分鐘）。橘色＝比前 4 週平均多 30% 以上。</p></div>
+        <div class="weeks">${weeks.map((w, i) => { const prev = weeks.slice(Math.max(0, i - 4), i).filter(x => x.v); const avg = prev.length ? prev.reduce((s, x) => s + x.v, 0) / prev.length : 0; return `<div class="wk"><span>${w.v || ''}</span><i class="${avg && w.v > avg * 1.3 ? 'hot' : ''}" style="height:${Math.round(w.v / mx * 110)}px"></i><span>${w.lbl}</span></div>`; }).join('')}</div>
+        <div><h3 style="margin-bottom:6px">練了什麼（近 8 週動作數）</h3><div class="mix">${Object.keys(mix).length ? Object.keys(mix).sort((x, y) => mix[y] - mix[x]).map(c => `<div class="dim"><span>${esc(c)}</span><span class="trk"><i class="b" style="width:${Math.round(mix[c] / mixTot * 100)}%;top:0;bottom:0"></i></span><span class="num">${Math.round(mix[c] / mixTot * 100)}%</span></div>`).join('') : '<p class="sm mut">近 8 週沒有訓練紀錄。</p>'}</div></div>
+      </section>
+    </div>
+    <section class="card stack"><div class="row between"><h3>最近的課</h3><button class="btn sec" id="parentCopy">複製家長版摘要</button></div>
+      <div class="hist">${sessions.slice(-12).reverse().map(x => `<div><span class="num">${x.date.slice(5).replace('-', '/')}</span><span>${esc(x.main)}</span><span class="num mut">${isFinite(x.rpe) ? 'RPE ' + x.rpe.toFixed(1) : '沒記 RPE'}</span></div>`).join('') || '<p class="sm mut">還沒有紀錄。</p>'}</div>
+    </section>
+  </div>`;
+  $('#pSel').onchange = e => { st.curPlayer = e.target.value; renderPlayer(); };
+  $('#parentCopy').onclick = () => {
+    const txt = `${n} 體能近況（${dLabel(st.date)}）\n・近 8 週上了 ${recent.length} 堂體能\n` + (b ? `・最近檢測 ${b.date}：強項「${b.strong || '—'}」、加強中「${b.weak || '—'}」\n` : '') +
+      (a && b && a.weak ? `・${a.weak}：${fmtS(a.scores[a.weak])} → ${fmtS(b.scores[a.weak])}\n` : '') + `・最近主要練：${Object.keys(mix).sort((x, y) => mix[y] - mix[x]).slice(0, 2).join('、') || '—'}\n——奕晉體能部`;
+    try { navigator.clipboard.writeText(txt).then(() => toast('已複製家長版摘要'), () => showText(txt)); } catch (e) { showText(txt); }
+  };
+}
+const fmtS = v => v == null || !isFinite(v) ? '—' : Math.round(v);
+
+/* ==== 網球教練 ==== */
+function renderTennisCoach() {
+  const d = st.day, me = st.me;
+  const mine = d.tennis.filter(t => String(t.coach).split('、').some(x => x === me.name || x === me.code));
+  const deadline = E.addDays(st.date, -1) + ' 20:00';
+  const at = mine.map(t => t.at).sort().pop();
+  const local = st.tdraft && st.tdraft.date === st.date ? st.tdraft.entries : mine.map(t => ({ start: t.start, end: t.end, players: t.players.slice() }));
+  st.tdraft = { date: st.date, entries: local };
+  $('#app').innerHTML = `<div class="stack" style="max-width:640px;margin:0 auto">
+    <div class="deadline"><div style="flex:1"><div class="sm" style="opacity:.8">${dLabel(st.date)} 的網球課表</div><div>請在 <b>${dLabel(E.addDays(st.date, -1))} 20:00</b> 前送出</div></div>${at ? `<span class="pill ${at > deadline ? 'warn' : 'ok'}">${at > deadline ? '遲交' : '已送出'} ${esc(at.slice(5))}</span>` : '<span class="pill bad">還沒送</span>'}</div>
+    <section class="stack">
+      <div class="row between"><h2>我的課（${local.length}）</h2><button class="link" id="copyLast">沿用上週${E.weekday(st.date)}</button></div>
+      ${local.length ? local.map((e, i) => `<div class="tentry"><span class="t">${esc(e.start)}<br><span class="mut xs">${esc(e.end)}</span></span><div class="chips">${e.players.map(p => `<span class="pc">${esc(p)}</span>`).join('')}</div><div class="row" style="gap:2px"><button class="link sm" data-ed="${i}">改</button><button class="link sm" data-rm="${i}" style="color:var(--bad)">刪</button></div></div>`).join('')
+        : `<div class="card empty"><b>還沒有課</b>按下面「＋ 加一堂網球課」，或沿用上週同一天。</div>`}
+      <button class="btn ghost" id="addT">＋ 加一堂網球課</button>
+    </section>
+    <div class="actbar"><div class="actbar-in"><div class="st"><b>${local.length} 堂</b>送出後體能教練就能排課</div><button class="btn lime" id="sendT">${at ? '更新送出' : '送出'}</button></div></div>
+  </div>`;
+  $('#addT').onclick = () => tennisEntrySheet(-1);
+  document.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => tennisEntrySheet(+b.dataset.ed));
+  document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { local.splice(+b.dataset.rm, 1); renderTennisCoach(); });
+  $('#copyLast').onclick = async () => {
+    try { const r = await api('getTennis', { date: E.addDays(st.date, -7) }); const last = r.tennis.filter(t => t.coach === me.name || t.coach === me.code);
+      if (!last.length) return toast('上週' + E.weekday(st.date) + '沒有你的課');
+      st.tdraft.entries = last.map(t => ({ start: t.start, end: t.end, players: t.players.map(d.resolve) })); renderTennisCoach(); toast('已帶入上週 ' + last.length + ' 堂，記得改有變動的再送出');
+    } catch (e) { toast(e.message); }
+  };
+  $('#sendT').onclick = async () => {
+    try { await api('saveTennis', { date: st.date, coach: me.code || me.name, entries: st.tdraft.entries, by: me.name }); st.tdraft = null; toast('已送出，謝謝！'); load(); }
+    catch (e) { toast('送不出去：' + e.message); }
+  };
+}
+function tennisEntrySheet(i) {
+  const e = i >= 0 ? st.tdraft.entries[i] : { start: '15:00', end: '17:00', players: [] };
+  const times = []; for (let m = 7 * 60; m <= 21 * 60; m += 30) times.push(E.fmt(m));
+  const sel = new Set(e.players);
+  sheet(`<h2>${i >= 0 ? '改' : '加'}一堂網球課</h2>
+    <div class="row" style="margin-top:8px"><label class="sm">開始 <select id="tS">${times.map(t => `<option ${t === e.start ? 'selected' : ''}>${t}</option>`).join('')}</select></label><label class="sm">結束 <select id="tE">${times.map(t => `<option ${t === e.end ? 'selected' : ''}>${t}</option>`).join('')}</select></label></div>
+    <p class="eyebrow" style="margin-top:14px">學生（點選，可複選）</p>
+    <input type="text" id="tQ" placeholder="搜尋名字或暱稱；名單沒有的人直接打名字按 Enter" style="width:100%;margin-bottom:8px">
+    <div class="pick" id="tP"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" id="tNo">取消</button><button class="btn" id="tOk">好了</button></div>`, () => {
+    const draw = () => { const q = $('#tQ').value.trim().toLowerCase(); const list = [...new Set([...sel, ...st.day.roster.filter(p => !q || (p.name + ' ' + p.alias).toLowerCase().includes(q)).map(p => p.name)])];
+      $('#tP').innerHTML = list.map(n => `<button aria-pressed="${sel.has(n)}" data-n="${esc(n)}">${esc(n)}</button>`).join(''); document.querySelectorAll('#tP [data-n]').forEach(b => b.onclick = () => { sel.has(b.dataset.n) ? sel.delete(b.dataset.n) : sel.add(b.dataset.n); draw(); }); };
+    draw(); $('#tQ').oninput = draw;
+    $('#tQ').onkeydown = ev => { if (ev.key === 'Enter' && $('#tQ').value.trim()) { ev.preventDefault(); sel.add(st.day.resolve($('#tQ').value.trim())); $('#tQ').value = ''; draw(); } };
+    $('#tNo').onclick = closeSheet;
+    $('#tOk').onclick = () => {
+      const s = $('#tS').value, en = $('#tE').value;
+      if (E.toMin(en) <= E.toMin(s)) return toast('結束要比開始晚');
+      if (!sel.size) return toast('至少選一位學生');
+      const ne = { start: s, end: en, players: [...sel] };
+      if (i >= 0) st.tdraft.entries[i] = ne; else st.tdraft.entries.push(ne);
+      st.tdraft.entries.sort((a, b) => E.toMin(a.start) - E.toMin(b.start));
+      closeSheet(); renderTennisCoach();
+    };
+  });
+}
+
+// ───────────── 啟動 ─────────────
+window.addEventListener('beforeunload', e => { if (st.dirty) { e.preventDefault(); e.returnValue = ''; } });
+(function boot() {
+  if (IS_DEV || USE_TEST) $('#testTag').hidden = false;
+  try { const m = JSON.parse(LS.get('yj_train_me') || 'null'); if (m && m.token) { st.me = m; return start(); } } catch (e) {}
+  gate();
+})();
+</script>
+</body>
+</html>
