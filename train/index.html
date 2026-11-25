@@ -340,7 +340,7 @@ async function gate() {
     } catch (e) { $('#app').innerHTML = `<div class="card empty"><b>連不到測試伺服器</b>請先在終端機跑 python3 dev_server.py</div>`; }
   } else {
     $('#testTag').hidden = !USE_TEST;
-    $('#app').innerHTML = `<form class="gate card stack" id="lf"><h2>教練登入</h2>${USE_TEST ? '<p class="note sm" style="margin:0">測試版：資料存在測試用的試算表，正式資料不會受影響。帳號用測試表的教練帳號。</p>' : ''}<input type="text" id="lu" placeholder="帳號" autocomplete="username" required><input type="password" id="lp" placeholder="密碼" autocomplete="current-password" required style="border:1.5px solid #cfdacf;border-radius:10px;padding:9px 11px;min-height:44px"><button class="btn">登入</button></form>`;
+    $('#app').innerHTML = `<form class="gate card stack" id="lf"><h2>教練登入</h2>${USE_TEST ? '<p class="note sm" style="margin:0">測試版：排課、回填存在測試用的試算表；只有「對不到 01 的名字」補登會寫進正式 01 球員總表。帳號用測試表的教練帳號。</p>' : ''}<input type="text" id="lu" placeholder="帳號" autocomplete="username" required><input type="password" id="lp" placeholder="密碼" autocomplete="current-password" required style="border:1.5px solid #cfdacf;border-radius:10px;padding:9px 11px;min-height:44px"><button class="btn">登入</button></form>`;
     $('#lf').onsubmit = e => { e.preventDefault(); doLogin($('#lu').value.trim(), $('#lp').value); };
   }
 }
@@ -396,7 +396,9 @@ function prep(d) {
   const idx = E.nameIndex(d.roster);
   d.idx = idx;
   d.resolve = n => idx[E.nameKey(n)] || n;
-  d.tennis.forEach(t => t.players = t.players.map(d.resolve));
+  // 舊資料裡可能混進教練稱呼（赖＝賴）或「女」「男」這種切剩的字 → 不當成學員
+  const coachKeys = new Set((d.coaches || []).map(c => E.nameKey(c.code || c.name)).filter(Boolean));
+  d.tennis.forEach(t => t.players = t.players.map(d.resolve).filter(n => !coachKeys.has(E.nameKey(n)) && !/^[女男]$/.test(n)));
   d.latest = {};
   Object.keys(d.radar).forEach(n => { const h = d.radar[n]; d.latest[n] = h[h.length - 1]; });
   // 程度沒填 → 用檢測總分暫估
@@ -442,6 +444,86 @@ function submissions() {
   });
 }
 function relDay(d) { const t = today(); return d === t ? '今天' : d === E.addDays(t, 1) ? '明天' : d === E.addDays(t, -1) ? '昨天' : dLabel(d); }
+// ───────────── 對不到 01 的名字：一鍵補登（直接寫正式 01 球員總表） ─────────────
+const IGN_KEY = 'yj_train_ignore';
+function ignored() { try { return new Set(JSON.parse(LS.get(IGN_KEY) || '[]')); } catch (e) { return new Set(); } }
+function setIgnored(set) { LS.set(IGN_KEY, JSON.stringify([...set])); }
+function nfBlock(notIn) {
+  if (!notIn.length) return '';
+  const ign = ignored(), todo = notIn.filter(n => !ign.has(n)), skipped = notIn.length - todo.length;
+  const reset = skipped ? `<span class="xs mut">已略過 ${skipped} 位只上網球的・<a href="#" id="nfReset">重新顯示</a></span>` : '';
+  if (!todo.length) return `<p class="xs mut" style="margin:0">${reset}</p>`;
+  return `<div class="note stack" style="gap:8px">
+      <div class="sm"><b>對不到 01 的名字（${todo.length}）</b>　點名字補一次，之後網球表這樣寫都會自動對到。</div>
+      <div class="pick" id="nfP" style="max-height:none">${todo.map(n => `<button data-nf="${esc(n)}">${esc(n)}</button>`).join('')}</div>
+      ${reset}
+    </div>`;
+}
+function bindNf() {
+  document.querySelectorAll('[data-nf]').forEach(b => b.onclick = () => linkSheet(b.dataset.nf));
+  const r = $('#nfReset'); if (r) r.onclick = e => { e.preventDefault(); setIgnored(new Set()); render(); };
+}
+function afterRosterChange() {
+  prep(st.day);
+  if (!st.showPlan) st.slots = autoPlan();
+  else E.recheck(st.slots, engineInput());
+  render();
+}
+function linkSheet(raw) {
+  const roster = st.day.roster, k = E.nameKey(raw);
+  const score = p => { const a = E.nameKey(p.name + (p.alias || '')); let n = 0; new Set(k).forEach(c => { if (a.includes(c)) n++; }); return n; };
+  const sugg = roster.map(p => ({ p, s: score(p) })).filter(x => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 8).map(x => x.p);
+  const looksName = /^[\u3400-\u9fff]{3,4}$/.test(raw) && !/[女男]$/.test(raw);
+  let grp = '';
+  sheet(`<h2>「${esc(raw)}」是誰？</h2>
+    <p class="mut sm" style="margin:4px 0 0">補一次就好，之後網球表寫「${esc(raw)}」都會自動對到。</p>
+    <h3 style="font-size:15px;margin:16px 0 6px">是 01 裡的這位</h3>
+    <input type="text" id="lkQ" placeholder="搜尋 01 的姓名或暱稱" style="width:100%" autocomplete="off">
+    <div class="pick" id="lkP" style="margin-top:8px"></div>
+    <h3 style="font-size:15px;margin:18px 0 6px">01 沒有這個人 → 新增</h3>
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+      <input type="text" id="lkN" value="${looksName ? esc(E.toTrad(raw)) : ''}" placeholder="全名（繁體）" style="flex:1;min-width:150px">
+      <div class="pick" id="lkG" style="flex:none"><button data-g="大隊">大隊</button><button data-g="小朋友">小朋友</button></div>
+    </div>
+    <div class="row" style="justify-content:space-between;margin-top:16px;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" id="lkIgn">只上網球，不用管</button>
+      <button class="btn" id="lkAdd" disabled>新增到 01</button>
+    </div>
+    <p class="xs mut" style="margin:10px 0 0">會直接寫進正式的 01 球員總表。新增的人，生日、性別之後要到 01 補上（檢測報告需要）。</p>`, () => {
+    const draw = () => {
+      const q = E.nameKey($('#lkQ').value);
+      const list = q ? roster.filter(p => E.nameKey(p.name + ' ' + (p.alias || '')).includes(q)).slice(0, 12) : sugg;
+      $('#lkP').innerHTML = list.length ? list.map(p => `<button data-pick="${esc(p.name)}">${esc(p.name)}${p.alias ? ` <small class="mut">${esc(p.alias)}</small>` : ''}</button>`).join('') : `<span class="sm mut">${q ? '01 找不到，看看是不是要新增' : '打字搜尋 01 的名字'}</span>`;
+      document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => doLink('alias', b.dataset.pick));
+    };
+    const okAdd = () => { $('#lkAdd').disabled = !($('#lkN').value.trim() && grp); };
+    $('#lkQ').oninput = draw; draw();
+    $('#lkN').oninput = okAdd;
+    document.querySelectorAll('#lkG [data-g]').forEach(b => b.onclick = () => { grp = b.dataset.g; document.querySelectorAll('#lkG [data-g]').forEach(x => x.setAttribute('aria-pressed', x === b)); okAdd(); });
+    $('#lkIgn').onclick = () => { const s = ignored(); s.add(raw); setIgnored(s); closeSheet(); render(); };
+    $('#lkAdd').onclick = () => doLink('add', E.toTrad($('#lkN').value.trim()), grp);
+  });
+  async function doLink(mode, name, group) {
+    const btns = document.querySelectorAll('#sheetRoot button'); btns.forEach(b => b.disabled = true);
+    try {
+      const r = await api('rosterLink', { mode, name, alias: raw, group });
+      closeSheet();
+      if (mode === 'alias') {
+        const p = roster.find(x => x.name === name); if (p) p.alias = r.alias || ((p.alias ? p.alias + '、' : '') + raw);
+        toast(`已登記：${raw} ＝ ${name}`);
+      } else {
+        roster.push({ id: String(r.id), name, alias: name === raw ? '' : raw, group, unclassified: false, team: '', level: '', growth: false, earliest: '', latest: '', status: '在訓', coach: '' });
+        toast(`已新增到 01：${name}（#${r.id}）`);
+      }
+      afterRosterChange();
+    } catch (e) {
+      if (e.message === 'needLogin') return;
+      btns.forEach(b => b.disabled = false);
+      toast('沒存到：' + e.message, 4000);
+    }
+  }
+}
+
 function renderPlan() {
   const d = st.day, subs = submissions();
   const A = E.availability({ roster: d.roster, tennis: d.tennis, leave: d.leave });
@@ -479,7 +561,7 @@ function renderPlan() {
           <div class="wins">${p.status === 'leave' ? '<span class="sm mut">今天請假</span>' : p.windows.length ? p.windows.map(w => winChip(p, w)).join('') : '<span class="sm mut">網球前後都沒有 30 分鐘以上的空檔</span>'}</div>
           <div class="tg">${stTag[p.status]}</div>
         </div>`).join('')}</div>` : `<div class="empty"><b>網球課表上沒有體能學員</b>名字都對不到 01 球員總表。可能是暱稱還沒登記。</div>`}
-      ${A.notIn.length ? `<details class="sm"><summary>另有 ${A.notIn.length} 人對不到 01 球員總表（只上網球，或暱稱還沒登記）</summary><p class="mut" style="margin:8px 0 0">${A.notIn.map(esc).join('、')}<br>如果其中有人要上體能：到 01 球員總表找到他，在「暱稱」欄填上網球表的叫法；新學員就新增一列。</p></details>` : ''}
+      ${nfBlock(A.notIn)}
     </section>`;
 
   const planPart = st.showPlan ? `
@@ -509,6 +591,7 @@ function renderPlan() {
     return;
   }
   $('#pasteBtn').onclick = pasteSheet;
+  bindNf();
   const lb = $('#leaveBtn'); if (lb) lb.onclick = leaveSheet;
   const pg = $('#planGo'); if (pg) pg.onclick = () => { st.slots = autoPlan(true); st.showPlan = true; st.dirty = true; render(); setTimeout(() => { const h = document.querySelector('.slots'); h && h.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); };
   if (!st.showPlan) return;
