@@ -113,6 +113,8 @@ const TK = (function () {
 })();
 const FROM_APP = /[?&]app=1/.test(location.search);
 if (FROM_APP) document.getElementById('back').addEventListener('click', e => { e.preventDefault(); history.length > 1 ? history.back() : null; });
+// 2026-11-25 App 新橫幅會把這頁放在框裡，返回交給橫幅，這裡的小箭頭藏起來
+try { if (window.self !== window.top) document.getElementById('back').style.display = 'none'; } catch (e) {}
 
 // ───────── 測項（欄位 key 與後台 rec 相同） ─────────
 // r=[最小,最大]：超出只提醒、不擋（跟網頁端 validRanges 一致）
