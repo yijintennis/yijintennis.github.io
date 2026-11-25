@@ -583,7 +583,12 @@
     const n = o.name, sess = (o.sessions || []).filter(x => (!x.player || x.player === n) && x.date >= addDays(o.date, -56) && x.date <= o.date);
     const gc = {}; sess.forEach(x => { if (x.goal) gc[x.goal] = (gc[x.goal] || 0) + 1; });
     const lines = [n + ' 體能近況（' + o.dateLabel + '）'];
-    lines.push('・近 8 週上了 ' + sess.length + ' 堂體能' + (Object.keys(gc).length ? '：' + GOALS.filter(g => gc[g]).map(g => g + ' ' + gc[g] + ' 堂').join('、') : ''));
+    // 累計堂數：同一天算一堂（o.total 有給就用後台算好的）
+    const allDays = {}; (o.sessions || []).forEach(x => { if ((!x.player || x.player === n) && x.date <= o.date) allDays[x.date] = 1; });
+    const days = Object.keys(allDays).sort(), total = o.total != null ? o.total : days.length, first = o.first || days[0] || '';
+    if (total) lines.push('・在奕晉一共上了 ' + total + ' 堂體能' + (first ? '（' + first.slice(0, 4) + '/' + (+first.slice(5, 7)) + ' 起有紀錄）' : ''));
+    // 近 8 週 0 堂多半是紀錄還沒補齊，不寫給家長
+    if (sess.length) lines.push('・近 8 週上了 ' + sess.length + ' 堂' + (Object.keys(gc).length ? '：' + GOALS.filter(g => gc[g]).map(g => g + ' ' + gc[g] + ' 堂').join('、') : ''));
     const tr = testTrend(o.tests);
     const up = tr.filter(t => t.better === 1), flat = tr.filter(t => t.prev && t.better !== 1);
     if (up.length) lines.push('・檢測進步：' + up.slice(0, 3).map(trendText).join('；'));
