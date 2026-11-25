@@ -1,0 +1,1 @@
+import{r as e,B as s,c as a,d as t,ac as o,o as n}from"./index-XGYZrqIu.js";import{a as r}from"./uni-app.es.BQEP6PnQ.js";const u={__name:"web",setup(u){const c=e("");return r(e=>{c.value=decodeURIComponent(e.u||""),e.t&&s({title:decodeURIComponent(e.t)})}),(e,s)=>{const r=o;return c.value?(n(),a(r,{key:0,src:c.value},null,8,["src"])):t("",!0)}}};export{u as default};
