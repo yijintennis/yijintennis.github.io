@@ -395,7 +395,7 @@ async function load() {
 function prep(d) {
   const idx = E.nameIndex(d.roster);
   d.idx = idx;
-  d.resolve = n => idx[String(n).toLowerCase()] || n;
+  d.resolve = n => idx[E.nameKey(n)] || n;
   d.tennis.forEach(t => t.players = t.players.map(d.resolve));
   d.latest = {};
   Object.keys(d.radar).forEach(n => { const h = d.radar[n]; d.latest[n] = h[h.length - 1]; });
@@ -617,7 +617,7 @@ function addSlotSheet() {
     <div class="pick" id="aP"></div>
     <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" id="aNo">取消</button><button class="btn" id="aOk">加進去</button></div>`, () => {
     const sel = new Set();
-    const draw = () => { const q = $('#aQ').value.trim().toLowerCase(); $('#aOk').textContent = sel.size ? '加進去（' + sel.size + ' 人）' : '加進去'; $('#aP').innerHTML = st.day.roster.filter(p => !q || (p.name + ' ' + p.alias).toLowerCase().includes(q)).sort((x, y) => (sel.has(y.name) - sel.has(x.name)) || (placed.has(x.name) - placed.has(y.name))).map(p => `<button aria-pressed="${sel.has(p.name)}" data-n="${esc(p.name)}">${esc(p.name)}${placed.has(p.name) ? ' <small>已排</small>' : ''}</button>`).join(''); document.querySelectorAll('#aP [data-n]').forEach(b => b.onclick = () => { sel.has(b.dataset.n) ? sel.delete(b.dataset.n) : sel.add(b.dataset.n); draw(); }); };
+    const draw = () => { const q = $('#aQ').value.trim().toLowerCase(); $('#aOk').textContent = sel.size ? '加進去（' + sel.size + ' 人）' : '加進去'; $('#aP').innerHTML = st.day.roster.filter(p => !q || E.nameKey(p.name + ' ' + p.alias).includes(E.nameKey(q))).sort((x, y) => (sel.has(y.name) - sel.has(x.name)) || (placed.has(x.name) - placed.has(y.name))).map(p => `<button aria-pressed="${sel.has(p.name)}" data-n="${esc(p.name)}">${esc(p.name)}${placed.has(p.name) ? ' <small>已排</small>' : ''}</button>`).join(''); document.querySelectorAll('#aP [data-n]').forEach(b => b.onclick = () => { sel.has(b.dataset.n) ? sel.delete(b.dataset.n) : sel.add(b.dataset.n); draw(); }); };
     draw(); $('#aQ').oninput = draw;
     document.querySelectorAll('[data-team]').forEach(b => b.onclick = () => { st.day.roster.filter(p => p.team === b.dataset.team).forEach(p => sel.add(p.name)); $('#aG').value = '大隊'; draw(); b.setAttribute('aria-pressed', 'true'); });
     $('#aNo').onclick = closeSheet;
@@ -861,7 +861,7 @@ function tennisEntrySheet(i) {
     <input type="text" id="tQ" placeholder="搜尋名字或暱稱；名單沒有的人直接打名字按 Enter" style="width:100%;margin-bottom:8px">
     <div class="pick" id="tP"></div>
     <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" id="tNo">取消</button><button class="btn" id="tOk">好了</button></div>`, () => {
-    const draw = () => { const q = $('#tQ').value.trim().toLowerCase(); const list = [...new Set([...sel, ...st.day.roster.filter(p => !q || (p.name + ' ' + p.alias).toLowerCase().includes(q)).map(p => p.name)])];
+    const draw = () => { const q = $('#tQ').value.trim().toLowerCase(); const list = [...new Set([...sel, ...st.day.roster.filter(p => !q || E.nameKey(p.name + ' ' + p.alias).includes(E.nameKey(q))).map(p => p.name)])];
       $('#tP').innerHTML = list.map(n => `<button aria-pressed="${sel.has(n)}" data-n="${esc(n)}">${esc(n)}</button>`).join(''); document.querySelectorAll('#tP [data-n]').forEach(b => b.onclick = () => { sel.has(b.dataset.n) ? sel.delete(b.dataset.n) : sel.add(b.dataset.n); draw(); }); };
     draw(); $('#tQ').oninput = draw;
     $('#tQ').onkeydown = ev => { if (ev.key === 'Enter' && $('#tQ').value.trim()) { ev.preventDefault(); sel.add(st.day.resolve($('#tQ').value.trim())); $('#tQ').value = ''; draw(); } };
