@@ -192,6 +192,16 @@ textarea{width:100%;min-height:220px;font-family:var(--num);font-size:14px;line-
 /* 球員頁 */
 .ph{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .av{width:54px;height:54px;border-radius:16px;background:var(--g);color:var(--lime);display:grid;place-items:center;font-weight:800;font-size:22px}
+.goals{display:flex;flex-wrap:wrap;gap:6px}
+.goals button{border:1.5px solid #cfdacf;background:#fff;border-radius:999px;padding:6px 14px;font-size:15px;min-height:40px;font-weight:600}
+.goals button[aria-pressed="true"]{background:var(--ink,#1f3a2c);color:#fff;border-color:transparent}
+.tip{border-left:4px solid var(--lime,#b9d84a);background:var(--bg);border-radius:8px;padding:8px 12px;font-size:14px}
+.frow .q{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px}
+.frow .q input{width:92px;min-height:40px}
+.frow .q select{min-height:40px}
+.nums{display:grid;gap:6px}
+.nums div{display:grid;grid-template-columns:minmax(90px,1fr) auto;gap:8px;align-items:baseline;border-bottom:1px dashed var(--line);padding:4px 0}
+.nums .up{color:var(--ok,#2e7d32);font-weight:700}.nums .dn{color:var(--bad,#c62828);font-weight:700}
 .pgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 @media (max-width:820px){.pgrid{grid-template-columns:1fr}}
 .dim{display:grid;grid-template-columns:86px minmax(0,1fr) 70px;gap:8px;align-items:center;font-size:13px;margin-bottom:8px}
@@ -272,7 +282,7 @@ const IS_DEV = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
 // 測試期：接「張無忌」副本的測試後台；正式上線改成 PROD_API
 const TEST_API = 'https://script.google.com/macros/s/AKfycbx7txO6BrZjh-EMSXpVWO00OVuQCBor8XOeSN7dt2KCMMLIT4uBnNwRxACHcgIvCZt1/exec';
 const PROD_API = 'https://script.google.com/macros/s/AKfycbzui0D7wBTHs02oqO87bbabZdvdvEW0FuHtmxMWfQAot30pm5C62AkjBvQSxltp8ldE/exec';
-const USE_TEST = true;
+const USE_TEST = false;
 const API = IS_DEV ? '/api' : (USE_TEST ? TEST_API : PROD_API);
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -399,6 +409,7 @@ function prep(d) {
   // 舊資料裡可能混進教練稱呼（赖＝賴）或「女」「男」這種切剩的字 → 不當成學員
   const coachKeys = new Set((d.coaches || []).map(c => E.nameKey(c.code || c.name)).filter(Boolean));
   d.tennis.forEach(t => t.players = t.players.map(d.resolve).filter(n => !coachKeys.has(E.nameKey(n)) && !/^[女男]$/.test(n)));
+  d.tests = d.tests || {};
   d.latest = {};
   Object.keys(d.radar).forEach(n => { const h = d.radar[n]; d.latest[n] = h[h.length - 1]; });
   // 程度沒填 → 用檢測總分暫估
@@ -756,7 +767,7 @@ function suggestion(s) {
   const key = s.id + '|' + s.players.join(',');
   if (!st.sugg[key]) {
     const radar = {}; Object.keys(st.day.latest).forEach(n => radar[n] = st.day.latest[n]);
-    st.sugg[key] = E.suggestSession({ date: st.date, slot: s, roster: st.day.roster, logs: st.day.logs, radar, monitor: st.day.monitor });
+    st.sugg[key] = E.suggestSession({ date: st.date, slot: s, roster: st.day.roster, logs: st.day.logs, radar, monitor: st.day.monitor, tests: st.day.tests });
   }
   return st.sugg[key];
 }
@@ -766,12 +777,16 @@ function renderSess() {
   if (!s) { $('#app').innerHTML = `<div class="card empty"><b>這天還沒有排課</b>先到「排課」排好時段。</div>`; return; }
   const g = suggestion(s);
   const chosen = s.option ? s.option.charAt(0) : g.recommend;
+  const goal = s.goal || g.goal;
   $('#app').innerHTML = `<div class="stack">
     ${slotSeg()}
     <section class="card stack">
       <div class="row between"><div><p class="eyebrow" style="margin:0">${esc(s.start)}–${esc(s.end)}・${esc(s.team || s.group)}・${s.players.length} 人</p><h2>今天建議：${esc(g.type === '速度爆發' ? '速度＋爆發' : g.type)}${g.focus && s.group !== '小朋友' ? '，重點「' + esc(g.focus) + '」' : ''}</h2></div>
         <span class="sm mut">帶課：${esc((s.coaches || []).join('＋') || '還沒派')}</span></div>
       <div class="note">${esc(g.why)}</div>
+      <div class="stack" style="gap:6px"><p class="eyebrow" style="margin:0">這堂的目的（先定目的，再給方法）</p>
+        <div class="goals" role="group" aria-label="這堂的目的">${E.GOALS.map(x => `<button data-goal="${x}" aria-pressed="${x === goal}">${x}</button>`).join('')}</div>
+        <div class="tip">${esc(E.GOAL_TIP[goal])}${E.QUALITY[goal] ? `<br><span class="sm mut">回填時記每個人的${E.QUALITY[goal].label}，和第幾趟開始掉。</span>` : ''}</div></div>
       ${g.recentDays.length ? `<div class="recent"><span class="sm mut">最近：</span>${g.recentDays.map(r => `<span class="pill idle">${r.date.slice(5).replace('-', '/')} ${esc(r.main)}</span>`).join('')}</div>` : ''}
     </section>
     <div class="opts">${g.options.map(o => `<button class="opt" aria-pressed="${o.level === chosen}" data-lv="${o.level}">
@@ -781,11 +796,12 @@ function renderSess() {
     <p class="sm mut" style="margin:0">動作先用體能訓練紀錄裡最常出現的動作；Adam 的動作庫定版後換成正式動作卡。</p>
     <section class="stack"><div class="row between"><h2>每個人的調整</h2><span class="sm mut">檢測＝05 雷達分數・負荷＝體能訓練紀錄</span></div>
       <div class="people">${g.people.map(personCard).join('')}</div></section>
-    <div class="actbar"><div class="actbar-in"><div class="st"><b>選了「${esc(chosen)}」</b>${s.option ? '已記在這堂' : '還沒存，按右邊記下來'}</div><button class="btn lime" id="useOpt">用這個課表 → 回填</button></div></div>
+    <div class="actbar"><div class="actbar-in"><div class="st"><b>【${esc(goal)}】選了「${esc(chosen)}」</b>${s.option ? '已記在這堂' : '還沒存，按右邊記下來'}</div><button class="btn lime" id="useOpt">用這個課表 → 回填</button></div></div>
   </div>`;
   bindSeg();
   document.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { const o = g.options.find(x => x.level === b.dataset.lv); s.option = o.level + '・' + o.title; render(); });
-  $('#useOpt').onclick = async () => { const o = g.options.find(x => x.level === chosen); s.option = o.level + '・' + o.title; await savePlan(st.planStatus || '草案', true); go('fill'); };
+  document.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { s.goal = b.dataset.goal; st.dirty = true; render(); });
+  $('#useOpt').onclick = async () => { const o = g.options.find(x => x.level === chosen); s.option = o.level + '・' + o.title; s.goal = goal; await savePlan(st.planStatus || '草案', true); go('fill'); };
   document.querySelectorAll('[data-pp]').forEach(b => b.onclick = () => { st.curPlayer = b.dataset.pp; go('player'); });
 }
 function personCard(x) {
@@ -809,21 +825,23 @@ function renderFill() {
   const g = suggestion(s);
   const lv = s.option ? s.option.charAt(0) : g.recommend;
   const o = g.options.find(x => x.level === lv);
+  const goal = s.goal || g.goal, Q = E.QUALITY[goal], qi = Q ? E.qualityItem(o, goal) : null;
   const key = s.id;
   const F = st.fill[key] = st.fill[key] || {};
   const defR = lv === '重' ? 7 : lv === '中' ? 6 : 4;
   s.players.forEach(n => { if (!F[n]) F[n] = { status: '出席', rpe: defR, done: s.partial && s.partial[n] ? '部分完成' : '全部完成', note: s.partial && s.partial[n] ? '只上 ' + s.partial[n] + ' 分鐘' : '' }; });
   const done = st.day.backfilled.includes(s.id);
   const nOn = s.players.filter(n => F[n].status === '出席').length;
-  const nRows = E.backfillRows(st.date, s, o, F).length;
+  const nRows = E.backfillRows(st.date, s, o, F, goal).length;
   $('#app').innerHTML = `<div class="stack">
     ${slotSeg()}
     <section class="card stack">
-      <div class="row between"><div><p class="eyebrow" style="margin:0">${esc(s.start)} ${esc(s.team || s.group)}・課表「${esc(o.level + '・' + o.title)}」</p><h2>練完回填</h2></div>${done ? '<span class="pill ok">✓ 已回填過，再存會覆蓋</span>' : '<span class="pill idle">還沒回填</span>'}</div>
+      <div class="row between"><div><p class="eyebrow" style="margin:0">${esc(s.start)} ${esc(s.team || s.group)}・【${esc(goal)}】課表「${esc(o.level + '・' + o.title)}」</p><h2>練完回填</h2></div>${done ? '<span class="pill ok">✓ 已回填過，再存會覆蓋</span>' : '<span class="pill idle">還沒回填</span>'}</div>
       <p class="sm mut" style="margin:0">動作、組數已經照課表帶好。只要改有狀況的人：請假、缺席、沒做完、RPE 不一樣。</p>
+      ${Q ? `<div class="tip">${esc(goal)}課要記品質：每個人「${esc(qi.name)}」的${esc(Q.label)}（${esc(Q.unit)}），還有第幾趟開始掉、就停。沒量就空著。</div>` : ''}
       <details class="sm"><summary>這堂的動作（${o.items.filter(x => !x.warm).length} 個）</summary><ol style="margin:8px 0 0;padding-left:20px">${o.items.filter(x => !x.warm).map(x => `<li>${itemTxt(x)}</li>`).join('')}</ol></details>
     </section>
-    <div class="fill">${s.players.map(n => fillRow(n, F[n])).join('')}</div>
+    <div class="fill">${s.players.map(n => fillRow(n, F[n], Q)).join('')}</div>
     <div class="actbar"><div class="actbar-in"><div class="st"><b>${nOn}/${s.players.length} 人出席</b>會寫入 ${nRows} 列到體能訓練紀錄</div><button class="btn lime" id="saveFill">${done ? '更新回填' : '寫進訓練紀錄'}</button></div></div>
   </div>`;
   bindSeg();
@@ -831,20 +849,24 @@ function renderFill() {
   document.querySelectorAll('[data-rpe]').forEach(b => b.onclick = () => { const f = F[b.dataset.n]; f.rpe = Math.max(1, Math.min(10, f.rpe + (+b.dataset.rpe))); renderFill(); });
   document.querySelectorAll('[data-done]').forEach(el => el.onchange = () => { F[el.dataset.done].done = el.value; });
   document.querySelectorAll('[data-note]').forEach(el => el.oninput = () => { F[el.dataset.note].note = el.value; });
+  document.querySelectorAll('[data-best]').forEach(el => el.oninput = () => { F[el.dataset.best].best = el.value.trim(); });
+  document.querySelectorAll('[data-drop]').forEach(el => el.onchange = () => { F[el.dataset.drop].drop = el.value; });
   $('#saveFill').onclick = async () => {
-    const rows = E.backfillRows(st.date, s, o, F);
+    const rows = E.backfillRows(st.date, s, o, F, goal);
     $('#saveFill').disabled = true; $('#saveFill').textContent = '寫入中…';
-    try { const r = await api('saveBackfill', { date: st.date, slotId: s.id, rows }); if (!st.day.backfilled.includes(s.id)) st.day.backfilled.push(s.id); toast('已寫入 ' + r.count + ' 列（測試分頁：體能訓練紀錄_回填測試）', 3200); renderFill(); }
+    try { const r = await api('saveBackfill', { date: st.date, slotId: s.id, rows }); if (!st.day.backfilled.includes(s.id)) st.day.backfilled.push(s.id); toast('已寫入 ' + r.count + ' 列' + (USE_TEST ? '（測試分頁：體能訓練紀錄_回填測試）' : '到體能訓練紀錄'), 3200); st.day.logs = st.day.logs.filter(l => !(l.date === st.date && s.players.includes(l.player) && /^【/.test(l.rx || ''))).concat(rows.map(r => ({ date: r[0], team: r[2], player: r[3], exercise: r[4], sets: r[7], reps: r[8], rpe: r[12], dist: r[9], time: r[10], rx: r[11], note: r[13] }))); renderFill(); }
     catch (e) { toast('寫不進去：' + e.message); $('#saveFill').disabled = false; }
   };
 }
-function fillRow(n, f) {
+function fillRow(n, f, Q) {
   const off = f.status !== '出席';
   return `<div class="frow ${off ? 'off' : ''}">
     <div class="nm">${esc(n)}<small>${f.status === '出席' ? esc(f.done) : esc(f.status)}</small></div>
     <div class="tog" role="group" aria-label="${esc(n)} 出席">${['出席', '請假', '缺席'].map(a => `<button data-att="${a}" data-n="${esc(n)}" class="${a === '缺席' ? 'abs' : ''}" aria-pressed="${f.status === a}">${a}</button>`).join('')}</div>
     <div class="rpe">${off ? '' : `<div class="step" aria-label="${esc(n)} RPE"><button data-rpe="-1" data-n="${esc(n)}" aria-label="RPE 減一">−</button><output>${f.rpe}</output><button data-rpe="1" data-n="${esc(n)}" aria-label="RPE 加一">＋</button></div>`}</div>
     ${off ? `<div class="more"><input type="text" data-note="${esc(n)}" value="${esc(f.note)}" placeholder="原因（選填）"></div>` : `<div class="more"><select data-done="${esc(n)}">${['全部完成', '部分完成', '依個別調整'].map(x => `<option ${x === f.done ? 'selected' : ''}>${x}</option>`).join('')}</select><input type="text" data-note="${esc(n)}" value="${esc(f.note)}" placeholder="備註（有狀況才寫）"></div>`}
+    ${!off && Q ? `<div class="q"><span class="mut">${esc(Q.label)}</span><input type="text" inputmode="decimal" data-best="${esc(n)}" value="${esc(f.best || '')}" placeholder="${Q.unit === '秒' ? '例 1.86' : '例 210'}" aria-label="${esc(n)} ${esc(Q.label)}"><span class="mut">${esc(Q.unit)}</span>
+      <select data-drop="${esc(n)}" aria-label="${esc(n)} 第幾趟開始掉"><option value="">沒有掉／沒注意</option>${[2, 3, 4, 5, 6, 7, 8, 10, 12].map(k => `<option value="${k}" ${String(f.drop) === String(k) ? 'selected' : ''}>第 ${k} 趟開始掉→停</option>`).join('')}</select></div>` : ''}
   </div>`;
 }
 
@@ -872,12 +894,21 @@ function renderPlayer() {
   else if (b) insight = `最近一次檢測 ${esc(b.date)}，弱項「${esc(b.weak || '—')}」。近 8 週練了 <b>${recent.length}</b> 堂。`;
   else insight = `還沒有檢測資料。近 8 週練了 <b>${recent.length}</b> 堂。建議排一次檢測，之後才看得出進步。`;
   const opts = d.roster.map(x => `<option ${x.name === n ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+  const trend = E.testTrend(d.tests[n]);
+  const gc = {}; recent.forEach(x => { if (x.goal) gc[x.goal] = (gc[x.goal] || 0) + 1; });
+  const bests = recent.filter(x => x.best).slice(-6).reverse();
+  const numsCard = `<section class="card stack"><div><h3>目標能力的數字</h3><p class="xs mut" style="margin:2px 0 0">檢測的原始成績（秒、公分），上一次 → 這一次。綠色＝進步。</p></div>
+    ${trend.length ? `<div class="nums">${trend.map(t => `<div><span>${esc(t.label)}</span><span class="num">${t.prev ? esc(E.fmtV(t.prev.v, t.unit)) + ' → ' : ''}<b>${esc(E.fmtV(t.last.v, t.unit))}</b> ${t.better === 1 ? '<span class="up">▲進步</span>' : t.better === -1 ? '<span class="dn">▼退步</span>' : t.prev ? '<span class="mut">持平</span>' : '<span class="mut">第一次</span>'}</span></div>`).join('')}</div>` : '<p class="sm mut">還沒有檢測數字。</p>'}
+    <div><h3 style="margin-bottom:6px">近 8 週練的目的</h3>${Object.keys(gc).length ? `<div class="chips">${E.GOALS.filter(g => gc[g]).map(g => `<span class="pill idle">${g} ${gc[g]} 堂</span>`).join('')}</div>` : '<p class="sm mut">還沒有標目的的課（從這版開始，排課台每堂都會記目的）。</p>'}</div>
+    ${bests.length ? `<div><h3 style="margin-bottom:6px">訓練中的最佳成績</h3><div class="hist">${bests.map(x => `<div><span class="num">${x.date.slice(5).replace('-', '/')}</span><span>${esc(x.best.exercise)}</span><span class="num"><b>${esc(E.fmtV(x.best.v, x.best.unit))}</b>${x.drop ? ' <span class="mut">第 ' + esc(x.drop) + ' 趟掉</span>' : ''}</span></div>`).join('')}</div></div>` : ''}
+  </section>`;
   $('#app').innerHTML = `<div class="stack">
     <section class="card stack">
       <div class="ph"><div class="av">${esc((n || '?').slice(0, 1))}</div><div style="flex:1;min-width:140px"><h2>${esc(n)}</h2><div class="sm mut">${esc(p.group || '')}${p.team ? '・' + esc(p.team) : ''}${p.level ? '・程度 ' + esc(p.level) + (p.levelGuess ? '（檢測暫估）' : '') : ''}${p.growth ? '・▲生長期' : ''}</div></div>
         <label class="sm mut">換人 <select id="pSel">${opts}</select></label></div>
       <div class="insight">${insight}</div>
     </section>
+    ${numsCard}
     <div class="pgrid">
       <section class="card"><h3>檢測：${a ? '上次 vs 這次' : '最近一次'}</h3>
         ${b ? `<div class="legend">${a ? `<span class="a">${esc(a.date)}</span>` : ''}<span class="b">${esc(b.date)}</span><span>中線＝同齡平均 50</span></div>
@@ -890,13 +921,12 @@ function renderPlayer() {
       </section>
     </div>
     <section class="card stack"><div class="row between"><h3>最近的課</h3><button class="btn sec" id="parentCopy">複製家長版摘要</button></div>
-      <div class="hist">${sessions.slice(-12).reverse().map(x => `<div><span class="num">${x.date.slice(5).replace('-', '/')}</span><span>${esc(x.main)}</span><span class="num mut">${isFinite(x.rpe) ? 'RPE ' + x.rpe.toFixed(1) : '沒記 RPE'}</span></div>`).join('') || '<p class="sm mut">還沒有紀錄。</p>'}</div>
+      <div class="hist">${sessions.slice(-12).reverse().map(x => `<div><span class="num">${x.date.slice(5).replace('-', '/')}</span><span>${x.goal ? '【' + esc(x.goal) + '】' : ''}${esc(x.main)}${x.best ? ' ・最佳 ' + esc(E.fmtV(x.best.v, x.best.unit)) : ''}</span><span class="num mut">${isFinite(x.rpe) ? 'RPE ' + x.rpe.toFixed(1) : '沒記 RPE'}</span></div>`).join('') || '<p class="sm mut">還沒有紀錄。</p>'}</div>
     </section>
   </div>`;
   $('#pSel').onchange = e => { st.curPlayer = e.target.value; renderPlayer(); };
   $('#parentCopy').onclick = () => {
-    const txt = `${n} 體能近況（${dLabel(st.date)}）\n・近 8 週上了 ${recent.length} 堂體能\n` + (b ? `・最近檢測 ${b.date}：強項「${b.strong || '—'}」、加強中「${b.weak || '—'}」\n` : '') +
-      (a && b && a.weak ? `・${a.weak}：${fmtS(a.scores[a.weak])} → ${fmtS(b.scores[a.weak])}\n` : '') + `・最近主要練：${Object.keys(mix).sort((x, y) => mix[y] - mix[x]).slice(0, 2).join('、') || '—'}\n——奕晉體能部`;
+    const txt = E.parentSummary({ name: n, date: st.date, dateLabel: dLabel(st.date), sessions, tests: d.tests[n] });
     try { navigator.clipboard.writeText(txt).then(() => toast('已複製家長版摘要'), () => showText(txt)); } catch (e) { showText(txt); }
   };
 }

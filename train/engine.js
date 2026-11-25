@@ -391,13 +391,68 @@
       { name: '熊爬＋螃蟹走', sets: 3, reps: 10, unit: '公尺' }]
   };
 
+  // ───── 每堂的目的（奕晉理念：先定目的，再給方法；速度爆發看品質，不看多累） ─────
+  const GOALS = ['速度', '爆發', '力量', '心肺', '協調'];
+  const GOAL_TIP = {
+    '速度': '每趟之間休息 1–2 分鐘、每趟都全力；時間開始變慢就停，不用做滿。',
+    '爆發': '每組之間休息夠、每一下都要跳最遠／丟最用力；力量掉了就停。',
+    '力量': '動作標準再加重，最後 1–2 下還能控制。',
+    '心肺': '這堂就是要喘，照間歇時間跑完。',
+    '協調': '動作品質優先，做對比做多重要。'
+  };
+  const CAT2GOAL = { '速度': '速度', '爆發': '爆發', '力量': '力量', '有氧': '心肺' };
+  function defaultGoal(type) { return type === '力量' ? '力量' : type === '小朋友綜合' ? '協調' : '速度'; }
+  function goalOf(rx) { const m = String(rx || '').match(/【(速度|爆發|力量|心肺|協調)】/); return m ? m[1] : ''; }
+  // 速度課記最佳秒數（越少越好）、爆發課記最佳距離
+  const QUALITY = { '速度': { col: 10, key: 'time', unit: '秒', label: '最佳時間', lower: true }, '爆發': { col: 9, key: 'dist', unit: 'cm', label: '最佳距離', lower: false } };
+  function qualityItem(option, goal) {
+    const items = option.items.filter(x => !x.warm);
+    return items.find(x => category(x.name) === goal) || items[0];
+  }
+
+  // ───── 檢測原始數字（02 檢測紀錄）：用秒數、公分看進步 ─────
+  const TEST_METRICS = [
+    { k: 'sprint10', label: '10m 衝刺', unit: '秒', lower: true, goal: '速度', tol: 0.03 },
+    { k: 'agility', label: '5-10-5 變向', unit: '秒', lower: true, goal: '速度', tol: 0.05 },
+    { k: 'cmj', label: '擺臂縱跳', unit: 'cm', lower: false, goal: '爆發', tol: 1 },
+    { k: 'broad', label: '立定跳遠', unit: 'cm', lower: false, goal: '爆發', tol: 3 },
+    { k: 'rot', label: '轉體拋擲', unit: 'm', lower: false, goal: '爆發', tol: 0.2 },
+    { k: 'serve', label: '發球拋擲', unit: 'm', lower: false, goal: '爆發', tol: 0.2 },
+    { k: 'ift', label: '30-15 心肺', unit: 'km/h', lower: false, goal: '心肺', tol: 0.4 }
+  ];
+  const r2 = v => Math.round(v * 100) / 100;
+  /** tests=[{date, sprint10, agility, ...}] → 每一項：第一次、上一次、這一次、有沒有進步 */
+  function testTrend(tests) {
+    const list = (tests || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    return TEST_METRICS.map(m => {
+      const pts = list.map(t => ({ date: t.date, v: parseFloat(t[m.k]) })).filter(x => isFinite(x.v) && x.v > 0);
+      if (!pts.length) return null;
+      const last = pts[pts.length - 1], prev = pts.length > 1 ? pts[pts.length - 2] : null, first = pts[0];
+      const d = prev ? r2(last.v - prev.v) : null;
+      const better = d == null ? null : Math.abs(d) < m.tol ? 0 : ((m.lower ? -d : d) > 0 ? 1 : -1);
+      return Object.assign({}, m, { pts, first, prev, last, delta: d, better });
+    }).filter(Boolean);
+  }
+  function fmtN(v, unit) { return unit === '秒' || unit === 'm' || unit === 'km/h' ? (Math.round(v * 100) / 100).toFixed(2) : String(Math.round(v)); }
+  function fmtV(v, unit) { return fmtN(v, unit) + ' ' + unit; }
+  function trendText(t) {
+    if (!t.prev) return t.label + ' ' + fmtV(t.last.v, t.unit) + '（第一次測）';
+    const diff = Math.abs(t.delta);
+    const word = t.better === 0 ? '持平' : t.lower ? (t.better > 0 ? '快了 ' : '慢了 ') + fmtV(diff, t.unit) : (t.better > 0 ? '多了 ' : '少了 ') + fmtV(diff, t.unit);
+    return t.label + ' ' + fmtN(t.prev.v, t.unit) + ' → ' + fmtV(t.last.v, t.unit) + '（' + word + '）';
+  }
+
   /** 每人每天的 session 負荷（sRPE＝平均 RPE × 時長） */
   function sessionLoads(logs, durOf) {
     const by = {};
     (logs || []).forEach(r => {
-      const d = normDate(r.date); if (!d || !r.player) return;
+      const d = normDate(r.date); if (!d || !r.player || /^（(請假|缺席)）$/.test(r.exercise || '')) return;
       const k = r.player + '|' + d;
-      const o = by[k] = by[k] || { player: r.player, date: d, rpe: [], cats: {}, team: r.team };
+      const o = by[k] = by[k] || { player: r.player, date: d, rpe: [], cats: {}, team: r.team, goal: '', best: null, drop: '' };
+      const g = goalOf(r.rx); if (g) o.goal = g;
+      const q = QUALITY[g]; const qv = q ? parseFloat(r[q.key]) : NaN;
+      if (q && isFinite(qv) && qv > 0 && (!o.best || (q.lower ? qv < o.best.v : qv > o.best.v))) o.best = { v: qv, unit: q.unit, exercise: r.exercise, label: q.label };
+      const dm = String(r.note || '').match(/第\s*(\d+)\s*趟開始掉/); if (dm) o.drop = dm[1];
       const v = parseFloat(r.rpe); if (isFinite(v)) o.rpe.push(v);
       const c = category(r.exercise || ''); o.cats[c] = (o.cats[c] || 0) + 1;
     });
@@ -405,7 +460,8 @@
       const rpe = o.rpe.length ? o.rpe.reduce((a, b) => a + b, 0) / o.rpe.length : NaN;
       const dur = durOf ? durOf(o.player) : 90;
       const main = Object.keys(o.cats).filter(c => c !== '其他').sort((a, b) => o.cats[b] - o.cats[a])[0] || '其他';
-      return { player: o.player, date: o.date, rpe, load: isFinite(rpe) ? Math.round(rpe * dur) : 0, main, team: o.team };
+      return { player: o.player, date: o.date, rpe, load: isFinite(rpe) ? Math.round(rpe * dur) : 0, main, team: o.team,
+        goal: o.goal || CAT2GOAL[main] || '', goalTagged: !!o.goal, best: o.best, drop: o.drop };
     });
   }
 
@@ -479,6 +535,8 @@
         if (r.weak && r.weak === focus && !kids) notes.push('弱項「' + r.weak + '」就是這堂重點');
         else if (r.weak && WEAK_ADD[r.weak] && !kids) notes.push('弱項「' + r.weak + '」→ 最後加 1 組 ' + WEAK_ADD[r.weak].name);
       }
+      const tr = testTrend((ctx.tests || {})[n]);
+      tr.filter(t => t.better === -1).forEach(t => { flags.push(['warn', t.label + ' 退步']); notes.push('上次檢測 ' + trendText(t) + '，這項要多練'); });
       if (!notes.length) notes.push('照團體課');
       return { name: n, level: p.level || '', weak: r ? r.weak : '', testDate: r ? r.date : '', sleep: m ? m.sleep : '', sore: m ? m.sore : '',
         acute: ls.acute, chronic: ls.chronic, ratio: ls.ratio, last: ls.last, flags, notes, suggest };
@@ -488,28 +546,58 @@
     let why = typeWhy;
     if (focus && !kids) why += ' 有 ' + weakCount[focus] + ' 人的檢測弱項是「' + focus + '」，所以把它放在第二個動作。';
     if (withData < s.players.length) why += ' （' + (s.players.length - withData) + ' 人還沒有檢測資料）';
-    return { type, why, focus, recentDays, options, recommend, people };
+    const goal = defaultGoal(type);
+    return { type, why, focus, recentDays, options, recommend, people, goal, goalTip: GOAL_TIP[goal] };
   }
 
-  /** 回填 → 體能訓練紀錄的列（欄位跟正式表一樣） */
-  function backfillRows(date, slot, option, att) {
+  /** 回填 → 體能訓練紀錄的列（欄位跟正式表一樣）。goal＝這堂的目的，寫在「處方」最前面【速度】 */
+  function backfillRows(date, slot, option, att, goal) {
     const rows = [];
     const label = slot.team || (slot.group + ' ' + slot.start);
+    const rx = (goal ? '【' + goal + '】' : '') + option.level + '・' + option.title;
+    const q = QUALITY[goal], qi = q ? qualityItem(option, goal) : null;
     slot.players.forEach(n => {
       const a = att[n] || {};
       if (a.status && a.status !== '出席') {
-        rows.push([date, '週' + weekday(date), label, n, '（' + a.status + '）', '', '', '', '', '', '', option.level + '・' + option.title, '', a.note || '', '排課台回填']);
+        rows.push([date, '週' + weekday(date), label, n, '（' + a.status + '）', '', '', '', '', '', '', rx, '', a.note || '', '排課台回填']);
         return;
       }
       option.items.filter(x => !x.warm).forEach(x => {
-        rows.push([date, '週' + weekday(date), label, n, x.name, '—', '', String(x.sets), String(x.reps) + (x.unit && x.unit !== '次' ? x.unit : ''), '', '', option.level + '・' + option.title,
-          String(a.rpe || ''), [a.done && a.done !== '全部完成' ? a.done : '', a.note || ''].filter(Boolean).join('；'), '排課台回填']);
+        const row = [date, '週' + weekday(date), label, n, x.name, '—', '', String(x.sets), String(x.reps) + (x.unit && x.unit !== '次' ? x.unit : ''), '', '', rx,
+          String(a.rpe || ''), '', '排課台回填'];
+        const notes = [a.done && a.done !== '全部完成' ? a.done : '', a.note || ''];
+        if (x === qi) {
+          const bv = parseFloat(a.best);
+          if (isFinite(bv) && bv > 0) row[q.col] = String(bv);
+          if (a.drop) notes.push('第 ' + a.drop + ' 趟開始掉→停');
+        }
+        row[13] = notes.filter(Boolean).join('；');
+        rows.push(row);
       });
     });
     return rows;
   }
 
+  /** 家長版摘要：講目標能力的數字，不講多累 */
+  function parentSummary(o) {
+    const n = o.name, sess = (o.sessions || []).filter(x => (!x.player || x.player === n) && x.date >= addDays(o.date, -56) && x.date <= o.date);
+    const gc = {}; sess.forEach(x => { if (x.goal) gc[x.goal] = (gc[x.goal] || 0) + 1; });
+    const lines = [n + ' 體能近況（' + o.dateLabel + '）'];
+    lines.push('・近 8 週上了 ' + sess.length + ' 堂體能' + (Object.keys(gc).length ? '：' + GOALS.filter(g => gc[g]).map(g => g + ' ' + gc[g] + ' 堂').join('、') : ''));
+    const tr = testTrend(o.tests);
+    const up = tr.filter(t => t.better === 1), flat = tr.filter(t => t.prev && t.better !== 1);
+    if (up.length) lines.push('・檢測進步：' + up.slice(0, 3).map(trendText).join('；'));
+    // 家長版不列退步幅度（教練頁看得到），只講目前的數字
+    if (!up.length && tr.length) lines.push('・最近檢測：' + tr.slice(0, 3).map(t => t.label + ' ' + fmtV(t.last.v, t.unit)).join('、'));
+    const bests = sess.filter(x => x.best).sort((a, b) => b.date.localeCompare(a.date));
+    if (bests.length) { const b = bests[0]; lines.push('・訓練中最好的一次：' + b.date.slice(5).replace('-', '/') + ' ' + b.best.exercise.replace(/^[A-Za-z0-9 \-]+(?=[一-鿿])/, '') + ' ' + fmtV(b.best.v, b.best.unit)); }
+    if (flat.length) lines.push('・接下來加強：' + flat.slice(0, 2).map(t => t.label).join('、'));
+    lines.push('——奕晉體能部');
+    return lines.join('\n');
+  }
+
   const API = { CFG, availability, fmt, toMin, weekday, addDays, daysBetween, normDate, nameIndex, nameKey, toTrad, parseTennisText, schedule, recheck, toChatText,
-    category, sessionLoads, loadStatus, suggestSession, backfillRows, WEAK_ADD };
+    category, sessionLoads, loadStatus, suggestSession, backfillRows, WEAK_ADD,
+    GOALS, GOAL_TIP, QUALITY, goalOf, defaultGoal, qualityItem, TEST_METRICS, testTrend, trendText, fmtV, parentSummary };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.TrainEngine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
