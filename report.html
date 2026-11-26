@@ -88,6 +88,8 @@ td.zone{width:52mm}.zb{position:relative;display:flex;height:3.6mm;border-radius
 td.rd{white-space:nowrap}td.rd .tg{display:inline-block;border-radius:1.4mm;padding:.2mm 2.2mm;font-size:10px;font-weight:900;margin:0 1.5mm .3mm 0}td.rd small{font-size:9.5px;font-weight:600}
 td.rd em{display:block;font-style:normal;font-size:8px;color:#6a7b72;margin-top:.3mm;white-space:normal}
 .empty-key{font-size:10.5px;color:var(--muted);padding:2mm 1.5mm;line-height:1.5}
+.card td.val.lr2{font-size:12px;white-space:nowrap;padding-right:3mm}
+.kn{margin-top:1.6mm;padding-top:1.2mm;border-top:.3mm dashed #d5ddd5;font-size:9.5px;color:var(--muted);line-height:1.5;display:flex;flex-wrap:wrap;gap:0 4mm}
 .bgrid{display:grid;grid-template-columns:repeat(3,1fr);column-gap:4mm}.bgrid .o{grid-template-columns:5mm 1fr auto}
 .card.base{flex:1;min-height:0}.ob.dense .o{padding:.45mm 0}.ob.dense .on{font-size:8.8px}.ob.dense .ov{font-size:10px}.ob.dense .o small{font-size:7.8px}
 body.mob .bgrid{grid-template-columns:1fr}
@@ -133,6 +135,9 @@ body.mob tr{padding:8px 0;border-bottom:1px solid #e5ebe5;display:grid;grid-temp
 body.mob tbody tr:last-child{border-bottom:0}
 body.mob td{border:0!important;padding:0!important}
 body.mob td.zone{grid-column:1/3}
+body.mob td.it{display:flex!important;align-items:center;gap:8px}
+body.mob td.it .ic,body.mob .o .oi{width:22px;height:22px;flex:none;display:inline-block}
+body.mob td.val.lr2{font-size:14px}
 body.mob td.rd{grid-column:1/3;white-space:normal}
 body.mob td.val{text-align:right;align-self:center}
 body.mob .ob{overflow:visible}
@@ -234,7 +239,20 @@ const T = {
     join: a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1],
     injLand: s => `${s}-leg landing stabilisation asymmetry`, injForce: s => `landing force asymmetry (${s})`, injDJ: s => `single-leg drop-jump asymmetry (${s})`, injLat: s => `lateral bound asymmetry (${s})`,
     injMob: (n, how) => `restricted ${n} (${how})`, bilat: 'bilateral',
-    dateFmt: d => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/,/g, '')
+    dateFmt: d => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/,/g, ''),
+    // 2026-11-25 未滿 12 歲：沒有國際對照 → 改跟學院同組別比
+    acadHow: 'International reference data are not available for this age group, so results are compared with <b>Yijin Academy players in the same age group</b> (academy data, not an international standard).',
+    acadSub: 'vs. Yijin Academy players in the same age group',
+    acadTiers: [['Excellent', 'Top 25% of academy group'], ['Above avg.', 'Better than half'], ['Average', 'Near the group mean'], ['Focus area', 'Most room to improve']],
+    acadThPos: 'Position within the academy age group',
+    acadTierWords: [['Excellent', 'Top quartile of the academy age group'], ['Above average', 'Above the academy age-group mean'], ['Average', 'Near the academy age-group mean'], ['Focus area', 'Bottom quartile — development priority']],
+    acadN: n => `academy age group, n = ${n}`,
+    acadStrength: (l, ex) => `${l}: <em>${ex ? 'top quartile' : 'above average'}</em> within the academy age group.`,
+    acadStrengthNone: 'No test above the academy age-group average yet — this report sets the baseline.',
+    acadPriority: l => `Most room to improve: ${l}.`,
+    acadFew: 'Not enough academy players in this age group to compare yet.',
+    notTestedLine: l => `Not tested this session: ${l}.`,
+    amendLine: l => `Completed later: ${l}.`
   },
   'zh-Hant': {
     back: '返回', print: '存成 PDF／列印', pdf: '下載 PDF', printOnly: '列印', pdfBusy: 'PDF 產生中…', pdfErr: 'PDF 產生失敗，請再試一次。', loading: '報告載入中…', loadingHint: '正在讀取檢測資料庫，大約 5～10 秒。',
@@ -278,11 +296,23 @@ const T = {
     join: a => a.join('、'),
     injLand: s => `${s}單腳落地後站穩比較慢`, injForce: s => `落地衝擊${s}偏大`, injDJ: s => `單腳落地再跳${s}較弱`, injLat: s => `側向跳${s}較弱`,
     injMob: (n, how) => `${n}${how}`, bilat: '兩側都偏緊',
-    dateFmt: d => `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日（週${'日一二三四五六'[d.getDay()]}）`
+    dateFmt: d => `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日（週${'日一二三四五六'[d.getDay()]}）`,
+    acadHow: '這個年齡目前沒有可靠的國際對照，所以改跟<b>奕晉學院同組別的球員</b>比一比（學院自己的資料，不是國際標準）。',
+    acadSub: '和奕晉學院同組別的球員比',
+    acadTiers: [['領先', '學院同組別的前 25%'], ['中上', '比一半以上的人好'], ['中間', '接近平均'], ['加油區', '最有進步空間']],
+    acadThPos: '在學院同組別中的位置',
+    acadTierWords: [['領先', '在學院同組別的前 25%'], ['中上', '比學院一半以上的同組別球員好'], ['中間', '接近學院同組別平均'], ['加油區', '最有進步空間的項目']],
+    acadN: n => `學院同組別 ${n} 人`,
+    acadStrength: (l, ex) => `${l}在學院同組別裡<em>${ex ? '前 25%' : '平均以上'}</em>。`,
+    acadStrengthNone: '目前還沒有項目超過學院同組別平均，這次的成績就是起點。',
+    acadPriority: l => `${l}是目前最有進步空間的項目。`,
+    acadFew: '學院同組別的人數還不夠，這項先不比較。',
+    notTestedLine: l => `本次未測：${l}。`,
+    amendLine: l => `補測：${l}。`
   }
 };
 // 簡體：由繁體逐字轉（只轉報告用到的字），避免維護兩份
-const S2PAIRS = '來来 個个 側侧 傷伤 僅仅 優优 兩两 別别 動动 勢势 區区 參参 單单 國国 報报 夠够 學学 對对 幹干 庫库 彈弹 彎弯 後后 復复 慣惯 應应 拋抛 撐撑 擊击 擲掷 擺摆 時时 晉晋 標标 檢检 歲岁 沒没 況况 測测 獻献 現现 發发 盤盘 確确 積积 穩稳 節节 約约 組组 統统 網网 緊紧 練练 縱纵 績绩 繼继 續续 腳脚 與与 藥药 衝冲 裡里 複复 見见 記记 設设 評评 試试 話话 認认 請请 讀读 變变 資资 賽赛 蹤踪 躍跃 軀躯 較较 載载 轉转 這这 連连 週周 進进 過过 遠远 選选 還还 邊边 錄录 長长 門门 開开 間间 關关 際际 雙双 離离 項项 預预 領领 顏颜 顯显 體体 髖髋 麼么 點点 齡龄';
+const S2PAIRS = '準准 條条 員员 補补 於于 來来 個个 側侧 傷伤 僅仅 優优 兩两 別别 動动 勢势 區区 參参 單单 國国 報报 夠够 學学 對对 幹干 庫库 彈弹 彎弯 後后 復复 慣惯 應应 拋抛 撐撑 擊击 擲掷 擺摆 時时 晉晋 標标 檢检 歲岁 沒没 況况 測测 獻献 現现 發发 盤盘 確确 積积 穩稳 節节 約约 組组 統统 網网 緊紧 練练 縱纵 績绩 繼继 續续 腳脚 與与 藥药 衝冲 裡里 複复 見见 記记 設设 評评 試试 話话 認认 請请 讀读 變变 資资 賽赛 蹤踪 躍跃 軀躯 較较 載载 轉转 這这 連连 週周 進进 過过 遠远 選选 還还 邊边 錄录 長长 門门 開开 間间 關关 際际 雙双 離离 項项 預预 領领 顏颜 顯显 體体 髖髋 麼么 點点 齡龄';
 const S2MAP = {}; S2PAIRS.split(' ').forEach(p => { S2MAP[p[0]] = p[1]; });
 const toHans = s => typeof s === 'string' ? s.replace(/[一-鿿]/g, c => S2MAP[c] || c) : s;
 T['zh-Hans'] = (function () {
@@ -362,6 +392,7 @@ const params = new URLSearchParams(location.search);
 const testId = params.get('id') || '';
 let lang = (function () {
   const q = params.get('lang'); if (T[q]) return q;
+  if (params.get('app') === '1') return 'zh-Hant';   // 從教練 App 打開一律先顯示繁體（2026-11-25）
   try { const s = localStorage.getItem('yj_report_lang'); if (T[s]) return s; } catch (e) {}
   return 'en';
 })();
@@ -377,7 +408,8 @@ const TK = token();
 function applyChrome() {
   const t = T[lang];
   document.documentElement.lang = lang;
-  document.body.className = lang;
+  const keep = ['mob', 'pdfing'].filter(c => document.body.classList.contains(c));
+  document.body.className = [lang].concat(keep).join(' ');   // 換語言不要把手機版面、PDF 狀態洗掉
   document.querySelectorAll('[data-t]').forEach(el => { el.innerHTML = t[el.dataset.t] || ''; });
   document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang ? 'true' : 'false'));
 }
@@ -445,33 +477,33 @@ function build(d) {
   KEY.forEach(x => {
     if (x.v == null) return;
     if (x.n) { x.p = pr(x.n[0], x.n[1], x.v, x.low); x.tier = tierOf(x.p); key.push(x); }
-    else extra.push({ icon: x.icon, name: N[x.k][0], val: fmtN(x.v), unit: u(x.unit) });
+    else extra.push({ icon: x.icon, name: N[x.k][0], val: fmtN(x.v), unit: u(x.unit), pid: { s10: 'sprint10m', broad: 'broadJump', ift: 'IFT30_15' }[x.k] || '' });
   });
 
   // 其他測試
   const lr = (l, r) => { l = num(l); r = num(r); return { l, r }; };
-  const addLR = (icon, name, L, R, unit) => {
+  const addLR = (icon, name, L, R, unit, pid) => {
     const { l, r } = lr(L, R);
     if (l == null && r == null) return;
     if (l != null && r != null) {
       const lv = symLevel(asymPct(l, r));
-      extra.push({ icon, name, val: `${t.L} ${fmtN(l)}　${t.R} ${fmtN(r)}`, unit: u(unit), note: t.sym[lv] });
+      extra.push({ icon, name, val: `${t.L} ${fmtN(l)}　${t.R} ${fmtN(r)}`, unit: u(unit), note: t.sym[lv], pid });
     } else {
       const side = l != null ? t.L : t.R;
-      extra.push({ icon, name, val: `${side} ${fmtN(l != null ? l : r)}`, unit: u(unit), note: t.notTested(l != null ? t.Right : t.Left) });
+      extra.push({ icon, name, val: `${side} ${fmtN(l != null ? l : r)}`, unit: u(unit), note: t.notTested(l != null ? t.Right : t.Left), pid });
     }
   };
-  const add1 = (icon, name, v, unit) => { v = num(v); if (v != null) extra.push({ icon, name, val: fmtN(v), unit: u(unit) }); };
-  add1('jump', N.cmjArm, rec.cmjHeight, 'cm');
-  addLR('jump', N.lateral, rec.lateralJumpL, rec.lateralJumpR, 'cm');
-  add1('agi', N.spider, rec.spiderRun, 's');
-  addLR('agi', N.agility, rec.agility515L, rec.agility515R, 's');
+  const add1 = (icon, name, v, unit, pid) => { v = num(v); if (v != null) extra.push({ icon, name, val: fmtN(v), unit: u(unit), pid }); };
+  add1('jump', N.cmjArm, rec.cmjHeight, 'cm', 'cmjHeight');
+  addLR('jump', N.lateral, rec.lateralJumpL, rec.lateralJumpR, 'cm', 'lateralAvg');
+  add1('agi', N.spider, rec.spiderRun, 's', 'spiderRun');
+  addLR('agi', N.agility, rec.agility515L, rec.agility515R, 's', 'avg515');
   add1('agi', N.reactive, rec.agility515Reactive, 's');
   add1('run', N.s30, rec.sprint30m, 's');
-  addLR('str', N.rot, rec.rotationalThrowL, rec.rotationalThrowR, 'm');
-  add1('str', N.serveThrow, rec.servingThrow, 'm');
+  addLR('str', N.rot, rec.rotationalThrowL, rec.rotationalThrowR, 'm', 'rThrowAvg');
+  add1('str', N.serveThrow, rec.servingThrow, 'm', 'servingThrow');
   add1('ball', N.serveSpeed, rec.serveSpeed, 'kmh');
-  add1('str', N.grip, rec.gripStrength, 'kg');
+  add1('str', N.grip, rec.gripStrength, 'kg', 'gripStrength');
   add1('str', N.gripNd, rec.gripStrengthNd, 'kg');
   add1('jump', N.hop, rec.hop10_5, 'none');
   if (rec.pullUp) extra.push({ icon: 'str', name: N.pullUp, val: esc(rec.pullUp), unit: esc(rec.pullUpUnit || '') });
@@ -525,7 +557,7 @@ function build(d) {
 
   // 一眼看懂
   const good = key.filter(x => x.p >= 50);
-  const strengthsHTML = !key.length ? t.noIntlStrength : good.length
+  let strengthsHTML = !key.length ? t.noIntlStrength : good.length
     ? t.strengthsText(t.join(good.map(x => N.short[x.k])), good.every(x => x.p >= 75))
     : t.strengthsNone;
   let priorityHTML = t.priorityNone;
@@ -539,6 +571,41 @@ function build(d) {
   const KM0 = { sprint10m: N.short.s10, avg515: N.agility, spiderRun: N.spider, cmjHeight: N.cmjArm, broadJump: N.short.broad, lateralAvg: N.lateral, landAvg: N.land, nkgAvg: N.force, djAvg: N.dj, rThrowAvg: N.rot, servingThrow: N.serveThrow, IFT30_15: N.short.ift, gripStrength: N.grip, serveSpeed: N.serveSpeed, hop10_5: N.hop };
   if (!key.length) priorityHTML = t.noIntlPriority(t.join((rec.keyMetrics || []).map(k => KM0[k]).filter(Boolean).slice(0, 3)));
   const injuryHTML = injuries.length ? capFirst(zh ? injuries.join('；') : injuries.join('; ')) + t.injSuffix : t.injuryNone;
+
+  // 2026-11-25 沒有國際對照（未滿 12 歲等）→ 用學院同組別 PR（後台 peerMetrics，人數不夠的不比）畫色條
+  const ACAD = [['sprint10m', N.s10[0], 'run'], ['broadJump', N.broad[0], 'jump'], ['cmjHeight', N.cmjArm, 'jump'], ['avg515', N.agility, 'agi'],
+    ['IFT30_15', N.ift[0], 'heart'], ['rThrowAvg', N.rot, 'str'], ['servingThrow', N.serveThrow, 'str'], ['lateralAvg', N.lateral, 'jump'],
+    ['spiderRun', N.spider, 'agi'], ['gripStrength', N.grip, 'str']];
+  const acad = [];
+  if (!key.length) {
+    const pm = {}; (d.peerMetrics || []).forEach(m => { pm[m.id] = m; });
+    ACAD.forEach(([id, name, icon]) => {
+      const m = pm[id], e = extra.find(o => o.pid === id);
+      if (!m || m.pct == null || !e || acad.length >= 7) return;
+      const p = Math.max(0, Math.min(100, Math.round(m.pct)));
+      acad.push({ id, name, icon, p, tier: tierOf(p), n: m.n, val: e.val, unit: e.unit });
+    });
+    if (acad.length) {
+      const g2 = acad.filter(x => x.p >= 50);
+      strengthsHTML = g2.length ? t.acadStrength(t.join(g2.map(x => x.name)), g2.every(x => x.p >= 75)) : t.acadStrengthNone;
+      const w2 = acad.filter(x => x.p < 50).sort((a, b) => a.p - b.p).slice(0, 2);
+      if (w2.length && !(rec.keyMetrics || []).length) priorityHTML = t.acadPriority(t.join(w2.map(x => x.name)));
+    }
+  }
+  // 本次未測（常測項目）＋補測紀錄：讓家長知道哪些是空的、哪些是後來補的
+  const CORE = [[N.s10[0], ['sprint10m']], [N.agility, ['agility515L', 'agility515R']], [N.cmjArm, ['cmjHeight']], [N.broad[0], ['broadJump']],
+    [N.lateral, ['lateralJumpL', 'lateralJumpR']], [N.rot, ['rotationalThrowL', 'rotationalThrowR']], [N.serveThrow, ['servingThrow']]];
+  const notTested = CORE.filter(c => c[1].every(f => num(rec[f]) == null)).map(c => c[0]);
+  const FN = { sprint10m: N.s10[0], sprint20m: N.s20[0], broadJump: N.broad[0], cmjNoArm: N.cmj[0], IFT30_15: N.ift[0], cmjHeight: N.cmjArm, lateralJumpL: N.lateral, lateralJumpR: N.lateral,
+    spiderRun: N.spider, agility515L: N.agility, agility515R: N.agility, rotationalThrowL: N.rot, rotationalThrowR: N.rot, servingThrow: N.serveThrow, gripStrength: N.grip };
+  const amended = [];
+  (rec.amendments || []).filter(a => a.kind === '補測').forEach(a => {
+    const nm = FN[a.field] || (zh ? esc(a.label) : '');
+    const dt = String(a.at || '').slice(5, 10).replace('-', '/').replace(/^0/, '').replace(/\/0/, '/');
+    const s1 = nm ? `${nm}（${dt}）` : '';
+    if (s1 && amended.indexOf(s1) < 0) amended.push(s1);
+  });
+  const notes = [notTested.length ? t.notTestedLine(t.join(notTested)) : '', amended.length ? t.amendLine(t.join(amended)) : ''].filter(Boolean);
 
   // 下次複測重點：教練勾的優先，沒有就自動挑（受傷風險＋最弱項，最多 3 個）
   const KM = { sprint10m: N.short.s10, avg515: N.agility, spiderRun: N.spider, cmjHeight: N.cmjArm, broadJump: N.short.broad, lateralAvg: N.lateral, landAvg: N.land, nkgAvg: N.force, djAvg: N.dj, rThrowAvg: N.rot, servingThrow: N.serveThrow, IFT30_15: N.short.ift, gripStrength: N.grip, serveSpeed: N.serveSpeed, hop10_5: N.hop };
@@ -559,7 +626,7 @@ function build(d) {
   const sexLabel = sex === 'Male' ? t.male : t.female;
   const hand = t.hands[rec.dominantHand] || esc(rec.dominantHand || '—');
 
-  return { rec, ageY, grpLabel, sexLabel, hand, name, ini, season, year, key, extra, limbs, strengthsHTML, priorityHTML, injuryHTML, re, td, intlOK, u };
+  return { rec, ageY, grpLabel, sexLabel, hand, name, ini, season, year, key, extra, limbs, strengthsHTML, priorityHTML, injuryHTML, re, td, intlOK, u, acad, notes };
 }
 
 function render() {
@@ -575,7 +642,20 @@ function render() {
         <div class="zl">${t.zl.map(s => `<span>${s}</span>`).join('')}</div></td>
       <td class="rd"><span class="tg ${TIER_CLS[x.tier]}">${tw[0]}</span><small>${tw[1]}</small>${x.caution ? `<em>${t.cmjCaution}</em>` : ''}</td></tr>`;
   }).join('');
-  const baseMode = !b.key.length;
+  // 學院同組別模式（沒有國際對照、但學院人數夠）：表格畫學院 PR，表格裡有的項目就不在左邊重複列
+  const acadMode = !b.key.length && b.acad.length > 0;
+  const baseMode = !b.key.length && !acadMode;
+  const acadRows = b.acad.map(x => {
+    const tw = t.acadTierWords[x.tier];
+    return `<tr><td class="it">${ic(x.icon)}<div><b>${x.name}</b><small>${t.acadN(x.n)}</small></div></td>
+      <td class="val${/\s/.test(x.val) ? ' lr2' : ''}">${x.val}<u>${x.unit}</u></td>
+      <td class="zone"><div class="zb"><span class="t1"></span><span class="t2"></span><span class="t3"></span><span class="t4"></span><i style="left:${x.p}%"></i></div>
+        <div class="zl">${t.zl.map(s => `<span>${s}</span>`).join('')}</div></td>
+      <td class="rd"><span class="tg ${TIER_CLS[x.tier]}">${tw[0]}</span><small>${tw[1]}</small></td></tr>`;
+  }).join('');
+  const shown = acadMode ? b.acad.map(x => x.id) : [];
+  const asideExtra = b.extra.filter(o => !o.pid || shown.indexOf(o.pid) < 0);
+  const notesHTML = b.notes.length ? `<div class="kn">${b.notes.map(x => `<span>${x}</span>`).join('')}</div>` : '';
   const extraRows = b.extra.length ? b.extra.map(o => `<div class="o">${ic(o.icon, 'oi')}<span class="on">${o.name}</span><span class="ov">${o.val}<u>${o.unit}</u></span>${o.note ? `<small>${o.note}</small>` : ''}</div>`).join('') : `<p class="tn">${t.addNone}</p>`;
   const limbRows = b.limbs.length ? b.limbs.map(x => {
     if (x.mob) return `<div class="l"><div class="lt"><b>${x.name}</b><span class="st ${SYM_CLS[x.lv]}">${x.label}</span></div></div>`;
@@ -597,11 +677,11 @@ function render() {
 <div class="main">
  ${baseMode ? '' : `<aside>
   <div class="box"><h3>${IC.eye}${t.howTitle}</h3>
-   <p>${b.intlOK ? t.howText : t.howNoIntl}</p>
-   ${baseMode ? '' : `${t.tiers.map((x, i) => `<div class="tier"><span class="blk ${TIER_CLS[i]}"></span><b>${x[0]}</b><small>${x[1]}</small></div>`).join('')}
+   <p>${acadMode ? t.acadHow : b.intlOK ? t.howText : t.howNoIntl}</p>
+   ${baseMode ? '' : `${(acadMode ? t.acadTiers : t.tiers).map((x, i) => `<div class="tier"><span class="blk ${TIER_CLS[i]}"></span><b>${x[0]}</b><small>${x[1]}</small></div>`).join('')}
    <div class="mk"><i></i>${t.marker}</div>
    <p class="tn">${t.bandNote}</p>`}</div>
-  ${baseMode ? '' : `<div class="box ob${b.extra.length > 11 ? ' dense' : ''}"><h3>${IC.bar}${t.addTitle}</h3><p class="tn">${t.addNote}</p>${extraRows}</div>`}
+  ${baseMode ? '' : `<div class="box ob${asideExtra.length > 11 ? ' dense' : ''}"><h3>${IC.bar}${t.addTitle}</h3><p class="tn">${t.addNote}</p>${asideExtra.length ? asideExtra.map(o => `<div class="o">${ic(o.icon, 'oi')}<span class="on">${o.name}</span><span class="ov">${o.val}<u>${o.unit}</u></span>${o.note ? `<small>${o.note}</small>` : ''}</div>`).join('') : `<p class="tn">${t.addNone}</p>`}</div>`}
  </aside>`}
  <div class="right">
   <div class="top">
@@ -613,8 +693,8 @@ function render() {
     <div class="g work">${IC.target}<div><b>${t.priority}</b>${b.priorityHTML}</div></div>
     <div class="g care">${IC.shield}<div><b>${t.injury}</b>${esc(b.injuryHTML).replace(/&lt;(\/?sub)&gt;/g, '<$1>')}</div></div></div>
   </div>
-  ${baseMode ? `<div class="card base"><h3>${IC.bar}${t.baseTitle}<small>${t.baseSub}</small></h3><div class="bgrid">${extraRows}</div></div>` : `<div class="card"><h3>${ic('run', 'h')}${t.keyTitle}<small>${t.keySub}</small></h3>
-   ${b.key.length ? `<table><thead><tr><th>${t.thTest}</th><th>${t.thRes}</th><th>${t.thPos}</th><th>${t.thInt}</th></tr></thead><tbody>${keyRows}</tbody></table>` : `<div class="empty-key">${t.keyNone}</div>`}</div>`}
+  ${baseMode ? `<div class="card base"><h3>${IC.bar}${t.baseTitle}<small>${t.baseSub}</small></h3><div class="bgrid">${extraRows}</div>${notesHTML}</div>` : `<div class="card"><h3>${ic('run', 'h')}${t.keyTitle}<small>${acadMode ? t.acadSub : t.keySub}</small></h3>
+   ${b.key.length || acadMode ? `<table><thead><tr><th>${t.thTest}</th><th>${t.thRes}</th><th>${acadMode ? t.acadThPos : t.thPos}</th><th>${t.thInt}</th></tr></thead><tbody>${acadMode ? acadRows : keyRows}</tbody></table>` : `<div class="empty-key">${t.keyNone}</div>`}${notesHTML}</div>`}
   <div class="bot">
    <div class="card lr"><h3>${IC.shield}${t.limbTitle}</h3>${limbRows}</div>
    <div class="card coach"><h3>${IC.coach}${t.coachTitle}</h3>
@@ -669,6 +749,7 @@ async function downloadPDF() {
   }
 }
 document.getElementById('pdfBtn').addEventListener('click', downloadPDF);
+try { if (window.self !== window.top) document.getElementById('backBtn').style.display = 'none'; } catch (e) {}   // App 橫幅已經有返回
 document.getElementById('backBtn').addEventListener('click', e => {
   e.preventDefault();
   if (history.length > 1) history.back(); else location.href = 'index.html';
